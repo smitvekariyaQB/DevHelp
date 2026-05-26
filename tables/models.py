@@ -11,7 +11,7 @@ def default_sheet_data():
     ]
     rows = [
         {'id': str(uuid.uuid4()), 'cells': {col['id']: '' for col in columns}}
-        for _ in range(3)
+        for _ in range(5)
     ]
     return {'columns': columns, 'rows': rows}
 

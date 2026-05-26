@@ -10,10 +10,17 @@
   const btnRedo = document.getElementById('btnRedo');
   if (!cfg || !container) return;
 
-  const CORNER_WIDTH = 40;
-  const ADD_COL_WIDTH = 44;
+  const ROW_HEADER_WIDTH = 48;
+  const ADD_COL_WIDTH = 48;
   const AUTOSAVE_DELAY = 800;
   const HISTORY_DELAY = 900;
+
+  const MIN_COL_WIDTH = 80;
+
+  const ICONS = {
+    plus: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    close: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.75 4.75l6.5 6.5M11.25 4.75l-6.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  };
 
   let sheetData = JSON.parse(JSON.stringify(cfg.initialData || { columns: [], rows: [] }));
   let saveTimer;
@@ -89,20 +96,76 @@
     }, HISTORY_DELAY);
   }
 
-  function totalTableWidth() {
-    return CORNER_WIDTH + sheetData.columns.reduce((sum, col) => sum + col.width, 0) + ADD_COL_WIDTH;
+  function ensureStructure() {
+    if (!sheetData.columns.length) {
+      for (let i = 0; i < 3; i += 1) {
+        sheetData.columns.push({
+          id: uid(),
+          width: MIN_COL_WIDTH,
+          label: `Column ${i + 1}`,
+        });
+      }
+    }
+    sheetData.rows.forEach((row) => {
+      if (!row.cells) row.cells = {};
+      sheetData.columns.forEach((col) => {
+        if (row.cells[col.id] === undefined) row.cells[col.id] = '';
+      });
+    });
+    if (!sheetData.rows.length) {
+      const cells = {};
+      sheetData.columns.forEach((col) => { cells[col.id] = ''; });
+      sheetData.rows.push({ id: uid(), cells });
+    }
   }
 
-  function syncColumnWidth(colId, width) {
-    const w = `${width}px`;
-    colgroupEl?.querySelector(`col[data-col-id="${colId}"]`)?.style.setProperty('width', w);
-    container.querySelectorAll(`[data-col-id="${colId}"]`).forEach((el) => {
-      if (el.tagName === 'TH' || el.tagName === 'TD') {
-        el.style.width = w;
-        el.style.minWidth = w;
-        el.style.maxWidth = w;
-      }
+  function getSpreadsheetWidth() {
+    const scroll = container.closest('.spreadsheet-scroll');
+    return Math.max(scroll ? scroll.clientWidth : 0, 400);
+  }
+
+  function fitColumnsToWidth() {
+    if (!sheetData.columns.length) return;
+    const available = Math.max(240, getSpreadsheetWidth() - ROW_HEADER_WIDTH);
+    const perCol = Math.max(MIN_COL_WIDTH, Math.floor(available / sheetData.columns.length));
+    sheetData.columns.forEach((col) => { col.width = perCol; });
+  }
+
+  function applyColumnWidths() {
+    if (!colgroupEl) return;
+    const cols = colgroupEl.querySelectorAll('col');
+    if (!cols.length) return;
+
+    cols[0].style.width = `${ROW_HEADER_WIDTH}px`;
+    sheetData.columns.forEach((col, i) => {
+      const colEl = cols[i + 1];
+      if (colEl) colEl.style.width = `${col.width}px`;
     });
+
+    const table = container.querySelector('.spreadsheet');
+    if (table) {
+      const tableWidth = ROW_HEADER_WIDTH
+        + sheetData.columns.reduce((sum, col) => sum + col.width, 0);
+      const scrollWidth = getSpreadsheetWidth();
+      table.style.width = `${Math.max(tableWidth, scrollWidth)}px`;
+      table.style.minWidth = `${scrollWidth}px`;
+    }
+  }
+
+  function updateTableLayout() {
+    fitColumnsToWidth();
+    applyColumnWidths();
+  }
+
+  let resizeTimer;
+  function scheduleLayoutFit() {
+    if (resizing) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      collectData();
+      fitColumnsToWidth();
+      updateTableLayout();
+    }, 100);
   }
 
   function collectData() {
@@ -151,7 +214,17 @@
 
   function autoResizeTextarea(ta) {
     ta.style.height = 'auto';
-    ta.style.height = `${Math.max(36, ta.scrollHeight)}px`;
+    ta.style.height = `${Math.max(44, ta.scrollHeight)}px`;
+  }
+
+  function makeIconButton(className, title, icon, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = className;
+    btn.title = title;
+    btn.innerHTML = icon;
+    btn.addEventListener('click', onClick);
+    return btn;
   }
 
   async function confirmDelete(message) {
@@ -169,9 +242,10 @@
     recordHistoryNow();
     collectData();
     const n = sheetData.columns.length + 1;
-    const col = { id: uid(), width: 160, label: `Column ${n}` };
+    const col = { id: uid(), width: MIN_COL_WIDTH, label: `Column ${n}` };
     sheetData.columns.push(col);
     sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
+    fitColumnsToWidth();
     render();
     scheduleAutosave(true);
   }
@@ -198,6 +272,7 @@
     collectData();
     sheetData.columns = sheetData.columns.filter((c) => c.id !== colId);
     sheetData.rows.forEach((row) => { delete row.cells[colId]; });
+    fitColumnsToWidth();
     render();
     scheduleAutosave(true);
   }
@@ -231,9 +306,15 @@
     const col = sheetData.columns.find((c) => c.id === resizing.colId);
     if (!col) return;
     const delta = e.clientX - resizing.startX;
-    col.width = Math.max(80, Math.min(600, resizing.startWidth + delta));
-    syncColumnWidth(col.id, col.width);
-    colgroupEl?.parentElement?.style.setProperty('width', `${totalTableWidth()}px`);
+    col.width = Math.max(MIN_COL_WIDTH, Math.min(800, resizing.startWidth + delta));
+    colgroupEl?.querySelector(`col[data-col-id="${col.id}"]`)?.style.setProperty('width', `${col.width}px`);
+    const table = container.querySelector('.spreadsheet');
+    if (table) {
+      const tableWidth = ROW_HEADER_WIDTH
+        + sheetData.columns.reduce((sum, c) => sum + c.width, 0);
+      const scrollWidth = getSpreadsheetWidth();
+      table.style.width = `${Math.max(tableWidth, scrollWidth)}px`;
+    }
   }
 
   function stopResize() {
@@ -249,7 +330,7 @@
   function buildColgroup() {
     const colgroup = document.createElement('colgroup');
     const cornerCol = document.createElement('col');
-    cornerCol.style.width = `${CORNER_WIDTH}px`;
+    cornerCol.style.width = `${ROW_HEADER_WIDTH}px`;
     colgroup.appendChild(cornerCol);
     sheetData.columns.forEach((col) => {
       const colEl = document.createElement('col');
@@ -257,17 +338,15 @@
       colEl.style.width = `${col.width}px`;
       colgroup.appendChild(colEl);
     });
-    const addCol = document.createElement('col');
-    addCol.style.width = `${ADD_COL_WIDTH}px`;
-    colgroup.appendChild(addCol);
     return colgroup;
   }
 
   function render() {
+    ensureStructure();
+    fitColumnsToWidth();
+
     const table = document.createElement('table');
     table.className = 'spreadsheet';
-    table.style.width = `${totalTableWidth()}px`;
-    table.style.minWidth = `${totalTableWidth()}px`;
 
     colgroupEl = buildColgroup();
     table.appendChild(colgroupEl);
@@ -282,13 +361,9 @@
       const th = document.createElement('th');
       th.className = 'spreadsheet-col-head';
       th.dataset.colId = col.id;
-      const w = `${col.width}px`;
-      th.style.width = w;
-      th.style.minWidth = w;
-      th.style.maxWidth = w;
 
-      const headWrap = document.createElement('div');
-      headWrap.className = 'col-head-wrap';
+      const headInner = document.createElement('div');
+      headInner.className = 'col-head-inner';
 
       const labelInput = document.createElement('input');
       labelInput.type = 'text';
@@ -301,32 +376,28 @@
         scheduleAutosave();
       });
 
-      const delCol = document.createElement('button');
-      delCol.type = 'button';
-      delCol.className = 'sheet-del-btn';
-      delCol.title = 'Delete column';
-      delCol.textContent = '×';
-      delCol.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteColumn(col.id);
-      });
+      const delCol = makeIconButton(
+        'sheet-icon-btn sheet-del-col',
+        'Delete column',
+        ICONS.close,
+        (e) => {
+          e.stopPropagation();
+          deleteColumn(col.id);
+        },
+      );
 
-      headWrap.appendChild(labelInput);
-      headWrap.appendChild(delCol);
+      headInner.appendChild(labelInput);
+      headInner.appendChild(delCol);
 
       const resize = document.createElement('span');
       resize.className = 'col-resize-handle';
       resize.dataset.colId = col.id;
 
-      th.appendChild(headWrap);
+      th.appendChild(headInner);
       th.appendChild(resize);
       headRow.appendChild(th);
     });
 
-    const addColTh = document.createElement('th');
-    addColTh.className = 'spreadsheet-add-col';
-    addColTh.innerHTML = '<button type="button" class="sheet-add-btn" data-action="add-col" title="Add column">+</button>';
-    headRow.appendChild(addColTh);
     thead.appendChild(headRow);
     table.appendChild(thead);
 
@@ -336,29 +407,32 @@
       const rowLabel = document.createElement('td');
       rowLabel.className = 'spreadsheet-row-label';
 
-      const rowWrap = document.createElement('div');
-      rowWrap.className = 'row-label-wrap';
-      rowWrap.innerHTML = `<span class="row-num">${rowIndex + 1}</span>`;
+      const rowInner = document.createElement('div');
+      rowInner.className = 'row-label-inner';
 
-      const delRow = document.createElement('button');
-      delRow.type = 'button';
-      delRow.className = 'sheet-del-btn sheet-del-row';
-      delRow.title = 'Delete row';
-      delRow.textContent = '×';
-      delRow.addEventListener('click', () => deleteRow(row.id));
+      const rowNum = document.createElement('span');
+      rowNum.className = 'row-num';
+      rowNum.textContent = String(rowIndex + 1);
 
-      rowWrap.appendChild(delRow);
-      rowLabel.appendChild(rowWrap);
+      const delRow = makeIconButton(
+        'sheet-icon-btn sheet-del-row',
+        'Delete row',
+        ICONS.close,
+        (e) => {
+          e.stopPropagation();
+          deleteRow(row.id);
+        },
+      );
+
+      rowInner.appendChild(rowNum);
+      rowInner.appendChild(delRow);
+      rowLabel.appendChild(rowInner);
       tr.appendChild(rowLabel);
 
       sheetData.columns.forEach((col) => {
         const td = document.createElement('td');
         td.className = 'spreadsheet-cell';
         td.dataset.colId = col.id;
-        const w = `${col.width}px`;
-        td.style.width = w;
-        td.style.minWidth = w;
-        td.style.maxWidth = w;
 
         const ta = document.createElement('textarea');
         ta.className = 'cell-input';
@@ -381,10 +455,23 @@
 
     const addRowTr = document.createElement('tr');
     addRowTr.className = 'spreadsheet-add-row';
-    const addRowTd = document.createElement('td');
-    addRowTd.colSpan = sheetData.columns.length + 2;
-    addRowTd.innerHTML = '<button type="button" class="sheet-add-btn sheet-add-row-btn" data-action="add-row">+ Add row</button>';
-    addRowTr.appendChild(addRowTd);
+    addRowTr.dataset.action = 'add-row';
+    addRowTr.title = 'Add row';
+
+    const addRowLabel = document.createElement('td');
+    addRowLabel.className = 'spreadsheet-row-label spreadsheet-add-row-label';
+    const addRowIcon = document.createElement('span');
+    addRowIcon.className = 'sheet-add-row-icon';
+    addRowIcon.innerHTML = ICONS.plus;
+    addRowLabel.appendChild(addRowIcon);
+    addRowTr.appendChild(addRowLabel);
+
+    sheetData.columns.forEach(() => {
+      const td = document.createElement('td');
+      td.className = 'spreadsheet-add-row-cell';
+      addRowTr.appendChild(td);
+    });
+
     tbody.appendChild(addRowTr);
 
     table.appendChild(tbody);
@@ -398,8 +485,9 @@
       });
     });
 
-    container.querySelector('[data-action="add-col"]')?.addEventListener('click', addColumn);
     container.querySelector('[data-action="add-row"]')?.addEventListener('click', addRow);
+
+    applyColumnWidths();
   }
 
   function doUndo() {
@@ -593,11 +681,29 @@
     if (ok) document.getElementById('deleteTableForm')?.submit();
   });
 
+  ensureStructure();
   sheetData.columns.forEach((col, i) => {
     if (!col.label) col.label = `Column ${i + 1}`;
   });
 
+  const addColRail = document.getElementById('sheetAddColRail');
+  if (addColRail) {
+    addColRail.innerHTML = `<span class="sheet-add-col-rail-icon">${ICONS.plus}</span>`;
+    addColRail.addEventListener('click', addColumn);
+  }
+
   render();
+  requestAnimationFrame(() => {
+    updateTableLayout();
+  });
+
+  const scrollEl = container.closest('.spreadsheet-scroll');
+  if (scrollEl && window.ResizeObserver) {
+    new ResizeObserver(scheduleLayoutFit).observe(scrollEl);
+  } else {
+    window.addEventListener('resize', scheduleLayoutFit);
+  }
+
   history.reset(getFullState());
   setStatus('saved');
 })();

@@ -25,10 +25,13 @@
   <div id="noteForm" class="note-edit-form" style="--note-color: {{ note.color }}">
     {% csrf_token %}
     <input type="hidden" name="content" id="noteContentInput">
-    <label class="field-label" for="noteTitleInput">Note title</label>
-    <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
-
-    {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyNote" %}
+    <div class="editor-title-row">
+      <div class="editor-title-field">
+        <label class="field-label" for="noteTitleInput">Note title</label>
+        <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
+      </div>
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyNote" %}
+    </div>
 
     <label class="field-label editor-content-label">Note content</label>
     <div class="editor-wrap">

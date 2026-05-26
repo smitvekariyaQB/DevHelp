@@ -20,15 +20,19 @@
   <p class="editor-page-label">Edit table</p>
 
   <div class="table-editor-panel" id="tableEditorPanel" style="--sheet-color: {{ sheet.color }}">
-    <div class="table-editor-toolbar">
-      <label class="field-label" for="tableTitle">Table name</label>
-      <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
+    <div class="editor-title-row">
+      <div class="editor-title-field">
+        <label class="field-label" for="tableTitle">Table name</label>
+        <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
+      </div>
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" %}
     </div>
 
-    {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" %}
-
-    <div class="spreadsheet-scroll">
-      <div class="spreadsheet-container" id="spreadsheetContainer"></div>
+    <div class="spreadsheet-scroll-wrap">
+      <div class="spreadsheet-scroll">
+        <div class="spreadsheet-container" id="spreadsheetContainer"></div>
+      </div>
+      <button type="button" class="sheet-add-col-rail" id="sheetAddColRail" title="Add column" aria-label="Add column"></button>
     </div>
 
     <div class="note-color-picker table-color-picker">
