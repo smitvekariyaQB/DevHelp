@@ -1,0 +1,98 @@
+import json
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_http_methods, require_POST
+
+from .models import JsonDocument
+
+
+def _json_body(request):
+    if request.body:
+        return json.loads(request.body)
+    return {}
+
+
+def _doc_payload(doc):
+    return {
+        'id': doc.id,
+        'title': doc.title,
+        'content': doc.content,
+        'preview': doc.preview,
+        'updated_at': doc.updated_at.isoformat(),
+    }
+
+
+@login_required
+def index(request):
+    documents = request.user.json_documents.all()
+    selected_id = request.GET.get('doc')
+    current_doc = None
+
+    if documents.exists():
+        if selected_id:
+            current_doc = get_object_or_404(JsonDocument, pk=selected_id, user=request.user)
+        else:
+            current_doc = documents.first()
+
+    doc_list = [
+        {
+            **_doc_payload(doc),
+            'selected': current_doc and doc.pk == current_doc.pk,
+        }
+        for doc in documents
+    ]
+
+    return render(
+        request,
+        'jsondocs/index.html',
+        {
+            'documents': doc_list,
+            'current_doc': current_doc,
+        },
+    )
+
+
+@login_required
+@require_http_methods(['POST'])
+def doc_create(request):
+    data = _json_body(request)
+    title = (data.get('title') or 'Untitled.json').strip()[:200] or 'Untitled.json'
+    content = data.get('content', '{\n  \n}')
+    if not isinstance(content, str):
+        content = '{\n  \n}'
+    doc = JsonDocument.objects.create(
+        user=request.user,
+        title=title,
+        content=content[:500000],
+    )
+    return JsonResponse({'document': _doc_payload(doc)})
+
+
+@login_required
+@require_POST
+def doc_autosave(request, pk):
+    doc = get_object_or_404(JsonDocument, pk=pk, user=request.user)
+    data = _json_body(request)
+
+    if 'title' in data:
+        doc.title = (data.get('title') or 'Untitled.json').strip()[:200] or 'Untitled.json'
+    if 'content' in data:
+        content = data.get('content', '')
+        if isinstance(content, str):
+            doc.content = content[:500000]
+
+    doc.save()
+    return JsonResponse({
+        'ok': True,
+        'document': _doc_payload(doc),
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def doc_delete(request, pk):
+    doc = get_object_or_404(JsonDocument, pk=pk, user=request.user)
+    doc.delete()
+    return JsonResponse({'ok': True})

@@ -9,4 +9,5 @@ urlpatterns = [
     path('todos/', include('todos.urls')),
     path('notes/', include('notes.urls')),
     path('tables/', include('tables.urls')),
+    path('json/', include('jsondocs.urls')),
 ]

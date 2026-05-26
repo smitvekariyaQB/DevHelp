@@ -7,6 +7,9 @@ Personal workspace for notes, tasks, and tables — Django web app with macOS-st
 - User registration, login, logout
 - Profile and change password
 - **To Do** (MS To-Do style): lists (My Day, Important, Tasks), add/complete/star/delete tasks
+- **Notes**: rich text notes with colors and autosave
+- **Tables**: spreadsheet-style tables
+- **JSON**: VS Code-style file list with formatter, search, copy, and minify
 
 ## Setup
 

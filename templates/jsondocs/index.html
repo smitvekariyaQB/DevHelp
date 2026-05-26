@@ -1,0 +1,122 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}JSON — ArcBook{% endblock %}
+
+{% block main %}
+<div class="json-app" id="jsonApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
+  <aside class="json-files-panel">
+    <div class="json-panel-head">
+      <span class="json-panel-title">JSON Files</span>
+      <button type="button" class="btn-new-json" id="btnNewJson" title="New JSON file">+</button>
+    </div>
+    <div class="json-search-wrap">
+      <input type="search"
+             id="jsonFileSearch"
+             class="json-search-input"
+             placeholder="Search files…"
+             autocomplete="off"
+             aria-label="Search JSON files">
+    </div>
+    <ul class="json-file-list" id="jsonFileList">
+      {% for doc in documents %}
+      <li class="json-file-item {% if doc.selected %}active{% endif %}"
+          data-doc-id="{{ doc.id }}"
+          data-doc-title="{{ doc.title|lower }}">
+        <button type="button" class="json-file-btn" data-doc-id="{{ doc.id }}">
+          <svg class="json-file-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 2.5h6.5L13 6v7.5a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M9.5 2.5V6H13" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 9h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <span class="json-file-name" title="Right-click for options">{{ doc.title }}</span>
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if not documents %}
+    <p class="json-empty-list" id="jsonEmptyList">No JSON files yet.</p>
+    {% endif %}
+  </aside>
+
+  <section class="json-editor-panel">
+    {% if current_doc %}
+    <header class="json-editor-header">
+      <div class="json-editor-header-main">
+        <input type="text"
+               id="jsonTitleInput"
+               class="json-title-input"
+               value="{{ current_doc.title }}"
+               placeholder="filename.json"
+               autocomplete="off"
+               aria-label="JSON file name">
+        <span class="json-valid-badge" id="jsonValidBadge" data-state="unknown">—</span>
+      </div>
+      <div class="json-editor-actions">
+        <button type="button" class="btn btn-default btn-json-tool" id="btnJsonSearch" title="Search in JSON">Search</button>
+        <button type="button" class="btn btn-default btn-json-tool" id="btnJsonFormat" title="Format JSON">Format</button>
+        <button type="button" class="btn btn-default btn-json-tool" id="btnJsonMinify" title="Minify JSON">Minify</button>
+        <button type="button" class="btn btn-default btn-json-tool" id="btnJsonCopy" title="Copy JSON">Copy</button>
+        <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteJson">Delete</button>
+        {% include "includes/save_controls.html" with autosave_id="jsonAutosaveStatus" %}
+      </div>
+    </header>
+
+    <div class="json-find-bar hidden" id="jsonFindBar">
+      <input type="search"
+             id="jsonFindInput"
+             class="json-find-input"
+             placeholder="Find in JSON…"
+             autocomplete="off"
+             aria-label="Find in JSON">
+      <span class="json-find-count" id="jsonFindCount"></span>
+      <button type="button" class="json-find-nav" id="btnFindPrev" title="Previous match">↑</button>
+      <button type="button" class="json-find-nav" id="btnFindNext" title="Next match">↓</button>
+      <button type="button" class="json-find-close" id="btnFindClose" title="Close search">×</button>
+    </div>
+
+    <div class="json-view-tabs" role="tablist">
+      <button type="button" class="json-view-tab active" id="tabJsonViewer" data-tab="viewer" role="tab" aria-selected="true">Viewer</button>
+      <button type="button" class="json-view-tab" id="tabJsonText" data-tab="text" role="tab" aria-selected="false">Text</button>
+    </div>
+
+    <div class="json-editor-wrap" id="jsonViewerWrap">
+      <div id="jsonTreeViewer" class="json-tree-viewer" role="tabpanel"></div>
+      <p class="json-tree-error hidden" id="jsonTreeError"></p>
+    </div>
+
+    <div class="json-editor-wrap hidden" id="jsonTextWrap">
+      <div class="json-text-stack">
+        <pre class="json-text-highlight" id="jsonHighlight" aria-hidden="true"></pre>
+        <textarea id="jsonEditor"
+                  class="json-editor"
+                  spellcheck="false"
+                  aria-label="JSON content">{{ current_doc.content }}</textarea>
+      </div>
+    </div>
+    {% else %}
+    <div class="json-welcome">
+      <div class="json-welcome-icon">{ }</div>
+      <h1>JSON Formatter</h1>
+      <p>Create a JSON file to format, search, and copy your data.</p>
+      <button type="button" class="btn btn-primary" id="btnNewJsonWelcome">+ New JSON file</button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.JSON_EDITOR_CONFIG = {
+    csrfToken: '{{ csrf_token }}',
+    currentDocId: {% if current_doc %}{{ current_doc.id }}{% else %}null{% endif %},
+    urls: {
+      index: '{% url "jsondocs:index" %}',
+      docCreate: '{% url "jsondocs:doc_create" %}',
+      docAutosave: (id) => `/json/api/${id}/autosave/`,
+      docDelete: (id) => `/json/api/${id}/delete/`,
+    },
+  };
+</script>
+<script src="{% static 'js/json-editor.js' %}"></script>
+{% endblock %}

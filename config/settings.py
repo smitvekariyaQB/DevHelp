@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'todos',
     'notes',
     'tables',
+    'jsondocs',
 ]
 
 MIDDLEWARE = [
