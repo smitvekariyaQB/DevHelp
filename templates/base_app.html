@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block body_class %}app-shell{% endblock %}
+
+{% block content %}
+<div class="app-shell-inner">
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-text">DevHelp</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="{% url 'todos:index' %}" class="nav-item {% if request.resolver_match.app_name == 'todos' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+          <span>To Do</span>
+        </a>
+        <a href="{% url 'notes:index' %}" class="nav-item {% if request.resolver_match.app_name == 'notes' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
+          <span>Notes</span>
+        </a>
+        <a href="{% url 'tables:index' %}" class="nav-item {% if request.resolver_match.app_name == 'tables' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+          </svg>
+          <span>Tables</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-panel">
+          <a href="{% url 'accounts:profile' %}" class="user-panel-profile {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+            <div class="user-avatar">{{ user.username|slice:":1"|upper }}</div>
+            <div class="user-info">
+              <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+              <span class="user-email">{{ user.email }}</span>
+            </div>
+          </a>
+          <div class="user-panel-actions">
+            <a href="{% url 'accounts:profile' %}" class="user-action-btn {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Profile
+            </a>
+            <button type="button" class="user-action-btn user-action-signout" id="btnSignOut">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+              Sign out
+            </button>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}" id="logoutForm" class="hidden-logout-form">
+          {% csrf_token %}
+        </form>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      {% block main %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('btnSignOut')?.addEventListener('click', async () => {
+    if (!window.AppModal) return;
+    const ok = await AppModal.confirm({
+      title: 'Sign out',
+      message: 'Are you sure you want to sign out of DevHelpTool?',
+      confirmText: 'Sign out',
+      cancelText: 'Cancel',
+      danger: true,
+    });
+    if (ok) document.getElementById('logoutForm')?.submit();
+  });
+</script>
+{% endblock %}

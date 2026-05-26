@@ -1,0 +1,37 @@
+{% extends "base_app.html" %}
+{% block title %}Tables — DevHelpTool{% endblock %}
+
+{% block main %}
+<div class="notes-page tables-page">
+  <header class="notes-header">
+    <div>
+      <h1>Tables</h1>
+      <p class="panel-sub">Add and edit spreadsheets · {{ sheets|length }} total</p>
+    </div>
+    <form method="post" action="{% url 'tables:create' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-inline">+ New table</button>
+    </form>
+  </header>
+
+  {% if sheets %}
+  <div class="notes-grid">
+    {% for sheet in sheets %}
+    <a href="{% url 'tables:edit' sheet.pk %}" class="note-card table-card" style="--note-color: {{ sheet.color }}">
+      <h3 class="note-card-title">{{ sheet.title }}</h3>
+      <p class="note-card-preview">{{ sheet.preview }}</p>
+      <time class="note-card-date">{{ sheet.updated_at|date:"M j, Y" }}</time>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="notes-empty">
+    <p>No tables yet.</p>
+    <form method="post" action="{% url 'tables:create' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-inline">Create your first table</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

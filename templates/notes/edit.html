@@ -1,0 +1,66 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}{{ note.title }} — Notes{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+{% endblock %}
+
+{% block main %}
+<div class="note-edit-page">
+  <header class="note-edit-header">
+    <a href="{% url 'notes:index' %}" class="back-link">← All notes</a>
+    <div class="note-edit-actions">
+      <form method="post" class="inline-form" id="deleteNoteForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteNote">Delete</button>
+      </form>
+      {% include "includes/save_controls.html" with autosave_id="autosaveStatus" %}
+    </div>
+  </header>
+
+  <p class="editor-page-label">Edit note</p>
+
+  <div id="noteForm" class="note-edit-form" style="--note-color: {{ note.color }}">
+    {% csrf_token %}
+    <input type="hidden" name="content" id="noteContentInput">
+    <label class="field-label" for="noteTitleInput">Note title</label>
+    <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
+
+    {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyNote" %}
+
+    <label class="field-label editor-content-label">Note content</label>
+    <div class="editor-wrap">
+      <div id="noteEditor"></div>
+    </div>
+
+    <div class="note-color-picker">
+      <span class="color-label">Note color</span>
+      <div class="color-options" id="colorOptions">
+        {% for hex, label in colors %}
+        <label class="color-option">
+          <input type="radio" name="color" value="{{ hex }}" {% if note.color == hex %}checked{% endif %}>
+          <span class="color-swatch" style="background: {{ hex }}" title="{{ label }}"></span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ note.content|json_script:"note-initial-content" }}
+<script>
+  window.NOTE_EDITOR_CONFIG = {
+    noteId: {{ note.pk }},
+    autosaveUrl: '{% url "notes:autosave" note.pk %}',
+    csrfToken: '{{ csrf_token }}',
+  };
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script src="{% static 'js/history.js' %}"></script>
+<script src="{% static 'js/note-editor.js' %}"></script>
+{% endblock %}

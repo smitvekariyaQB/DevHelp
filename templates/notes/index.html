@@ -1,0 +1,37 @@
+{% extends "base_app.html" %}
+{% block title %}Notes — DevHelpTool{% endblock %}
+
+{% block main %}
+<div class="notes-page">
+  <header class="notes-header">
+    <div>
+      <h1>Notes</h1>
+      <p class="panel-sub">Add and edit your notes · {{ notes|length }} total</p>
+    </div>
+    <form method="post" action="{% url 'notes:create' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-inline">+ New note</button>
+    </form>
+  </header>
+
+  {% if notes %}
+  <div class="notes-grid">
+    {% for note in notes %}
+    <a href="{% url 'notes:edit' note.pk %}" class="note-card" style="--note-color: {{ note.color }}">
+      <h3 class="note-card-title">{{ note.title }}</h3>
+      <p class="note-card-preview">{{ note.preview }}</p>
+      <time class="note-card-date">{{ note.updated_at|date:"M j, Y" }}</time>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="notes-empty">
+    <p>No notes yet.</p>
+    <form method="post" action="{% url 'notes:create' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-inline">Create your first note</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

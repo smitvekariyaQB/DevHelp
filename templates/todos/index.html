@@ -1,0 +1,109 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}To Do — DevHelpTool{% endblock %}
+
+{% block main %}
+<div class="todo-app" data-current-list="{{ current_list.id }}">
+  <aside class="todo-lists-panel">
+    <button type="button" class="btn-new-list" id="btnNewList">+ New list</button>
+    <ul class="todo-lists" id="todoLists">
+      {% for lst in lists %}
+      <li>
+        <a href="?list={{ lst.id }}"
+           class="todo-list-item {% if lst.selected %}active{% endif %}"
+           data-list-id="{{ lst.id }}"
+           style="--list-color: {{ lst.color }}">
+          <span class="list-dot"></span>
+          <span class="list-title">{{ lst.title }}</span>
+          {% if lst.active_count %}<span class="list-count">{{ lst.active_count }}</span>{% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <section class="todo-tasks-panel">
+    <header class="tasks-header">
+      <div class="tasks-header-main">
+        <h1 style="color: {{ current_list.color }}">{{ current_list.title }}</h1>
+        <p class="tasks-date" id="tasksDate"></p>
+      </div>
+      {% if not current_list.is_smart %}
+      <button type="button"
+              class="btn-delete-list"
+              id="btnDeleteList"
+              data-list-id="{{ current_list.id }}"
+              data-list-title="{{ current_list.title }}">
+        Delete list
+      </button>
+      {% endif %}
+    </header>
+
+    <div class="add-task-row">
+      <button type="button" class="task-check-placeholder" disabled aria-hidden="true"></button>
+      <input type="text"
+             id="newTaskInput"
+             class="add-task-input"
+             placeholder="Add a task"
+             autocomplete="off"
+             data-list-id="{{ current_list.id }}">
+    </div>
+
+    <ul class="task-list active-tasks" id="activeTasks">
+      {% for task in active_tasks %}
+      <li class="task-item" data-task-id="{{ task.id }}">
+        <button type="button" class="task-check" data-action="toggle" aria-label="Complete task"></button>
+        <div class="task-body">
+          <span class="task-title">{{ task.title }}</span>
+          {% if task.due_date %}<span class="task-due">{{ task.due_date }}</span>{% endif %}
+        </div>
+        <button type="button" class="task-star {% if task.is_important %}starred{% endif %}" data-action="star" aria-label="Important">★</button>
+        <button type="button" class="task-delete" data-action="delete" aria-label="Delete">×</button>
+      </li>
+      {% empty %}
+      <li class="task-empty">No tasks yet. Add one above.</li>
+      {% endfor %}
+    </ul>
+
+    {% if completed_tasks %}
+    <details class="completed-section" open>
+      <summary>Completed ({{ completed_tasks|length }})</summary>
+      <ul class="task-list completed-tasks" id="completedTasks">
+        {% for task in completed_tasks %}
+        <li class="task-item completed" data-task-id="{{ task.id }}">
+          <button type="button" class="task-check checked" data-action="toggle" aria-label="Mark incomplete"></button>
+          <div class="task-body">
+            <span class="task-title">{{ task.title }}</span>
+          </div>
+          <button type="button" class="task-delete" data-action="delete" aria-label="Delete">×</button>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% else %}
+    <details class="completed-section hidden" id="completedSection">
+      <summary>Completed (<span id="completedCount">0</span>)</summary>
+      <ul class="task-list completed-tasks" id="completedTasks"></ul>
+    </details>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.TODO_CONFIG = {
+    csrfToken: '{{ csrf_token }}',
+    listId: {{ current_list.id }},
+    urls: {
+      taskCreate: '{% url "todos:task_create" %}',
+      taskToggle: (id) => `/todos/api/tasks/${id}/toggle/`,
+      taskUpdate: (id) => `/todos/api/tasks/${id}/update/`,
+      taskDelete: (id) => `/todos/api/tasks/${id}/delete/`,
+      listCreate: '{% url "todos:list_create" %}',
+      listDelete: (id) => `/todos/api/lists/${id}/delete/`,
+    },
+  };
+</script>
+<script src="{% static 'js/todos.js' %}"></script>
+{% endblock %}

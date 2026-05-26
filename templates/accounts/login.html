@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Sign in — DevHelpTool{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <div class="auth-body">
+    <h1>DevHelpTool</h1>
+    <p class="auth-sub">Developer help tools</p>
+    <form method="post" class="auth-form" autocomplete="off">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <label>Username</label>
+      {{ form.username }}
+      {% if form.username.errors %}<span class="field-error">{{ form.username.errors.0 }}</span>{% endif %}
+      <label>Password</label>
+      {{ form.password }}
+      <input type="text" name="prevent_autofill" tabindex="-1" autocomplete="off" class="autofill-trap" aria-hidden="true">
+      {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
+      <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+    <p class="auth-footer">No account? <a href="{% url 'accounts:register' %}">Create one</a></p>
+  </div>
+</div>
+{% endblock %}

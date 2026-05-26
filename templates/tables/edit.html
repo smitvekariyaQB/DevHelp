@@ -1,0 +1,62 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}{{ sheet.title }} — Tables{% endblock %}
+
+{% block main %}
+<div class="table-edit-page">
+  <header class="note-edit-header">
+    <a href="{% url 'tables:index' %}" class="back-link">← All tables</a>
+    <div class="note-edit-actions">
+      <button type="button" class="btn btn-default" id="btnDuplicateTable" title="Create a duplicate table">Duplicate</button>
+      <form method="post" class="inline-form" id="deleteTableForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteTable">Delete</button>
+      </form>
+      {% include "includes/save_controls.html" with autosave_id="tableAutosaveStatus" %}
+    </div>
+  </header>
+
+  <p class="editor-page-label">Edit table</p>
+
+  <div class="table-editor-panel" id="tableEditorPanel" style="--sheet-color: {{ sheet.color }}">
+    <div class="table-editor-toolbar">
+      <label class="field-label" for="tableTitle">Table name</label>
+      <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
+    </div>
+
+    {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" %}
+
+    <div class="spreadsheet-scroll">
+      <div class="spreadsheet-container" id="spreadsheetContainer"></div>
+    </div>
+
+    <div class="note-color-picker table-color-picker">
+      <span class="color-label">Table color</span>
+      <div class="color-options" id="tableColorOptions">
+        {% for hex, label in colors %}
+        <label class="color-option">
+          <input type="radio" name="color" value="{{ hex }}" {% if sheet.color == hex %}checked{% endif %}>
+          <span class="color-swatch" style="background: {{ hex }}" title="{{ label }}"></span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.TABLE_EDITOR_CONFIG = {
+    autosaveUrl: '{% url "tables:autosave" sheet.pk %}',
+    duplicateUrl: '{% url "tables:duplicate" sheet.pk %}',
+    csrfToken: '{{ csrf_token }}',
+    initialData: {{ sheet_data_json|safe }},
+    initialColor: '{{ sheet.color }}',
+  };
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/history.js' %}"></script>
+<script src="{% static 'js/table-editor.js' %}"></script>
+{% endblock %}

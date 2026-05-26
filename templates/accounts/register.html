@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Register — DevHelpTool{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <div class="auth-body">
+    <h1>Create account</h1>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <label>Username</label>
+      {{ form.username }}
+      <label>Email</label>
+      {{ form.email }}
+      <label>Password</label>
+      {{ form.password1 }}
+      <label>Confirm password</label>
+      {{ form.password2 }}
+      {% if form.errors %}
+      <div class="form-error">
+        {% for field, errors in form.errors.items %}
+          {% for error in errors %}{{ error }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">Create account</button>
+    </form>
+    <p class="auth-footer">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+  </div>
+</div>
+{% endblock %}

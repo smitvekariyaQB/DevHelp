@@ -1,0 +1,64 @@
+{% extends "base_app.html" %}
+{% block title %}Profile — DevHelpTool{% endblock %}
+
+{% block main %}
+<div class="panel-header">
+  <h1>Profile</h1>
+  <p class="panel-sub">Account details and password</p>
+</div>
+
+<div class="profile-sections">
+  <section class="panel-card">
+    <h2 class="section-title">Account</h2>
+    <form method="post" class="settings-form">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="profile">
+      <div class="form-row">
+        <label>Username</label>
+        {{ profile_form.username }}
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        {{ profile_form.email }}
+      </div>
+      <div class="form-row">
+        <label>First name</label>
+        {{ profile_form.first_name }}
+      </div>
+      <div class="form-row">
+        <label>Last name</label>
+        {{ profile_form.last_name }}
+      </div>
+      <button type="submit" class="btn btn-primary btn-inline">Save account</button>
+    </form>
+  </section>
+
+  <section class="panel-card" id="password">
+    <h2 class="section-title">Password</h2>
+    <form method="post" class="settings-form">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="password">
+      <div class="form-row">
+        <label>Current password</label>
+        {{ password_form.old_password }}
+      </div>
+      <div class="form-row">
+        <label>New password</label>
+        {{ password_form.new_password1 }}
+      </div>
+      <div class="form-row">
+        <label>Confirm new password</label>
+        {{ password_form.new_password2 }}
+      </div>
+      {% if password_form.errors %}
+      <div class="form-error">
+        {% for field, errors in password_form.errors.items %}
+          {% for error in errors %}{{ error }}<br>{% endfor %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn-primary btn-inline">Update password</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
