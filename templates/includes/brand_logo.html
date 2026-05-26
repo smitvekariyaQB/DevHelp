@@ -1,0 +1,10 @@
+{% load static %}
+<img
+  src="{% static 'images/brand-logo.png' %}"
+  alt=""
+  class="brand-logo{% if logo_class %} {{ logo_class }}{% endif %}"
+  width="22"
+  height="22"
+  decoding="async"
+  aria-hidden="true"
+/>

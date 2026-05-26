@@ -7,8 +7,8 @@
   <div class="app-layout">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <span class="brand-icon">⚡</span>
-        <span class="brand-text">DevHelp</span>
+        {% include "includes/brand_logo.html" %}
+        <span class="brand-text">ArcBook</span>
       </div>
 
       <nav class="sidebar-nav">
@@ -71,7 +71,7 @@
     if (!window.AppModal) return;
     const ok = await AppModal.confirm({
       title: 'Sign out',
-      message: 'Are you sure you want to sign out of DevHelpTool?',
+      message: 'Are you sure you want to sign out of ArcBook?',
       confirmText: 'Sign out',
       cancelText: 'Cancel',
       danger: true,

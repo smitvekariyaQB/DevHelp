@@ -1,12 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Sign in — DevHelpTool{% endblock %}
+{% block title %}Sign in — ArcBook{% endblock %}
 {% block body_class %}auth-page{% endblock %}
 
 {% block content %}
 <div class="auth-card">
   <div class="auth-body">
-    <h1>DevHelpTool</h1>
-    <p class="auth-sub">Developer help tools</p>
+    <div class="auth-brand">
+      {% include "includes/brand_logo.html" with logo_class="brand-logo-lg" %}
+      <h1>ArcBook</h1>
+      <p class="auth-sub">Notes, tasks &amp; tables in one place</p>
+    </div>
     <form method="post" class="auth-form" autocomplete="off">
       {% csrf_token %}
       {% if form.non_field_errors %}

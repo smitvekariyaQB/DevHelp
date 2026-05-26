@@ -1,6 +1,6 @@
-# DevHelpTool
+# ArcBook
 
-Developer help tools — Django web app with macOS-style UI.
+Personal workspace for notes, tasks, and tables — Django web app with macOS-style UI.
 
 ## Features
 
