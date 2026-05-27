@@ -518,6 +518,61 @@ body.modal-open {
 }
 
 /* Settings / profile */
+.settings-app {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-sidebar {
+  width: 240px;
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.settings-nav {
+  list-style: none;
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 2px;
+  transition: background 0.12s;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.settings-nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.settings-nav-item.active {
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 500;
+}
+
+.settings-content {
+  flex: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+.settings-tab-content.hidden {
+  display: none;
+}
+
 .panel-header { padding: 28px 32px 0; }
 .panel-header h1 { font-size: 28px; font-weight: 600; }
 .panel-sub { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }

@@ -1,64 +1,110 @@
 {% extends "base_app.html" %}
-{% block title %}Profile — ArcBook{% endblock %}
+{% block title %}Settings — ArcBook{% endblock %}
 
 {% block main %}
-<div class="panel-header">
-  <h1>Profile</h1>
-  <p class="panel-sub">Account details and password</p>
-</div>
+<div class="settings-app">
+  <aside class="settings-sidebar">
+    <ul class="settings-nav">
+      <li>
+        <button type="button" class="settings-nav-item active" data-tab-target="profile-tab">Profile</button>
+      </li>
+      <li>
+        <button type="button" class="settings-nav-item" data-tab-target="password-tab">Change password</button>
+      </li>
+    </ul>
+  </aside>
+  
+  <section class="settings-content">
+    <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0;">
+      <h1 id="settings-page-title">Profile</h1>
+      <p class="panel-sub" id="settings-page-subtitle">Manage your account details</p>
+    </div>
 
-<div class="profile-sections">
-  <section class="panel-card">
-    <h2 class="section-title">Account</h2>
-    <form method="post" class="settings-form">
-      {% csrf_token %}
-      <input type="hidden" name="form_type" value="profile">
-      <div class="form-row">
-        <label>Username</label>
-        {{ profile_form.username }}
+    <div class="profile-sections" style="padding-left: 0; padding-right: 0;">
+      <div id="profile-tab" class="settings-tab-content">
+        <section class="panel-card">
+          <h2 class="section-title">Account</h2>
+          <form method="post" class="settings-form">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="profile">
+            <div class="form-row">
+              <label>Username</label>
+              {{ profile_form.username }}
+            </div>
+            <div class="form-row">
+              <label>Email</label>
+              {{ profile_form.email }}
+            </div>
+            <div class="form-row">
+              <label>First name</label>
+              {{ profile_form.first_name }}
+            </div>
+            <div class="form-row">
+              <label>Last name</label>
+              {{ profile_form.last_name }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-inline">Save account</button>
+          </form>
+        </section>
       </div>
-      <div class="form-row">
-        <label>Email</label>
-        {{ profile_form.email }}
-      </div>
-      <div class="form-row">
-        <label>First name</label>
-        {{ profile_form.first_name }}
-      </div>
-      <div class="form-row">
-        <label>Last name</label>
-        {{ profile_form.last_name }}
-      </div>
-      <button type="submit" class="btn btn-primary btn-inline">Save account</button>
-    </form>
-  </section>
 
-  <section class="panel-card" id="password">
-    <h2 class="section-title">Password</h2>
-    <form method="post" class="settings-form">
-      {% csrf_token %}
-      <input type="hidden" name="form_type" value="password">
-      <div class="form-row">
-        <label>Current password</label>
-        {{ password_form.old_password }}
+      <div id="password-tab" class="settings-tab-content hidden">
+        <section class="panel-card">
+          <h2 class="section-title">Password</h2>
+          <form method="post" class="settings-form">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="password">
+            <div class="form-row">
+              <label>Current password</label>
+              {{ password_form.old_password }}
+            </div>
+            <div class="form-row">
+              <label>New password</label>
+              {{ password_form.new_password1 }}
+            </div>
+            <div class="form-row">
+              <label>Confirm new password</label>
+              {{ password_form.new_password2 }}
+            </div>
+            {% if password_form.errors %}
+            <div class="form-error">
+              {% for field, errors in password_form.errors.items %}
+                {% for error in errors %}{{ error }}<br>{% endfor %}
+              {% endfor %}
+            </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-inline">Update password</button>
+          </form>
+        </section>
       </div>
-      <div class="form-row">
-        <label>New password</label>
-        {{ password_form.new_password1 }}
-      </div>
-      <div class="form-row">
-        <label>Confirm new password</label>
-        {{ password_form.new_password2 }}
-      </div>
-      {% if password_form.errors %}
-      <div class="form-error">
-        {% for field, errors in password_form.errors.items %}
-          {% for error in errors %}{{ error }}<br>{% endfor %}
-        {% endfor %}
-      </div>
-      {% endif %}
-      <button type="submit" class="btn btn-primary btn-inline">Update password</button>
-    </form>
+    </div>
   </section>
 </div>
+{% endblock %}
+
+{% block page_js %}
+<script data-page-script>
+  document.querySelectorAll('.settings-nav-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.add('hidden'));
+      
+      const targetId = e.currentTarget.dataset.tabTarget;
+      e.currentTarget.classList.add('active');
+      document.getElementById(targetId)?.classList.remove('hidden');
+      
+      const titleEl = document.getElementById('settings-page-title');
+      const subEl = document.getElementById('settings-page-subtitle');
+      if (titleEl && subEl) {
+        if (targetId === 'profile-tab') {
+          titleEl.textContent = 'Profile';
+          subEl.textContent = 'Manage your account details';
+        } else if (targetId === 'password-tab') {
+          titleEl.textContent = 'Change password';
+          subEl.textContent = 'Update your security credentials';
+        }
+      }
+    });
+  });
+</script>
 {% endblock %}
