@@ -57,12 +57,12 @@
         <button type="button" class="btn btn-default btn-json-tool" id="btnJsonMinify" title="Minify JSON">Minify</button>
         <button type="button" class="btn btn-default btn-json-tool" id="btnJsonCopy" title="Copy JSON">Copy</button>
         <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteJson">Delete</button>
-        {% include "includes/save_controls.html" with autosave_id="jsonAutosaveStatus" %}
+        <button type="button" class="btn btn-primary btn-inline" id="btnManualSave">Save</button>
       </div>
     </header>
 
     <div class="json-find-bar hidden" id="jsonFindBar">
-      <input type="search"
+      <input type="text"
              id="jsonFindInput"
              class="json-find-input"
              placeholder="Find in JSON…"
@@ -74,23 +74,35 @@
       <button type="button" class="json-find-close" id="btnFindClose" title="Close search">×</button>
     </div>
 
-    <div class="json-view-tabs" role="tablist">
-      <button type="button" class="json-view-tab active" id="tabJsonViewer" data-tab="viewer" role="tab" aria-selected="true">Viewer</button>
-      <button type="button" class="json-view-tab" id="tabJsonText" data-tab="text" role="tab" aria-selected="false">Text</button>
-    </div>
+    <div class="json-parse-error hidden" id="jsonParseError" role="alert"></div>
 
-    <div class="json-editor-wrap" id="jsonViewerWrap">
-      <div id="jsonTreeViewer" class="json-tree-viewer" role="tabpanel"></div>
-      <p class="json-tree-error hidden" id="jsonTreeError"></p>
-    </div>
+    <div class="json-workspace">
+      <div class="json-tab-bar">
+        <div class="json-tab-gutter-spacer" aria-hidden="true"></div>
+        <div class="json-view-tabs" role="tablist">
+          <button type="button" class="json-view-tab active" id="tabJsonText" data-tab="text" role="tab" aria-selected="true">Text</button>
+          <button type="button" class="json-view-tab" id="tabJsonViewer" data-tab="viewer" role="tab" aria-selected="false">Viewer</button>
+        </div>
+      </div>
 
-    <div class="json-editor-wrap hidden" id="jsonTextWrap">
-      <div class="json-text-stack">
-        <pre class="json-text-highlight" id="jsonHighlight" aria-hidden="true"></pre>
-        <textarea id="jsonEditor"
-                  class="json-editor"
-                  spellcheck="false"
-                  aria-label="JSON content">{{ current_doc.content }}</textarea>
+      <div class="json-editor-wrap hidden" id="jsonViewerWrap">
+        <div id="jsonTreeViewer" class="json-tree-viewer" role="tabpanel"></div>
+        <p class="json-tree-error hidden" id="jsonTreeError"></p>
+      </div>
+
+      <div class="json-editor-wrap" id="jsonTextWrap">
+        <div class="json-text-editor" id="jsonTextEditor">
+          <div class="json-line-gutter" id="jsonLineGutter">
+            <pre class="json-line-numbers" id="jsonLineNumbers" aria-hidden="true">1</pre>
+          </div>
+          <div class="json-text-stack">
+            <pre class="json-text-highlight" id="jsonHighlight" aria-hidden="true"></pre>
+            <textarea id="jsonEditor"
+                      class="json-editor"
+                      spellcheck="false"
+                      aria-label="JSON content">{{ current_doc.content }}</textarea>
+          </div>
+        </div>
       </div>
     </div>
     {% else %}
@@ -105,7 +117,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
   window.JSON_EDITOR_CONFIG = {
     csrfToken: '{{ csrf_token }}',

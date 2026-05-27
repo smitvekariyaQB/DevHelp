@@ -9,7 +9,7 @@ class JsonDocument(models.Model):
         related_name='json_documents',
     )
     title = models.CharField(max_length=200, default='Untitled.json')
-    content = models.TextField(default='{\n  \n}')
+    content = models.TextField(default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

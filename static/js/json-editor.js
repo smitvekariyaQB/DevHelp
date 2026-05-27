@@ -9,7 +9,10 @@
   const titleInput = document.getElementById('jsonTitleInput');
   const editor = document.getElementById('jsonEditor');
   const highlight = document.getElementById('jsonHighlight');
+  const textEditor = document.getElementById('jsonTextEditor');
   const textStack = document.querySelector('.json-text-stack');
+  const lineGutter = document.getElementById('jsonLineGutter');
+  const lineNumbers = document.getElementById('jsonLineNumbers');
   const treeViewer = document.getElementById('jsonTreeViewer');
   const treeError = document.getElementById('jsonTreeError');
   const viewerWrap = document.getElementById('jsonViewerWrap');
@@ -17,8 +20,7 @@
   const tabViewer = document.getElementById('tabJsonViewer');
   const tabText = document.getElementById('tabJsonText');
   const validBadge = document.getElementById('jsonValidBadge');
-  const statusEl = document.getElementById('jsonAutosaveStatus');
-  const statusTextEl = statusEl?.querySelector('.autosave-badge-text');
+  const parseErrorEl = document.getElementById('jsonParseError');
   const btnSave = document.getElementById('btnManualSave');
   const btnFormat = document.getElementById('btnJsonFormat');
   const btnMinify = document.getElementById('btnJsonMinify');
@@ -32,14 +34,13 @@
   const btnFindNext = document.getElementById('btnFindNext');
   const btnFindClose = document.getElementById('btnFindClose');
 
-  const AUTOSAVE_DELAY = 800;
-  let saveTimer;
   let saving = false;
   let pending = false;
   let findMatches = [];
   let findIndex = -1;
-  let activeTab = 'viewer';
+  let activeTab = 'text';
   let treeRefreshTimer;
+  let lastParseError = null;
 
   function csrfHeaders() {
     return {
@@ -56,8 +57,107 @@
       .replace(/"/g, '&quot;');
   }
 
-  function highlightJsonText(text) {
-    const escaped = escapeHtml(text);
+  function getLineColumn(text, position) {
+    const before = text.slice(0, position);
+    const lines = before.split('\n');
+    return {
+      line: lines.length,
+      column: lines[lines.length - 1].length + 1,
+    };
+  }
+
+  function getErrorRange(text, position) {
+    if (position == null || position < 0 || position >= text.length) return null;
+    let start = position;
+    let end = Math.min(text.length, position + 1);
+    while (end < text.length && end - position < 24 && !/[\s,\[\]{}:]/.test(text[end])) {
+      end += 1;
+    }
+    return { start, end };
+  }
+
+  function cleanParseMessage(message) {
+    return String(message || 'Invalid JSON')
+      .replace(/^JSON\.parse:\s*/i, '')
+      .replace(/\s*at position\s+\d+\s*(\([^)]*\))?/i, '')
+      .replace(/\s*in JSON\s*(\([^)]*\))?/i, '')
+      .trim();
+  }
+
+  function analyzeJson(text) {
+    if (!text.trim()) {
+      return { valid: false, empty: true };
+    }
+    try {
+      return { valid: true, data: JSON.parse(text) };
+    } catch (e) {
+      const fullMessage = e.message || 'Invalid JSON';
+      let position = null;
+      const posMatch = fullMessage.match(/position\s+(\d+)/i);
+      if (posMatch) position = parseInt(posMatch[1], 10);
+
+      let line = null;
+      let column = null;
+      const lineColMatch = fullMessage.match(/line\s+(\d+)\s+column\s+(\d+)/i);
+      if (lineColMatch) {
+        line = parseInt(lineColMatch[1], 10);
+        column = parseInt(lineColMatch[2], 10);
+        if (position == null) {
+          position = getPositionFromLineColumn(text, line, column);
+        }
+      } else if (position != null) {
+        ({ line, column } = getLineColumn(text, position));
+      }
+
+      const message = cleanParseMessage(fullMessage);
+      const errorRange = position != null ? getErrorRange(text, position) : null;
+      const snippetLine = line != null ? (text.split('\n')[line - 1] ?? '') : '';
+
+      return {
+        valid: false,
+        message,
+        fullMessage,
+        position,
+        line,
+        column,
+        errorRange,
+        snippetLine,
+      };
+    }
+  }
+
+  function getPositionFromLineColumn(text, line, column) {
+    const lines = text.split('\n');
+    if (line < 1 || line > lines.length) return null;
+    let pos = 0;
+    for (let i = 0; i < line - 1; i += 1) {
+      pos += lines[i].length + 1;
+    }
+    return pos + Math.max(0, column - 1);
+  }
+
+  function buildErrorSnippet(lineText, column) {
+    if (!lineText) return '';
+    const col = Math.max(1, column || 1);
+    const before = escapeHtml(lineText.slice(0, col - 1));
+    const badChar = lineText[col - 1] ?? '';
+    const after = escapeHtml(lineText.slice(col));
+    return `${before}<mark class="json-error-mark">${escapeHtml(badChar || '?')}</mark>${after}`;
+  }
+
+  function formatErrorDetails(error) {
+    if (!error || error.empty) return '';
+    const loc = error.line != null
+      ? `Line ${error.line}, column ${error.column}`
+      : (error.position != null ? `Position ${error.position}` : 'Syntax error');
+    let html = `<strong>${loc}:</strong> ${escapeHtml(error.message)}`;
+    if (error.snippetLine) {
+      html += `<pre class="json-error-snippet">${buildErrorSnippet(error.snippetLine, error.column)}</pre>`;
+    }
+    return html;
+  }
+
+  function applySyntaxHighlight(escaped) {
     return escaped.replace(
       /("(\\.|[^"\\])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
       (match) => {
@@ -78,37 +178,187 @@
     );
   }
 
+  function highlightJsonText(text, errorRange, findState) {
+    const findLen = findState?.queryLength ?? 0;
+    const findActiveIndex = findState?.activeIndex ?? -1;
+    const findMatchList = findState?.matches ?? [];
+
+    const ranges = [];
+    if (errorRange) {
+      ranges.push({ start: errorRange.start, end: errorRange.end, type: 'error' });
+    }
+    if (findLen > 0 && findMatchList.length) {
+      findMatchList.forEach((start, i) => {
+        ranges.push({
+          start,
+          end: start + findLen,
+          type: i === findActiveIndex ? 'find-active' : 'find',
+        });
+      });
+    }
+
+    if (!ranges.length) {
+      return `${applySyntaxHighlight(escapeHtml(text))}\n`;
+    }
+
+    const boundaries = new Set([0, text.length]);
+    ranges.forEach((range) => {
+      boundaries.add(range.start);
+      boundaries.add(range.end);
+    });
+    const points = [...boundaries].sort((a, b) => a - b);
+
+    const wrapClass = {
+      error: 'json-hl-error',
+      find: 'json-hl-find',
+      'find-active': 'json-hl-find-active',
+    };
+
+    let html = '';
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const segStart = points[i];
+      const segEnd = points[i + 1];
+      if (segStart >= segEnd) continue;
+
+      const mid = (segStart + segEnd) / 2;
+      const covering = ranges.filter((range) => mid >= range.start && mid < range.end);
+      let type = null;
+      if (covering.some((range) => range.type === 'find-active')) type = 'find-active';
+      else if (covering.some((range) => range.type === 'error')) type = 'error';
+      else if (covering.some((range) => range.type === 'find')) type = 'find';
+
+      const segment = applySyntaxHighlight(escapeHtml(text.slice(segStart, segEnd)));
+      html += type ? `<span class="${wrapClass[type]}">${segment}</span>` : segment;
+    }
+    return `${html}\n`;
+  }
+
+  function getFindHighlightState() {
+    if (!findBar || findBar.classList.contains('hidden') || !findInput?.value) {
+      return null;
+    }
+    return {
+      matches: findMatches,
+      activeIndex: findIndex,
+      queryLength: findInput.value.length,
+    };
+  }
+
+  function syncLineNumbers() {
+    if (!editor || !lineNumbers) return;
+    const lines = editor.value.split('\n');
+    const errorLine = lastParseError?.line;
+    if (errorLine) {
+      lineNumbers.innerHTML = lines.map((_, i) => {
+        const num = i + 1;
+        const cls = num === errorLine ? 'json-line-num json-line-num-error' : 'json-line-num';
+        return `<span class="${cls}">${num}</span>`;
+      }).join('');
+    } else {
+      lineNumbers.textContent = lines.map((_, i) => i + 1).join('\n');
+    }
+  }
+
   function syncTextHighlight() {
     if (!editor || !highlight) return;
-    highlight.innerHTML = `${highlightJsonText(editor.value)}\n`;
+    highlight.innerHTML = highlightJsonText(
+      editor.value,
+      lastParseError?.errorRange ?? null,
+      getFindHighlightState(),
+    );
+    syncLineNumbers();
     syncTextEditorHeight();
     syncHighlightScroll();
+  }
+
+  function showParseError(error) {
+    if (!parseErrorEl) return;
+    if (!error || error.valid || error.empty) {
+      parseErrorEl.classList.add('hidden');
+      parseErrorEl.innerHTML = '';
+      return;
+    }
+    parseErrorEl.innerHTML = formatErrorDetails(error);
+    parseErrorEl.classList.remove('hidden');
+  }
+
+  function scrollToParseError(error) {
+    if (!editor || !error?.errorRange) return;
+    const { start, end } = error.errorRange;
+    editor.focus();
+    editor.setSelectionRange(start, end);
+    const lineHeight = parseInt(getComputedStyle(editor).lineHeight, 10) || 21;
+    const line = error.line || getLineColumn(editor.value, start).line;
+    if (textWrap) {
+      textWrap.scrollTop = Math.max(0, (line - 1) * lineHeight - 80);
+    }
+    syncHighlightScroll();
+  }
+
+  function getEditorMinHeight() {
+    if (!textWrap) return 240;
+    return Math.max(240, textWrap.clientHeight);
   }
 
   function syncTextEditorHeight() {
     if (!editor || !textStack) return;
     editor.style.height = 'auto';
-    const height = Math.max(320, editor.scrollHeight);
+    const contentHeight = editor.scrollHeight;
+    const minHeight = getEditorMinHeight();
+    const height = Math.max(contentHeight, minHeight);
     editor.style.height = `${height}px`;
-    highlight.style.minHeight = `${height}px`;
+    highlight.style.height = `${height}px`;
     textStack.style.minHeight = `${height}px`;
+    if (lineGutter) lineGutter.style.minHeight = `${height}px`;
+    if (textEditor) textEditor.style.minHeight = `${height}px`;
   }
 
   function syncHighlightScroll() {
     if (!editor || !highlight) return;
-    highlight.style.transform = `translate(${-editor.scrollLeft}px, ${-editor.scrollTop}px)`;
+    highlight.style.transform = `translate(${-editor.scrollLeft}px, 0)`;
   }
 
-  function setStatus(state, text) {
-    if (!statusEl) return;
-    statusEl.dataset.state = state;
-    const label = text || {
-      saved: 'Saved',
-      saving: 'Saving…',
-      unsaved: 'Unsaved changes',
-      error: 'Save failed',
-    }[state] || state;
-    if (statusTextEl) statusTextEl.textContent = label;
+  async function runSave() {
+    if (!cfg.currentDocId || !editor) return;
+    if (saving) {
+      pending = true;
+      return;
+    }
+    saving = true;
+    const saveLabel = btnSave?.textContent;
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.textContent = 'Saving…';
+    }
+    try {
+      const res = await fetch(cfg.urls.docAutosave(cfg.currentDocId), {
+        method: 'POST',
+        headers: csrfHeaders(),
+        body: JSON.stringify({
+          title: titleInput ? titleInput.value : '',
+          content: editor.value,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      syncSidebarTitle(cfg.currentDocId, titleInput?.value || 'Untitled.json');
+      if (btnSave) btnSave.textContent = 'Saved';
+    } catch {
+      if (btnSave) btnSave.textContent = 'Save failed';
+    } finally {
+      saving = false;
+      if (btnSave) {
+        btnSave.disabled = false;
+        setTimeout(() => {
+          if (btnSave.textContent === 'Saved' || btnSave.textContent === 'Save failed') {
+            btnSave.textContent = saveLabel || 'Save';
+          }
+        }, 1500);
+      }
+      if (pending) {
+        pending = false;
+        runSave();
+      }
+    }
   }
 
   function parseEditorJson() {
@@ -118,29 +368,40 @@
   }
 
   function updateValidBadge() {
-    if (!validBadge || !editor) return;
-    const text = editor.value.trim();
-    if (!text) {
+    if (!validBadge || !editor) return false;
+
+    const result = analyzeJson(editor.value);
+    lastParseError = result.valid || result.empty ? null : result;
+
+    if (result.empty) {
       validBadge.dataset.state = 'unknown';
       validBadge.textContent = 'Empty';
+      validBadge.title = '';
       editor.classList.remove('json-editor-invalid');
-      textStack?.classList.remove('json-editor-invalid-wrap');
+      textEditor?.classList.remove('json-editor-invalid-wrap');
+      showParseError(null);
       return false;
     }
-    try {
-      JSON.parse(text);
+
+    if (result.valid) {
       validBadge.dataset.state = 'valid';
       validBadge.textContent = 'Valid JSON';
+      validBadge.title = '';
       editor.classList.remove('json-editor-invalid');
-      textStack?.classList.remove('json-editor-invalid-wrap');
+      textEditor?.classList.remove('json-editor-invalid-wrap');
+      showParseError(null);
       return true;
-    } catch {
-      validBadge.dataset.state = 'invalid';
-      validBadge.textContent = 'Invalid JSON';
-      editor.classList.add('json-editor-invalid');
-      textStack?.classList.add('json-editor-invalid-wrap');
-      return false;
     }
+
+    validBadge.dataset.state = 'invalid';
+    validBadge.textContent = result.line != null
+      ? `Invalid · Line ${result.line}`
+      : 'Invalid JSON';
+    validBadge.title = result.message;
+    editor.classList.add('json-editor-invalid');
+    textEditor?.classList.add('json-editor-invalid-wrap');
+    showParseError(result);
+    return false;
   }
 
   function valueTypeClass(val) {
@@ -267,26 +528,27 @@
 
     treeViewer.innerHTML = '';
     treeError.classList.add('hidden');
-    treeError.textContent = '';
+    treeError.innerHTML = '';
 
-    const text = editor?.value.trim() || '';
-    if (!text) {
+    const text = editor?.value ?? '';
+    if (!text.trim()) {
       treeError.textContent = 'JSON is empty.';
       treeError.classList.remove('hidden');
       return;
     }
 
-    try {
-      const data = JSON.parse(text);
-      if (data !== null && typeof data === 'object') {
-        treeViewer.appendChild(createBranchNode(null, data, 0, true));
+    const result = analyzeJson(text);
+    if (result.valid) {
+      if (result.data !== null && typeof result.data === 'object') {
+        treeViewer.appendChild(createBranchNode(null, result.data, 0, true));
       } else {
-        treeViewer.appendChild(createLeafRow('value', data));
+        treeViewer.appendChild(createLeafRow('value', result.data));
       }
-    } catch (e) {
-      treeError.textContent = e.message || 'Invalid JSON — switch to Text tab to fix syntax.';
-      treeError.classList.remove('hidden');
+      return;
     }
+
+    treeError.innerHTML = formatErrorDetails(result);
+    treeError.classList.remove('hidden');
   }
 
   function scheduleTreeRefresh() {
@@ -299,6 +561,8 @@
     activeTab = tab;
     const isViewer = tab === 'viewer';
 
+    document.querySelector('.json-workspace')?.classList.toggle('json-workspace-viewer', isViewer);
+
     tabViewer?.classList.toggle('active', isViewer);
     tabText?.classList.toggle('active', !isViewer);
     tabViewer?.setAttribute('aria-selected', isViewer ? 'true' : 'false');
@@ -310,46 +574,10 @@
     if (isViewer) renderTreeViewer();
     else {
       syncTextHighlight();
-      editor?.focus();
+      syncTextEditorHeight();
+      if (lastParseError) scrollToParseError(lastParseError);
+      else editor?.focus();
     }
-  }
-
-  async function runAutosave() {
-    if (!cfg.currentDocId || !editor) return;
-    if (saving) {
-      pending = true;
-      return;
-    }
-    saving = true;
-    setStatus('saving');
-    try {
-      const res = await fetch(cfg.urls.docAutosave(cfg.currentDocId), {
-        method: 'POST',
-        headers: csrfHeaders(),
-        body: JSON.stringify({
-          title: titleInput ? titleInput.value : '',
-          content: editor.value,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      setStatus('saved');
-      syncSidebarTitle(cfg.currentDocId, titleInput?.value || 'Untitled.json');
-    } catch {
-      setStatus('error');
-    } finally {
-      saving = false;
-      if (pending) {
-        pending = false;
-        runAutosave();
-      }
-    }
-  }
-
-  function scheduleAutosave(immediate) {
-    if (!cfg.currentDocId) return;
-    setStatus('unsaved');
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(runAutosave, immediate ? 0 : AUTOSAVE_DELAY);
   }
 
   function syncSidebarTitle(docId, title) {
@@ -433,7 +661,6 @@
       editor.value = JSON.stringify(parsed, null, spaces);
       updateValidBadge();
       syncTextHighlight();
-      scheduleAutosave(true);
       scheduleTreeRefresh();
       if (findBar && !findBar.classList.contains('hidden')) runFind();
       return true;
@@ -449,16 +676,6 @@
     if (!editor) return;
     try {
       await navigator.clipboard.writeText(editor.value);
-      if (statusTextEl) {
-        const prev = statusTextEl.textContent;
-        const prevState = statusEl.dataset.state;
-        statusTextEl.textContent = 'Copied!';
-        statusEl.dataset.state = 'saved';
-        setTimeout(() => {
-          statusTextEl.textContent = prev;
-          statusEl.dataset.state = prevState;
-        }, 1500);
-      }
     } catch {
       editor.select();
       document.execCommand('copy');
@@ -473,6 +690,7 @@
 
     if (!query) {
       if (findCount) findCount.textContent = '';
+      syncTextHighlight();
       return;
     }
 
@@ -490,11 +708,10 @@
       if (!findMatches.length) {
         findCount.textContent = 'No matches';
       } else {
-        findIndex = 0;
-        findCount.textContent = `1 of ${findMatches.length}`;
-        goToFindMatch(0, false);
+        findCount.textContent = `${findMatches.length} match${findMatches.length === 1 ? '' : 'es'}`;
       }
     }
+    syncTextHighlight();
   }
 
   function goToFindMatch(index, updateCount = true) {
@@ -504,15 +721,37 @@
     const end = start + findInput.value.length;
 
     if (activeTab !== 'text') setActiveTab('text');
+    syncTextHighlight();
 
-    editor.focus();
-    editor.setSelectionRange(start, end);
-    const lineHeight = parseInt(getComputedStyle(editor).lineHeight, 10) || 20;
-    editor.scrollTop = Math.max(0, (start / editor.value.length) * editor.scrollHeight - lineHeight * 3);
+    const revealMatch = () => {
+      editor.focus({ preventScroll: true });
+      editor.setSelectionRange(start, end);
+      const lineHeight = parseInt(getComputedStyle(editor).lineHeight, 10) || 20;
+      const line = getLineColumn(editor.value, start).line;
+      if (textWrap) {
+        textWrap.scrollTop = Math.max(0, (line - 1) * lineHeight - 80);
+      }
+      findInput?.focus();
+    };
+
+    // Defer so Enter in the find bar does not insert into the editor.
+    setTimeout(revealMatch, 0);
 
     if (updateCount && findCount) {
       findCount.textContent = `${findIndex + 1} of ${findMatches.length}`;
     }
+  }
+
+  function findNextMatch() {
+    if (!findInput?.value.trim()) return;
+    if (!findMatches.length) runFind();
+    if (!findMatches.length) return;
+    goToFindMatch(findIndex === -1 ? 0 : findIndex + 1);
+  }
+
+  function findPrevMatch() {
+    if (!findMatches.length) return;
+    goToFindMatch(findIndex === -1 ? findMatches.length - 1 : findIndex - 1);
   }
 
   function filterFileList() {
@@ -528,7 +767,7 @@
     const res = await fetch(cfg.urls.docCreate, {
       method: 'POST',
       headers: csrfHeaders(),
-      body: JSON.stringify({ title: 'Untitled.json', content: '{\n  \n}' }),
+      body: JSON.stringify({ title: 'Untitled.json', content: '' }),
     });
     if (!res.ok) return;
     const data = await res.json();
@@ -649,24 +888,36 @@
   if (editor) {
     editor.addEventListener('input', () => {
       updateValidBadge();
-      syncTextHighlight();
-      scheduleAutosave();
       scheduleTreeRefresh();
-      if (findBar && !findBar.classList.contains('hidden')) runFind();
+      if (findBar && !findBar.classList.contains('hidden') && findInput?.value) {
+        runFind();
+      } else {
+        syncTextHighlight();
+      }
     });
     editor.addEventListener('scroll', syncHighlightScroll);
     updateValidBadge();
     syncTextHighlight();
   }
 
+  parseErrorEl?.addEventListener('click', () => {
+    if (!lastParseError) return;
+    setActiveTab('text');
+    scrollToParseError(lastParseError);
+  });
+
+  treeError?.addEventListener('click', () => {
+    if (!lastParseError) return;
+    setActiveTab('text');
+    scrollToParseError(lastParseError);
+  });
+
   titleInput?.addEventListener('input', () => {
-    scheduleAutosave();
     syncSidebarTitle(cfg.currentDocId, titleInput.value || 'Untitled.json');
   });
 
   btnSave?.addEventListener('click', () => {
-    clearTimeout(saveTimer);
-    runAutosave();
+    runSave();
   });
 
   btnFormat?.addEventListener('click', () => formatJson(2));
@@ -685,6 +936,8 @@
     findBar?.classList.add('hidden');
     if (findCount) findCount.textContent = '';
     findMatches = [];
+    findIndex = -1;
+    syncTextHighlight();
     if (activeTab === 'text') editor?.focus();
   });
 
@@ -692,18 +945,19 @@
   findInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
-      if (findMatches.length) goToFindMatch(findIndex - 1);
+      e.stopPropagation();
+      findPrevMatch();
       return;
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (!findMatches.length) runFind();
-      else goToFindMatch(findIndex + 1);
+      e.stopPropagation();
+      findNextMatch();
     }
   });
 
-  btnFindNext?.addEventListener('click', () => goToFindMatch(findIndex + 1));
-  btnFindPrev?.addEventListener('click', () => goToFindMatch(findIndex - 1));
+  btnFindNext?.addEventListener('click', findNextMatch);
+  btnFindPrev?.addEventListener('click', findPrevMatch);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideFileContextMenu();
@@ -716,13 +970,16 @@
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
-      clearTimeout(saveTimer);
-      runAutosave();
+      runSave();
     }
   });
 
+  if (textWrap && typeof ResizeObserver !== 'undefined') {
+    const resizeObserver = new ResizeObserver(() => syncTextEditorHeight());
+    resizeObserver.observe(textWrap);
+  }
+
   if (cfg.currentDocId) {
-    setStatus('saved');
-    setActiveTab('viewer');
+    setActiveTab('text');
   }
 })();

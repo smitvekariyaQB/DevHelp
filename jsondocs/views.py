@@ -59,9 +59,9 @@ def index(request):
 def doc_create(request):
     data = _json_body(request)
     title = (data.get('title') or 'Untitled.json').strip()[:200] or 'Untitled.json'
-    content = data.get('content', '{\n  \n}')
+    content = data.get('content', '')
     if not isinstance(content, str):
-        content = '{\n  \n}'
+        content = ''
     doc = JsonDocument.objects.create(
         user=request.user,
         title=title,
