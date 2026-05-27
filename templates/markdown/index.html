@@ -1,0 +1,111 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}Markdown — ArcBook{% endblock %}
+
+{% block main %}
+<div class="markdown-app" id="markdownApp">
+  <header class="markdown-header">
+    <h1 class="markdown-title">Markdown Editor</h1>
+    <div class="markdown-actions">
+      <label class="markdown-scroll-sync" for="markdownScrollSync" title="Sync editor and preview scroll position">
+        <span class="markdown-scroll-sync-label">Scroll sync</span>
+        <input type="checkbox"
+               id="markdownScrollSync"
+               class="markdown-scroll-sync-input"
+               checked
+               aria-label="Sync editor and preview scroll">
+        <span class="markdown-scroll-sync-switch" aria-hidden="true"></span>
+      </label>
+      <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownSearch" title="Search in markdown (Ctrl+F)">Search</button>
+      <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownCopy" title="Copy markdown">Copy</button>
+    </div>
+  </header>
+
+  <div class="markdown-find-bar hidden" id="markdownFindBar">
+    <input type="text"
+           id="markdownFindInput"
+           class="markdown-find-input"
+           placeholder="Find in markdown…"
+           autocomplete="off"
+           aria-label="Find in markdown">
+    <span class="markdown-find-count" id="markdownFindCount"></span>
+    <button type="button" class="markdown-find-nav" id="btnMarkdownFindPrev" title="Previous match">↑</button>
+    <button type="button" class="markdown-find-nav" id="btnMarkdownFindNext" title="Next match">↓</button>
+    <button type="button" class="markdown-find-close" id="btnMarkdownFindClose" title="Close search">×</button>
+  </div>
+
+  <div class="markdown-workspace" id="markdownWorkspace">
+    <div class="markdown-pane markdown-editor-pane" id="markdownEditorPane">
+      <div class="markdown-pane-head">
+        <span class="markdown-pane-label">Editor</span>
+        <button type="button"
+                class="markdown-pane-toggle"
+                id="btnToggleEditor"
+                title="Hide editor"
+                aria-label="Hide editor"
+                aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+      </div>
+      <div class="markdown-pane-body">
+        <div class="markdown-editor-wrap" id="markdownEditorWrap">
+          <div class="markdown-text-editor" id="markdownTextEditor">
+            <div class="markdown-line-gutter" id="markdownLineGutter">
+              <pre class="markdown-line-numbers" id="markdownLineNumbers" aria-hidden="true">1</pre>
+            </div>
+            <div class="markdown-text-stack">
+              <pre class="markdown-text-highlight" id="markdownHighlight" aria-hidden="true"></pre>
+              <textarea id="markdownEditor"
+                        class="markdown-editor"
+                        spellcheck="false"
+                        aria-label="Markdown content"
+                        placeholder="Write markdown here…"># Welcome to Markdown
+
+Start typing on the left to see a **live preview** on the right.
+
+## Features
+
+- Headings, lists, and links
+- **Bold** and *italic* text
+- Code blocks and inline `code`
+- Blockquotes and tables
+
+> Edit freely — nothing is saved automatically.</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="markdown-resizer" id="markdownResizer" role="separator" aria-orientation="vertical" aria-label="Resize panes" tabindex="0">
+      <span class="markdown-resizer-handle" aria-hidden="true"></span>
+    </div>
+
+    <div class="markdown-pane markdown-preview-pane" id="markdownPreviewPane">
+      <div class="markdown-pane-head">
+        <span class="markdown-pane-label">Preview</span>
+        <button type="button"
+                class="markdown-pane-toggle"
+                id="btnTogglePreview"
+                title="Hide preview"
+                aria-label="Hide preview"
+                aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+      <div class="markdown-pane-body" id="markdownPreviewWrap">
+        <div class="markdown-preview" id="markdownPreview"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+<script src="{% static 'js/markdown-editor.js' %}"></script>
+{% endblock %}

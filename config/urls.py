@@ -10,4 +10,5 @@ urlpatterns = [
     path('notes/', include('notes.urls')),
     path('tables/', include('tables.urls')),
     path('json/', include('jsondocs.urls')),
+    path('markdown/', include('markdown.urls')),
 ]
