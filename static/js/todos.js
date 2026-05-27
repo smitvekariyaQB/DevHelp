@@ -143,7 +143,8 @@
             AppModal.alert({ title: 'Error', message: data.error });
             return;
           }
-          window.location.href = '/todos/';
+          if (window.routerNavigate) window.routerNavigate('/todos/');
+          else window.location.href = '/todos/';
         });
       };
       run();
@@ -173,7 +174,8 @@
           </a>
         `;
         ul.appendChild(li);
-        window.location.href = `?list=${lst.id}`;
+        if (window.routerNavigate) window.routerNavigate(`/todos/?list=${lst.id}`);
+        else window.location.href = `?list=${lst.id}`;
       });
     });
   }

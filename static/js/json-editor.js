@@ -771,7 +771,8 @@
     });
     if (!res.ok) return;
     const data = await res.json();
-    window.location.href = `${cfg.urls.index}?doc=${data.document.id}`;
+    if (window.routerNavigate) window.routerNavigate(`${cfg.urls.index}?doc=${data.document.id}`);
+    else window.location.href = `${cfg.urls.index}?doc=${data.document.id}`;
   }
 
   async function deleteDocument(docId) {
@@ -798,7 +799,8 @@
     });
 
     if (String(id) === String(cfg.currentDocId)) {
-      window.location.href = cfg.urls.index;
+      if (window.routerNavigate) window.routerNavigate(cfg.urls.index);
+      else window.location.href = cfg.urls.index;
       return;
     }
 
@@ -850,7 +852,8 @@
   }
 
   function openDocument(docId) {
-    window.location.href = `${cfg.urls.index}?doc=${docId}`;
+    if (window.routerNavigate) window.routerNavigate(`${cfg.urls.index}?doc=${docId}`);
+    else window.location.href = `${cfg.urls.index}?doc=${docId}`;
   }
 
   btnNewJson?.addEventListener('click', createDocument);
@@ -865,9 +868,10 @@
     showFileContextMenu(e.clientX, e.clientY, item);
   });
 
-  document.addEventListener('click', (e) => {
+  function onDocClick(e) {
     if (!e.target.closest('.json-file-context-menu')) hideFileContextMenu();
-  });
+  }
+  document.addEventListener('click', onDocClick);
 
   fileList?.addEventListener('click', (e) => {
     if (e.target.classList.contains('json-file-name-input')) return;
@@ -959,7 +963,7 @@
   btnFindNext?.addEventListener('click', findNextMatch);
   btnFindPrev?.addEventListener('click', findPrevMatch);
 
-  document.addEventListener('keydown', (e) => {
+  function onDocKeydown(e) {
     if (e.key === 'Escape') hideFileContextMenu();
     if ((e.ctrlKey || e.metaKey) && e.key === 'f' && editor) {
       e.preventDefault();
@@ -972,14 +976,26 @@
       e.preventDefault();
       runSave();
     }
-  });
+  }
+  document.addEventListener('keydown', onDocKeydown);
 
+  let resizeObserver;
   if (textWrap && typeof ResizeObserver !== 'undefined') {
-    const resizeObserver = new ResizeObserver(() => syncTextEditorHeight());
+    resizeObserver = new ResizeObserver(() => syncTextEditorHeight());
     resizeObserver.observe(textWrap);
   }
 
   if (cfg.currentDocId) {
     setActiveTab('text');
+  }
+
+  // Register cleanup for the router so listeners/timers are removed on navigate
+  if (window.__routerCleanup) {
+    window.__routerCleanup.push(() => {
+      document.removeEventListener('click', onDocClick);
+      document.removeEventListener('keydown', onDocKeydown);
+      clearTimeout(treeRefreshTimer);
+      resizeObserver?.disconnect();
+    });
   }
 })();

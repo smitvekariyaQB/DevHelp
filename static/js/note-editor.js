@@ -216,7 +216,7 @@
     scheduleAutosave();
   });
 
-  document.addEventListener('keydown', (e) => {
+  function onKeydown(e) {
     if (!e.ctrlKey && !e.metaKey) return;
     if (e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -226,7 +226,8 @@
       e.preventDefault();
       doRedo();
     }
-  });
+  }
+  document.addEventListener('keydown', onKeydown);
 
   ready = true;
   history.reset(getFullState());
@@ -247,6 +248,16 @@
         danger: true,
       });
       if (ok) deleteForm.submit();
+    });
+  }
+
+  // Register cleanup for the router so listeners/timers are removed on navigate
+  if (window.__routerCleanup) {
+    window.__routerCleanup.push(() => {
+      document.removeEventListener('keydown', onKeydown);
+      clearTimeout(saveTimer);
+      clearTimeout(historyTimer);
+      ready = false;
     });
   }
 })();

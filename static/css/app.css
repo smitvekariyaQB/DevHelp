@@ -352,6 +352,7 @@ body.modal-open {
   background: var(--panel-bg);
   overflow: auto;
   min-height: 0;
+  transition: opacity 0.15s ease;
 }
 
 /* Auth pages */

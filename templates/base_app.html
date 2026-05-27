@@ -64,7 +64,7 @@
       </div>
     </aside>
 
-    <main class="main-panel">
+    <main class="main-panel" id="main-content">
       {% block main %}{% endblock %}
     </main>
   </div>
@@ -85,5 +85,7 @@
     if (ok) document.getElementById('logoutForm')?.submit();
   });
 </script>
+<div id="page-scripts">
 {% block page_js %}{% endblock %}
+</div>
 {% endblock %}

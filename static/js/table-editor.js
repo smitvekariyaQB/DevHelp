@@ -503,7 +503,7 @@
   btnUndo?.addEventListener('click', doUndo);
   btnRedo?.addEventListener('click', doRedo);
 
-  document.addEventListener('keydown', (e) => {
+  function onDocKeydown(e) {
     if (!e.ctrlKey && !e.metaKey) return;
     if (e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -513,7 +513,8 @@
       e.preventDefault();
       doRedo();
     }
-  });
+  }
+  document.addEventListener('keydown', onDocKeydown);
 
   if (titleInput) {
     titleInput.addEventListener('input', () => {
@@ -666,7 +667,8 @@
     if (!cfg.duplicateUrl) return;
     clearTimeout(saveTimer);
     await runAutosave();
-    window.location.href = cfg.duplicateUrl;
+    if (window.routerNavigate) window.routerNavigate(cfg.duplicateUrl);
+    else window.location.href = cfg.duplicateUrl;
   });
 
   document.getElementById('btnDeleteTable')?.addEventListener('click', async () => {
@@ -697,13 +699,28 @@
     updateTableLayout();
   });
 
+  let scrollResizeObserver;
   const scrollEl = container.closest('.spreadsheet-scroll');
   if (scrollEl && window.ResizeObserver) {
-    new ResizeObserver(scheduleLayoutFit).observe(scrollEl);
+    scrollResizeObserver = new ResizeObserver(scheduleLayoutFit);
+    scrollResizeObserver.observe(scrollEl);
   } else {
     window.addEventListener('resize', scheduleLayoutFit);
   }
 
   history.reset(getFullState());
   setStatus('saved');
+
+  // Register cleanup for the router so listeners/timers are removed on navigate
+  if (window.__routerCleanup) {
+    window.__routerCleanup.push(() => {
+      document.removeEventListener('keydown', onDocKeydown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', stopResize);
+      clearTimeout(saveTimer);
+      clearTimeout(historyTimer);
+      clearTimeout(resizeTimer);
+      scrollResizeObserver?.disconnect();
+    });
+  }
 })();
