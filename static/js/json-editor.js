@@ -33,6 +33,9 @@
   const btnFindPrev = document.getElementById('btnFindPrev');
   const btnFindNext = document.getElementById('btnFindNext');
   const btnFindClose = document.getElementById('btnFindClose');
+  const viewerActions = document.getElementById('jsonViewerActions');
+  const btnExpandAll = document.getElementById('btnExpandAll');
+  const btnCollapseAll = document.getElementById('btnCollapseAll');
 
   let saving = false;
   let pending = false;
@@ -569,6 +572,7 @@
     tabText?.setAttribute('aria-selected', !isViewer ? 'true' : 'false');
 
     viewerWrap?.classList.toggle('hidden', !isViewer);
+    viewerActions?.classList.toggle('hidden', !isViewer);
     textWrap?.classList.toggle('hidden', isViewer);
 
     if (isViewer) renderTreeViewer();
@@ -888,6 +892,35 @@
 
   tabViewer?.addEventListener('click', () => setActiveTab('viewer'));
   tabText?.addEventListener('click', () => setActiveTab('text'));
+
+  btnExpandAll?.addEventListener('click', () => {
+    if (!treeViewer) return;
+    treeViewer.querySelectorAll('.json-tree-children').forEach((children) => {
+      children.classList.remove('collapsed');
+      const toggle = children.parentElement?.querySelector('.json-tree-toggle');
+      if (toggle) {
+        toggle.textContent = '−';
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', 'Collapse');
+      }
+    });
+  });
+
+  btnCollapseAll?.addEventListener('click', () => {
+    if (!treeViewer) return;
+    // Collapse all except the root node
+    const rootChildren = treeViewer.querySelector('.json-tree-children');
+    treeViewer.querySelectorAll('.json-tree-children').forEach((children) => {
+      if (children === rootChildren) return;
+      children.classList.add('collapsed');
+      const toggle = children.parentElement?.querySelector('.json-tree-toggle');
+      if (toggle) {
+        toggle.textContent = '+';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Expand');
+      }
+    });
+  });
 
   if (editor) {
     editor.addEventListener('input', () => {
