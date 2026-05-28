@@ -40,6 +40,7 @@
   let saving = false;
   let pending = false;
   let findMatches = [];
+  let viewerFindMatches = [];
   let findIndex = -1;
   let activeTab = 'text';
   let treeRefreshTimer;
@@ -507,7 +508,7 @@
 
     entries.forEach(([entryKey, entryVal]) => {
       if (entryVal !== null && typeof entryVal === 'object') {
-        children.appendChild(createBranchNode(entryKey, entryVal, depth + 1, false));
+        children.appendChild(createBranchNode(entryKey, entryVal, depth + 1, true));
       } else {
         children.appendChild(createLeafRow(entryKey, entryVal));
       }
@@ -557,7 +558,86 @@
   function scheduleTreeRefresh() {
     if (activeTab !== 'viewer') return;
     clearTimeout(treeRefreshTimer);
-    treeRefreshTimer = setTimeout(renderTreeViewer, 200);
+    treeRefreshTimer = setTimeout(() => {
+      renderTreeViewer();
+      if (findBar && !findBar.classList.contains('hidden') && findInput?.value) {
+        runFind();
+      }
+    }, 200);
+  }
+
+  function clearViewerFindHighlights() {
+    treeViewer?.querySelectorAll('.json-tree-find-match, .json-tree-find-active').forEach((row) => {
+      row.classList.remove('json-tree-find-match', 'json-tree-find-active');
+    });
+  }
+
+  function expandTreeRowAncestors(row) {
+    let node = row.closest('.json-tree-node');
+    while (node && node !== treeViewer) {
+      const children = node.querySelector(':scope > .json-tree-children');
+      if (children) {
+        children.classList.remove('collapsed');
+        const toggle = node.querySelector(':scope > .json-tree-row > .json-tree-toggle');
+        if (toggle) {
+          toggle.textContent = '−';
+          toggle.setAttribute('aria-expanded', 'true');
+          toggle.setAttribute('aria-label', 'Collapse');
+        }
+      }
+      node = node.parentElement?.closest('.json-tree-node');
+    }
+  }
+
+  function runViewerFind(query) {
+    if (!treeViewer) return;
+
+    if (!treeViewer.querySelector('.json-tree-row')) {
+      renderTreeViewer();
+    }
+
+    const lowerQuery = query.toLowerCase();
+    viewerFindMatches = [];
+    clearViewerFindHighlights();
+
+    treeViewer.querySelectorAll('.json-tree-row').forEach((row) => {
+      if (row.textContent.toLowerCase().includes(lowerQuery)) {
+        expandTreeRowAncestors(row);
+        viewerFindMatches.push(row);
+      }
+    });
+
+    if (findCount) {
+      if (!viewerFindMatches.length) {
+        findCount.textContent = 'No matches';
+      } else {
+        findCount.textContent = `${viewerFindMatches.length} match${viewerFindMatches.length === 1 ? '' : 'es'}`;
+      }
+    }
+
+    if (viewerFindMatches.length) {
+      goToViewerFindMatch(0, false);
+    } else {
+      findIndex = -1;
+    }
+  }
+
+  function goToViewerFindMatch(index, updateCount = true) {
+    if (!viewerFindMatches.length) return;
+    findIndex = ((index % viewerFindMatches.length) + viewerFindMatches.length) % viewerFindMatches.length;
+
+    clearViewerFindHighlights();
+    viewerFindMatches.forEach((row, i) => {
+      row.classList.add('json-tree-find-match');
+      if (i === findIndex) row.classList.add('json-tree-find-active');
+    });
+
+    viewerFindMatches[findIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    findInput?.focus({ preventScroll: true });
+
+    if (updateCount && findCount) {
+      findCount.textContent = `${findIndex + 1} of ${viewerFindMatches.length}`;
+    }
   }
 
   function setActiveTab(tab) {
@@ -581,6 +661,10 @@
       syncTextEditorHeight();
       if (lastParseError) scrollToParseError(lastParseError);
       else editor?.focus();
+    }
+
+    if (findBar && !findBar.classList.contains('hidden') && findInput?.value) {
+      runFind();
     }
   }
 
@@ -687,16 +771,25 @@
   }
 
   function runFind() {
-    if (!editor || !findInput) return;
+    if (!findInput) return;
     const query = findInput.value;
     findMatches = [];
+    viewerFindMatches = [];
     findIndex = -1;
 
     if (!query) {
       if (findCount) findCount.textContent = '';
-      syncTextHighlight();
+      clearViewerFindHighlights();
+      if (activeTab === 'text') syncTextHighlight();
       return;
     }
+
+    if (activeTab === 'viewer') {
+      runViewerFind(query);
+      return;
+    }
+
+    if (!editor) return;
 
     const lowerText = editor.value.toLowerCase();
     const lowerQuery = query.toLowerCase();
@@ -719,12 +812,16 @@
   }
 
   function goToFindMatch(index, updateCount = true) {
+    if (activeTab === 'viewer') {
+      goToViewerFindMatch(index, updateCount);
+      return;
+    }
+
     if (!editor || !findInput || !findMatches.length) return;
     findIndex = ((index % findMatches.length) + findMatches.length) % findMatches.length;
     const start = findMatches[findIndex];
     const end = start + findInput.value.length;
 
-    if (activeTab !== 'text') setActiveTab('text');
     syncTextHighlight();
 
     const revealMatch = () => {
@@ -748,14 +845,32 @@
 
   function findNextMatch() {
     if (!findInput?.value.trim()) return;
+    if (activeTab === 'viewer') {
+      if (!viewerFindMatches.length) runFind();
+      if (!viewerFindMatches.length) return;
+      goToViewerFindMatch(findIndex === -1 ? 0 : findIndex + 1);
+      return;
+    }
     if (!findMatches.length) runFind();
     if (!findMatches.length) return;
     goToFindMatch(findIndex === -1 ? 0 : findIndex + 1);
   }
 
   function findPrevMatch() {
+    if (activeTab === 'viewer') {
+      if (!viewerFindMatches.length) runFind();
+      if (!viewerFindMatches.length) return;
+      goToViewerFindMatch(findIndex === -1 ? viewerFindMatches.length - 1 : findIndex - 1);
+      return;
+    }
     if (!findMatches.length) return;
     goToFindMatch(findIndex === -1 ? findMatches.length - 1 : findIndex - 1);
+  }
+
+  function openFindBar() {
+    findBar?.classList.remove('hidden');
+    findInput?.focus();
+    findInput?.select();
   }
 
   function filterFileList() {
@@ -962,20 +1077,19 @@
   btnCopy?.addEventListener('click', copyJson);
   btnDelete?.addEventListener('click', () => deleteDocument(cfg.currentDocId));
 
-  btnSearch?.addEventListener('click', () => {
-    setActiveTab('text');
-    findBar?.classList.remove('hidden');
-    findInput?.focus();
-    findInput?.select();
-  });
+  btnSearch?.addEventListener('click', openFindBar);
 
   btnFindClose?.addEventListener('click', () => {
     findBar?.classList.add('hidden');
     if (findCount) findCount.textContent = '';
     findMatches = [];
+    viewerFindMatches = [];
     findIndex = -1;
-    syncTextHighlight();
-    if (activeTab === 'text') editor?.focus();
+    clearViewerFindHighlights();
+    if (activeTab === 'text') {
+      syncTextHighlight();
+      editor?.focus();
+    }
   });
 
   findInput?.addEventListener('input', runFind);
@@ -1000,10 +1114,7 @@
     if (e.key === 'Escape') hideFileContextMenu();
     if ((e.ctrlKey || e.metaKey) && e.key === 'f' && editor) {
       e.preventDefault();
-      setActiveTab('text');
-      findBar?.classList.remove('hidden');
-      findInput?.focus();
-      findInput?.select();
+      openFindBar();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();

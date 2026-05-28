@@ -2511,6 +2511,16 @@ body.col-resizing {
   background: rgba(0, 122, 255, 0.06);
 }
 
+.json-tree-row.json-tree-find-match {
+  background: rgba(255, 214, 0, 0.35);
+}
+
+.json-tree-row.json-tree-find-active {
+  background: rgba(255, 149, 0, 0.45);
+  outline: 1px solid rgba(255, 149, 0, 0.55);
+  outline-offset: -1px;
+}
+
 .json-tree-toggle {
   width: 18px;
   height: 18px;
