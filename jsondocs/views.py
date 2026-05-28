@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from .defaults import DEFAULT_JSON_CONTENT
 from .models import JsonDocument
 
 
@@ -30,11 +31,17 @@ def index(request):
     selected_id = request.GET.get('doc')
     current_doc = None
 
-    if documents.exists():
-        if selected_id:
-            current_doc = get_object_or_404(JsonDocument, pk=selected_id, user=request.user)
-        else:
-            current_doc = documents.first()
+    if not documents.exists():
+        current_doc = JsonDocument.objects.create(
+            user=request.user,
+            title='Untitled.json',
+            content=DEFAULT_JSON_CONTENT,
+        )
+        documents = request.user.json_documents.all()
+    elif selected_id:
+        current_doc = get_object_or_404(JsonDocument, pk=selected_id, user=request.user)
+    else:
+        current_doc = documents.first()
 
     doc_list = [
         {
@@ -59,9 +66,9 @@ def index(request):
 def doc_create(request):
     data = _json_body(request)
     title = (data.get('title') or 'Untitled.json').strip()[:200] or 'Untitled.json'
-    content = data.get('content', '')
+    content = data.get('content', DEFAULT_JSON_CONTENT)
     if not isinstance(content, str):
-        content = ''
+        content = DEFAULT_JSON_CONTENT
     doc = JsonDocument.objects.create(
         user=request.user,
         title=title,

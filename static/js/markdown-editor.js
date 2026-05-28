@@ -1,6 +1,15 @@
 (function () {
+  const cfg = window.MARKDOWN_EDITOR_CONFIG;
   const app = document.getElementById('markdownApp');
-  if (!app) return;
+  if (!cfg || !app) return;
+
+  const fileList = document.getElementById('mdFileList');
+  const fileSearch = document.getElementById('mdFileSearch');
+  const btnNewMarkdown = document.getElementById('btnNewMarkdown');
+  const btnNewMarkdownWelcome = document.getElementById('btnNewMarkdownWelcome');
+  const titleInput = document.getElementById('markdownTitleInput');
+  const btnSave = document.getElementById('btnMarkdownSave');
+  const btnDelete = document.getElementById('btnDeleteMarkdown');
 
   const workspace = document.getElementById('markdownWorkspace');
   const editorPane = document.getElementById('markdownEditorPane');
@@ -34,8 +43,19 @@
   let resizeObserver;
   let scrollSyncEnabled = true;
   let isScrollSyncing = false;
+  let saving = false;
+  let pending = false;
+  let fileContextMenu = null;
+  let fileContextTarget = null;
 
   const MIN_PANE_PCT = 15;
+
+  function csrfHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': cfg.csrfToken,
+    };
+  }
 
   function escapeHtml(text) {
     return String(text)
@@ -444,6 +464,259 @@
       e.preventDefault();
       openFindBar();
     }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's' && editor && cfg.currentDocId) {
+      e.preventDefault();
+      runSave();
+    }
+    if (e.key === 'Escape') hideFileContextMenu();
+  }
+
+  async function runSave() {
+    if (!cfg.currentDocId || !editor) return;
+    if (saving) {
+      pending = true;
+      return;
+    }
+    saving = true;
+    const saveLabel = btnSave?.textContent;
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.textContent = 'Saving…';
+    }
+    try {
+      const res = await fetch(cfg.urls.docAutosave(cfg.currentDocId), {
+        method: 'POST',
+        headers: csrfHeaders(),
+        body: JSON.stringify({
+          title: titleInput ? titleInput.value : '',
+          content: editor.value,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      syncSidebarTitle(cfg.currentDocId, titleInput?.value || 'Untitled.md');
+      if (btnSave) btnSave.textContent = 'Saved';
+    } catch {
+      if (btnSave) btnSave.textContent = 'Save failed';
+    } finally {
+      saving = false;
+      if (btnSave) {
+        btnSave.disabled = false;
+        setTimeout(() => {
+          if (btnSave.textContent === 'Saved' || btnSave.textContent === 'Save failed') {
+            btnSave.textContent = saveLabel || 'Save';
+          }
+        }, 1500);
+      }
+      if (pending) {
+        pending = false;
+        runSave();
+      }
+    }
+  }
+
+  function syncSidebarTitle(docId, title) {
+    if (!fileList) return;
+    const item = fileList.querySelector(`.md-file-item[data-doc-id="${docId}"]`);
+    const nameEl = item?.querySelector('.md-file-name');
+    if (nameEl) nameEl.textContent = title || 'Untitled.md';
+    if (item) item.dataset.docTitle = (title || '').toLowerCase();
+  }
+
+  async function saveDocumentTitle(docId, title) {
+    const res = await fetch(cfg.urls.docAutosave(docId), {
+      method: 'POST',
+      headers: csrfHeaders(),
+      body: JSON.stringify({ title }),
+    });
+    if (!res.ok) throw new Error();
+    syncSidebarTitle(docId, title);
+    if (String(docId) === String(cfg.currentDocId) && titleInput) {
+      titleInput.value = title;
+    }
+  }
+
+  function startSidebarRename(item) {
+    if (!item || item.querySelector('.md-file-name-input')) return;
+
+    const docId = item.dataset.docId;
+    const nameEl = item.querySelector('.md-file-name');
+    if (!nameEl) return;
+
+    const original = nameEl.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'md-file-name-input';
+    input.value = original;
+    input.setAttribute('aria-label', 'Edit file name');
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let finished = false;
+    const finish = async (save) => {
+      if (finished) return;
+      finished = true;
+      const newTitle = (save ? input.value.trim() : original) || 'Untitled.md';
+      const span = document.createElement('span');
+      span.className = 'md-file-name';
+      span.title = 'Right-click for options';
+      span.textContent = newTitle;
+      input.replaceWith(span);
+      item.dataset.docTitle = newTitle.toLowerCase();
+      if (save) {
+        try {
+          await saveDocumentTitle(docId, newTitle);
+        } catch {
+          span.textContent = original;
+          item.dataset.docTitle = original.toLowerCase();
+        }
+      }
+    };
+
+    input.addEventListener('blur', () => finish(true));
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        input.blur();
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        finish(false);
+      }
+    });
+    input.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  function filterFileList() {
+    if (!fileSearch || !fileList) return;
+    const q = fileSearch.value.trim().toLowerCase();
+    fileList.querySelectorAll('.md-file-item').forEach((item) => {
+      const title = item.dataset.docTitle || '';
+      item.hidden = q && !title.includes(q);
+    });
+  }
+
+  async function createDocument() {
+    const res = await fetch(cfg.urls.docCreate, {
+      method: 'POST',
+      headers: csrfHeaders(),
+      body: JSON.stringify({ title: 'Untitled.md' }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const url = `${cfg.urls.index}?doc=${data.document.id}`;
+    if (window.routerNavigate) window.routerNavigate(url);
+    else window.location.href = url;
+  }
+
+  async function deleteDocument(docId) {
+    const id = docId || cfg.currentDocId;
+    if (!id) return;
+
+    const item = fileList?.querySelector(`.md-file-item[data-doc-id="${id}"]`);
+    const fileName = item?.querySelector('.md-file-name')?.textContent || 'this file';
+
+    if (window.AppModal) {
+      const ok = await AppModal.confirm({
+        title: 'Delete markdown file',
+        message: `Delete "${fileName}" permanently?`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+
+    await fetch(cfg.urls.docDelete(id), {
+      method: 'POST',
+      headers: csrfHeaders(),
+    });
+
+    if (String(id) === String(cfg.currentDocId)) {
+      if (window.routerNavigate) window.routerNavigate(cfg.urls.index);
+      else window.location.href = cfg.urls.index;
+      return;
+    }
+
+    item?.remove();
+    if (fileList && !fileList.querySelector('.md-file-item')) {
+      document.getElementById('mdEmptyList')?.classList.remove('hidden');
+    }
+  }
+
+  function hideFileContextMenu() {
+    fileContextMenu?.classList.add('hidden');
+    fileContextTarget = null;
+  }
+
+  function ensureFileContextMenu() {
+    if (fileContextMenu) return;
+    fileContextMenu = document.createElement('div');
+    fileContextMenu.className = 'md-file-context-menu hidden';
+    fileContextMenu.innerHTML = `
+      <button type="button" data-action="rename">Rename</button>
+      <button type="button" data-action="delete" class="danger">Delete</button>
+    `;
+    document.body.appendChild(fileContextMenu);
+
+    fileContextMenu.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn || !fileContextTarget) return;
+      const action = btn.dataset.action;
+      const item = fileContextTarget;
+      hideFileContextMenu();
+      if (action === 'rename') startSidebarRename(item);
+      if (action === 'delete') deleteDocument(item.dataset.docId);
+    });
+  }
+
+  function showFileContextMenu(x, y, item) {
+    ensureFileContextMenu();
+    fileContextTarget = item;
+    fileContextMenu.classList.remove('hidden');
+
+    const menuRect = fileContextMenu.getBoundingClientRect();
+    const maxX = window.innerWidth - menuRect.width - 8;
+    const maxY = window.innerHeight - menuRect.height - 8;
+    fileContextMenu.style.left = `${Math.min(x, maxX)}px`;
+    fileContextMenu.style.top = `${Math.min(y, maxY)}px`;
+  }
+
+  function openDocument(docId) {
+    const url = `${cfg.urls.index}?doc=${docId}`;
+    if (window.routerNavigate) window.routerNavigate(url);
+    else window.location.href = url;
+  }
+
+  btnNewMarkdown?.addEventListener('click', createDocument);
+  btnNewMarkdownWelcome?.addEventListener('click', createDocument);
+  btnSave?.addEventListener('click', runSave);
+  btnDelete?.addEventListener('click', () => deleteDocument(cfg.currentDocId));
+  fileSearch?.addEventListener('input', filterFileList);
+
+  fileList?.addEventListener('contextmenu', (e) => {
+    const nameEl = e.target.closest('.md-file-name');
+    if (!nameEl) return;
+    const item = nameEl.closest('.md-file-item');
+    if (!item) return;
+    e.preventDefault();
+    showFileContextMenu(e.clientX, e.clientY, item);
+  });
+
+  fileList?.addEventListener('click', (e) => {
+    if (!e.target.closest('.md-file-context-menu')) hideFileContextMenu();
+    const btn = e.target.closest('.md-file-btn');
+    if (!btn) return;
+    openDocument(btn.dataset.docId);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.md-file-context-menu')) hideFileContextMenu();
+  });
+
+  if (!editor) {
+    return;
   }
 
   editor?.addEventListener('input', onEditorInput);
@@ -497,6 +770,9 @@
       stopResize();
       resizeObserver?.disconnect();
       document.removeEventListener('keydown', onGlobalKeydown);
+      hideFileContextMenu();
+      fileContextMenu?.remove();
+      fileContextMenu = null;
     });
   }
 })();

@@ -3,109 +3,165 @@
 {% block title %}Markdown — ArcBook{% endblock %}
 
 {% block main %}
-<div class="markdown-app" id="markdownApp">
-  <header class="markdown-header">
-    <h1 class="markdown-title">Markdown Editor</h1>
-    <div class="markdown-actions">
-      <label class="markdown-scroll-sync" for="markdownScrollSync" title="Sync editor and preview scroll position">
-        <span class="markdown-scroll-sync-label">Scroll sync</span>
-        <input type="checkbox"
-               id="markdownScrollSync"
-               class="markdown-scroll-sync-input"
-               checked
-               aria-label="Sync editor and preview scroll">
-        <span class="markdown-scroll-sync-switch" aria-hidden="true"></span>
-      </label>
-      <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownSearch" title="Search in markdown (Ctrl+F)">Search</button>
-      <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownCopy" title="Copy markdown">Copy</button>
+<div class="markdown-app" id="markdownApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
+  <aside class="md-files-panel">
+    <div class="md-panel-head">
+      <span class="md-panel-title">Markdown Files</span>
+      <button type="button" class="btn-new-md" id="btnNewMarkdown" title="New markdown file">+</button>
     </div>
-  </header>
-
-  <div class="markdown-find-bar hidden" id="markdownFindBar">
-    <input type="text"
-           id="markdownFindInput"
-           class="markdown-find-input"
-           placeholder="Find in markdown…"
-           autocomplete="off"
-           aria-label="Find in markdown">
-    <span class="markdown-find-count" id="markdownFindCount"></span>
-    <button type="button" class="markdown-find-nav" id="btnMarkdownFindPrev" title="Previous match">↑</button>
-    <button type="button" class="markdown-find-nav" id="btnMarkdownFindNext" title="Next match">↓</button>
-    <button type="button" class="markdown-find-close" id="btnMarkdownFindClose" title="Close search">×</button>
-  </div>
-
-  <div class="markdown-workspace" id="markdownWorkspace">
-    <div class="markdown-pane markdown-editor-pane" id="markdownEditorPane">
-      <div class="markdown-pane-head">
-        <span class="markdown-pane-label">Editor</span>
-        <button type="button"
-                class="markdown-pane-toggle"
-                id="btnToggleEditor"
-                title="Hide editor"
-                aria-label="Hide editor"
-                aria-expanded="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6"/>
+    <div class="md-search-wrap">
+      <input type="search"
+             id="mdFileSearch"
+             class="md-search-input"
+             placeholder="Search files…"
+             autocomplete="off"
+             aria-label="Search markdown files">
+    </div>
+    <ul class="md-file-list" id="mdFileList">
+      {% for doc in documents %}
+      <li class="md-file-item {% if doc.selected %}active{% endif %}"
+          data-doc-id="{{ doc.id }}"
+          data-doc-title="{{ doc.title|lower }}">
+        <button type="button" class="md-file-btn" data-doc-id="{{ doc.id }}">
+          <svg class="md-file-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 2.5h6.5L13 6v7.5a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M9.5 2.5V6H13" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 9h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
+          <span class="md-file-name" title="Right-click for options">{{ doc.title }}</span>
         </button>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if not documents %}
+    <p class="md-empty-list" id="mdEmptyList">No markdown files yet.</p>
+    {% endif %}
+  </aside>
+
+  <section class="markdown-main-panel">
+    {% if current_doc %}
+    <header class="markdown-header">
+      <div class="markdown-header-main">
+        <input type="text"
+               id="markdownTitleInput"
+               class="markdown-title-input"
+               value="{{ current_doc.title }}"
+               placeholder="filename.md"
+               autocomplete="off"
+               aria-label="Markdown file name">
       </div>
-      <div class="markdown-pane-body">
-        <div class="markdown-editor-wrap" id="markdownEditorWrap">
-          <div class="markdown-text-editor" id="markdownTextEditor">
-            <div class="markdown-line-gutter" id="markdownLineGutter">
-              <pre class="markdown-line-numbers" id="markdownLineNumbers" aria-hidden="true">1</pre>
-            </div>
-            <div class="markdown-text-stack">
-              <pre class="markdown-text-highlight" id="markdownHighlight" aria-hidden="true"></pre>
-              <textarea id="markdownEditor"
-                        class="markdown-editor"
-                        spellcheck="false"
-                        aria-label="Markdown content"
-                        placeholder="Write markdown here…"># Welcome to Markdown
+      <div class="markdown-actions">
+        <label class="markdown-scroll-sync" for="markdownScrollSync" title="Sync editor and preview scroll position">
+          <span class="markdown-scroll-sync-label">Scroll sync</span>
+          <input type="checkbox"
+                 id="markdownScrollSync"
+                 class="markdown-scroll-sync-input"
+                 checked
+                 aria-label="Sync editor and preview scroll">
+          <span class="markdown-scroll-sync-switch" aria-hidden="true"></span>
+        </label>
+        <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownSearch" title="Search in markdown (Ctrl+F)">Search</button>
+        <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownCopy" title="Copy markdown">Copy</button>
+        <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteMarkdown">Delete</button>
+        <button type="button" class="btn btn-primary btn-inline" id="btnMarkdownSave">Save</button>
+      </div>
+    </header>
 
-Start typing on the left to see a **live preview** on the right.
+    <div class="markdown-find-bar hidden" id="markdownFindBar">
+      <input type="text"
+             id="markdownFindInput"
+             class="markdown-find-input"
+             placeholder="Find in markdown…"
+             autocomplete="off"
+             aria-label="Find in markdown">
+      <span class="markdown-find-count" id="markdownFindCount"></span>
+      <button type="button" class="markdown-find-nav" id="btnMarkdownFindPrev" title="Previous match">↑</button>
+      <button type="button" class="markdown-find-nav" id="btnMarkdownFindNext" title="Next match">↓</button>
+      <button type="button" class="markdown-find-close" id="btnMarkdownFindClose" title="Close search">×</button>
+    </div>
 
-## Features
-
-- Headings, lists, and links
-- **Bold** and *italic* text
-- Code blocks and inline `code`
-- Blockquotes and tables
-
-> Edit freely — nothing is saved automatically.</textarea>
+    <div class="markdown-workspace" id="markdownWorkspace">
+      <div class="markdown-pane markdown-editor-pane" id="markdownEditorPane">
+        <div class="markdown-pane-head">
+          <span class="markdown-pane-label">Editor</span>
+          <button type="button"
+                  class="markdown-pane-toggle"
+                  id="btnToggleEditor"
+                  title="Hide editor"
+                  aria-label="Hide editor"
+                  aria-expanded="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+        </div>
+        <div class="markdown-pane-body">
+          <div class="markdown-editor-wrap" id="markdownEditorWrap">
+            <div class="markdown-text-editor" id="markdownTextEditor">
+              <div class="markdown-line-gutter" id="markdownLineGutter">
+                <pre class="markdown-line-numbers" id="markdownLineNumbers" aria-hidden="true">1</pre>
+              </div>
+              <div class="markdown-text-stack">
+                <pre class="markdown-text-highlight" id="markdownHighlight" aria-hidden="true"></pre>
+                <textarea id="markdownEditor"
+                          class="markdown-editor"
+                          spellcheck="false"
+                          aria-label="Markdown content"
+                          placeholder="Write markdown here…">{{ current_doc.content }}</textarea>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="markdown-resizer" id="markdownResizer" role="separator" aria-orientation="vertical" aria-label="Resize panes" tabindex="0">
-      <span class="markdown-resizer-handle" aria-hidden="true"></span>
-    </div>
+      <div class="markdown-resizer" id="markdownResizer" role="separator" aria-orientation="vertical" aria-label="Resize panes" tabindex="0">
+        <span class="markdown-resizer-handle" aria-hidden="true"></span>
+      </div>
 
-    <div class="markdown-pane markdown-preview-pane" id="markdownPreviewPane">
-      <div class="markdown-pane-head">
-        <span class="markdown-pane-label">Preview</span>
-        <button type="button"
-                class="markdown-pane-toggle"
-                id="btnTogglePreview"
-                title="Hide preview"
-                aria-label="Hide preview"
-                aria-expanded="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
-      </div>
-      <div class="markdown-pane-body" id="markdownPreviewWrap">
-        <div class="markdown-preview" id="markdownPreview"></div>
+      <div class="markdown-pane markdown-preview-pane" id="markdownPreviewPane">
+        <div class="markdown-pane-head">
+          <span class="markdown-pane-label">Preview</span>
+          <button type="button"
+                  class="markdown-pane-toggle"
+                  id="btnTogglePreview"
+                  title="Hide preview"
+                  aria-label="Hide preview"
+                  aria-expanded="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+        <div class="markdown-pane-body" id="markdownPreviewWrap">
+          <div class="markdown-preview" id="markdownPreview"></div>
+        </div>
       </div>
     </div>
-  </div>
+    {% else %}
+    <div class="markdown-welcome">
+      <div class="markdown-welcome-icon">M↓</div>
+      <h1>Markdown Editor</h1>
+      <p>Create a markdown file to write, preview, and save your documents.</p>
+      <button type="button" class="btn btn-primary" id="btnNewMarkdownWelcome">+ New markdown file</button>
+    </div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
 
 {% block page_js %}
+<script>
+  window.MARKDOWN_EDITOR_CONFIG = {
+    csrfToken: '{{ csrf_token }}',
+    currentDocId: {% if current_doc %}{{ current_doc.id }}{% else %}null{% endif %},
+    urls: {
+      index: '{% url "markdown:index" %}',
+      docCreate: '{% url "markdown:doc_create" %}',
+      docAutosave: (id) => `/markdown/api/${id}/autosave/`,
+      docDelete: (id) => `/markdown/api/${id}/delete/`,
+    },
+  };
+</script>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
 <script src="{% static 'js/markdown-editor.js' %}"></script>
 {% endblock %}
