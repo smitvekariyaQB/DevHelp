@@ -68,9 +68,24 @@
     return cfg.extensionLanguages?.[ext] || 'plaintext';
   }
 
+  const HLJS_LANGUAGE_ALIASES = {
+    html: 'xml',
+    htm: 'xml',
+  };
+
+  function resolveHljsLanguage(lang) {
+    if (!lang || lang === 'plaintext' || typeof hljs === 'undefined') return null;
+    if (hljs.getLanguage(lang)) return lang;
+    const alias = HLJS_LANGUAGE_ALIASES[lang];
+    if (alias && hljs.getLanguage(alias)) return alias;
+    return null;
+  }
+
   function updateLanguageBadge() {
     if (!langBadge) return;
-    langBadge.textContent = getLanguage(titleInput?.value || '');
+    const filename = titleInput?.value || '';
+    const ext = getExtension(filename);
+    langBadge.textContent = ext || getLanguage(filename);
   }
 
   function getLineColumn(text, position) {
@@ -83,19 +98,16 @@
   }
 
   function getHighlightedHtml(text, filename) {
-    const lang = getLanguage(filename);
+    const lang = resolveHljsLanguage(getLanguage(filename));
     const content = text.endsWith('\n') ? text : `${text}\n`;
-    if (lang === 'plaintext' || typeof hljs === 'undefined') {
+    if (!lang) {
       return escapeHtml(content);
     }
     try {
-      if (hljs.getLanguage(lang)) {
-        return hljs.highlight(content, { language: lang }).value;
-      }
+      return hljs.highlight(content, { language: lang }).value;
     } catch {
-      /* fall through */
+      return escapeHtml(content);
     }
-    return escapeHtml(content);
   }
 
   function locateTextRange(root, start, end) {
@@ -222,7 +234,12 @@
 
   function syncTextHighlight() {
     if (!editor || !highlight) return;
-    highlight.innerHTML = highlightCode(editor.value, titleInput?.value || '');
+    const filename = titleInput?.value || '';
+    const lang = resolveHljsLanguage(getLanguage(filename));
+    highlight.className = lang
+      ? `code-text-highlight hljs language-${lang}`
+      : 'code-text-highlight hljs';
+    highlight.innerHTML = highlightCode(editor.value, filename);
     syncLineNumbers();
     syncTextEditorHeight();
     syncHighlightScroll();

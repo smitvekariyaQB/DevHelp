@@ -2,13 +2,30 @@
 {% load static %}
 {% block title %}Code — ArcBook{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+{% endblock %}
+
 {% block main %}
 <div class="code-app" id="codeApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
-  <aside class="code-files-panel">
+  <aside class="code-files-panel" id="codeFilesPanel">
     <div class="code-panel-head">
       <span class="code-panel-title">Code Files</span>
-      <button type="button" class="btn-new-code" id="btnNewCode" title="New code file">+</button>
+      <div class="files-panel-head-actions">
+        <button type="button"
+                class="files-panel-toggle"
+                id="btnToggleCodeSidebar"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+                aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <button type="button" class="btn-new-code" id="btnNewCode" title="New code file">+</button>
+      </div>
     </div>
+    <div class="files-panel-body">
     <div class="code-search-wrap">
       <input type="search"
              id="codeFileSearch"
@@ -41,6 +58,7 @@
       </li>
       {% endfor %}
     </ul>
+    </div>
   </aside>
 
   <section class="code-main-panel">
@@ -117,7 +135,6 @@
     },
   };
 </script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
@@ -141,4 +158,5 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
 <script src="{% static 'js/code-editor.js' %}"></script>
+<script src="{% static 'js/files-panel.js' %}"></script>
 {% endblock %}

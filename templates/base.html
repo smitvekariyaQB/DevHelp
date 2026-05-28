@@ -10,6 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% block extra_css %}{% endblock %}
+  <script>
+    try {
+      if (localStorage.getItem('appSidebarCollapsed') === '1') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    } catch (_) {}
+  </script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% if messages %}
@@ -24,6 +31,7 @@
   {% include "includes/modal.html" %}
   <script src="{% static 'js/modals.js' %}"></script>
   <script src="{% static 'js/router.js' %}"></script>
+  <script src="{% static 'js/sidebar.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

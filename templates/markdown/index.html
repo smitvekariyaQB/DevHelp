@@ -4,11 +4,24 @@
 
 {% block main %}
 <div class="markdown-app" id="markdownApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
-  <aside class="md-files-panel">
+  <aside class="md-files-panel" id="mdFilesPanel">
     <div class="md-panel-head">
       <span class="md-panel-title">Markdown Files</span>
-      <button type="button" class="btn-new-md" id="btnNewMarkdown" title="New markdown file">+</button>
+      <div class="files-panel-head-actions">
+        <button type="button"
+                class="files-panel-toggle"
+                id="btnToggleMdSidebar"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+                aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <button type="button" class="btn-new-md" id="btnNewMarkdown" title="New markdown file">+</button>
+      </div>
     </div>
+    <div class="files-panel-body">
     <div class="md-search-wrap">
       <input type="search"
              id="mdFileSearch"
@@ -36,6 +49,7 @@
     {% if not documents %}
     <p class="md-empty-list" id="mdEmptyList">No markdown files yet.</p>
     {% endif %}
+    </div>
   </aside>
 
   <section class="markdown-main-panel">
@@ -164,4 +178,5 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
 <script src="{% static 'js/markdown-editor.js' %}"></script>
+<script src="{% static 'js/files-panel.js' %}"></script>
 {% endblock %}

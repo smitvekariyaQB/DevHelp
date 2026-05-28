@@ -4,11 +4,24 @@
 
 {% block main %}
 <div class="json-app" id="jsonApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
-  <aside class="json-files-panel">
+  <aside class="json-files-panel" id="jsonFilesPanel">
     <div class="json-panel-head">
       <span class="json-panel-title">JSON Files</span>
-      <button type="button" class="btn-new-json" id="btnNewJson" title="New JSON file">+</button>
+      <div class="files-panel-head-actions">
+        <button type="button"
+                class="files-panel-toggle"
+                id="btnToggleJsonSidebar"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+                aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <button type="button" class="btn-new-json" id="btnNewJson" title="New JSON file">+</button>
+      </div>
     </div>
+    <div class="files-panel-body">
     <div class="json-search-wrap">
       <input type="search"
              id="jsonFileSearch"
@@ -36,6 +49,7 @@
     {% if not documents %}
     <p class="json-empty-list" id="jsonEmptyList">No JSON files yet.</p>
     {% endif %}
+    </div>
   </aside>
 
   <section class="json-editor-panel">
@@ -135,4 +149,5 @@
   };
 </script>
 <script src="{% static 'js/json-editor.js' %}"></script>
+<script src="{% static 'js/files-panel.js' %}"></script>
 {% endblock %}
