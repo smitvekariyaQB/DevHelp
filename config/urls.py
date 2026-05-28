@@ -11,4 +11,5 @@ urlpatterns = [
     path('tables/', include('tables.urls')),
     path('json/', include('jsondocs.urls')),
     path('markdown/', include('markdown.urls')),
+    path('code/', include('codefiles.urls')),
 ]

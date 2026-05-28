@@ -1,0 +1,144 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}Code — ArcBook{% endblock %}
+
+{% block main %}
+<div class="code-app" id="codeApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
+  <aside class="code-files-panel">
+    <div class="code-panel-head">
+      <span class="code-panel-title">Code Files</span>
+      <button type="button" class="btn-new-code" id="btnNewCode" title="New code file">+</button>
+    </div>
+    <div class="code-search-wrap">
+      <input type="search"
+             id="codeFileSearch"
+             class="code-search-input"
+             placeholder="Search files…"
+             autocomplete="off"
+             aria-label="Search code files">
+    </div>
+    <div class="code-new-file-wrap hidden" id="codeNewFileWrap">
+      <input type="text"
+             id="codeNewFileInput"
+             class="code-new-file-input"
+             placeholder="filename.ext"
+             autocomplete="off"
+             aria-label="New file name">
+    </div>
+    <ul class="code-file-list" id="codeFileList">
+      {% for doc in documents %}
+      <li class="code-file-item {% if doc.selected %}active{% endif %}"
+          data-doc-id="{{ doc.id }}"
+          data-doc-title="{{ doc.title|lower }}">
+        <button type="button" class="code-file-btn" data-doc-id="{{ doc.id }}">
+          <svg class="code-file-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 2.5h6.5L13 6v7.5a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M9.5 2.5V6H13" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 9h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <span class="code-file-name" title="Right-click for options">{{ doc.title }}</span>
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <section class="code-main-panel">
+    {% if current_doc %}
+    <header class="code-header">
+      <div class="code-header-main">
+        <input type="text"
+               id="codeTitleInput"
+               class="code-title-input"
+               value="{{ current_doc.title }}"
+               placeholder="filename.py"
+               autocomplete="off"
+               aria-label="Code file name">
+        <span class="code-lang-badge" id="codeLangBadge">{{ current_doc_meta.language|default:"plaintext" }}</span>
+      </div>
+      <div class="code-actions">
+        <button type="button" class="btn btn-default btn-code-tool" id="btnCodeSearch" title="Search in code (Ctrl+F)">Search</button>
+        <button type="button" class="btn btn-default btn-code-tool" id="btnCodeCopy" title="Copy code">Copy</button>
+        <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteCode">Delete</button>
+        <button type="button" class="btn btn-primary btn-inline" id="btnCodeSave">Save</button>
+      </div>
+    </header>
+
+    <div class="code-find-bar hidden" id="codeFindBar">
+      <input type="text"
+             id="codeFindInput"
+             class="code-find-input"
+             placeholder="Find in code…"
+             autocomplete="off"
+             aria-label="Find in code">
+      <span class="code-find-count" id="codeFindCount"></span>
+      <button type="button" class="code-find-nav" id="btnCodeFindPrev" title="Previous match">↑</button>
+      <button type="button" class="code-find-nav" id="btnCodeFindNext" title="Next match">↓</button>
+      <button type="button" class="code-find-close" id="btnCodeFindClose" title="Close search">×</button>
+    </div>
+
+    <div class="code-editor-wrap" id="codeEditorWrap">
+      <div class="code-text-editor" id="codeTextEditor">
+        <div class="code-line-gutter" id="codeLineGutter">
+          <pre class="code-line-numbers" id="codeLineNumbers" aria-hidden="true">1</pre>
+        </div>
+        <div class="code-text-stack">
+          <pre class="code-text-highlight hljs" id="codeHighlight" aria-hidden="true"></pre>
+          <textarea id="codeEditor"
+                    class="code-editor"
+                    spellcheck="false"
+                    aria-label="Code content">{{ current_doc.content }}</textarea>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="code-welcome">
+      <div class="code-welcome-icon">&lt;/&gt;</div>
+      <h1>Code Editor</h1>
+      <p>Create a file using the name box above the file list. Supported extensions get syntax highlighting; others open as plain text.</p>
+      <button type="button" class="btn btn-primary" id="btnNewCodeWelcome">Create first file</button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  window.CODE_EDITOR_CONFIG = {
+    csrfToken: '{{ csrf_token }}',
+    currentDocId: {% if current_doc %}{{ current_doc.id }}{% else %}null{% endif %},
+    extensionLanguages: {{ extension_languages_json|safe }},
+    urls: {
+      index: '{% url "codefiles:index" %}',
+      docCreate: '{% url "codefiles:doc_create" %}',
+      docAutosave: (id) => `/code/api/${id}/autosave/`,
+      docDelete: (id) => `/code/api/${id}/delete/`,
+    },
+  };
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/scss.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/ruby.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
+<script src="{% static 'js/code-editor.js' %}"></script>
+{% endblock %}

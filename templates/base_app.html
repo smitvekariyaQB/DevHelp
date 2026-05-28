@@ -42,6 +42,12 @@
           </svg>
           <span>Markdown</span>
         </a>
+        <a href="{% url 'codefiles:index' %}" class="nav-item {% if request.resolver_match.app_name == 'codefiles' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>
+          </svg>
+          <span>Code</span>
+        </a>
       </nav>
 
       <div class="sidebar-footer">

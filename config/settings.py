@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'tables',
     'jsondocs',
     'markdown',
+    'codefiles',
 ]
 
 MIDDLEWARE = [
