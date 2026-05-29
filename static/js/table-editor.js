@@ -571,8 +571,26 @@
     runAutosave();
   });
 
-  function cellForExport(text) {
-    return String(text || '').replace(/\t/g, ' ').replace(/\r?\n/g, ' ').trim();
+  function normalizeCellText(text) {
+    return String(text || '')
+      .replace(/\t/g, ' ')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim();
+  }
+
+  function cellLineWidth(text) {
+    const normalized = normalizeCellText(text);
+    if (!normalized) return 0;
+    return Math.max(...normalized.split('\n').map((line) => line.length));
+  }
+
+  function cellForMarkdownExport(text) {
+    return normalizeCellText(text).replace(/\n/g, '<br>');
+  }
+
+  function cellForHtmlExport(text) {
+    return escapeHtml(normalizeCellText(text)).replace(/\n/g, '<br>');
   }
 
   function escapeHtml(text) {
@@ -586,14 +604,20 @@
   function buildTableExportData() {
     collectData();
     const title = titleInput?.value?.trim() || 'Untitled table';
-    const headers = sheetData.columns.map((col, i) => cellForExport(col.label || `Column ${i + 1}`));
+    const headers = sheetData.columns.map((col, i) =>
+      cellForMarkdownExport(col.label || `Column ${i + 1}`),
+    );
     const rows = sheetData.rows.map((row) =>
-      sheetData.columns.map((col) => cellForExport(row.cells[col.id])),
+      sheetData.columns.map((col) => cellForMarkdownExport(row.cells[col.id])),
     );
 
-    const widths = headers.map((h, i) => {
-      const colMax = rows.reduce((max, r) => Math.max(max, (r[i] || '').length), 0);
-      return Math.max(h.length, colMax, 3);
+    const widths = sheetData.columns.map((col, i) => {
+      const headerWidth = cellLineWidth(col.label || `Column ${i + 1}`);
+      const colMax = sheetData.rows.reduce(
+        (max, row) => Math.max(max, cellLineWidth(row.cells[col.id])),
+        0,
+      );
+      return Math.max(headerWidth, colMax, 3);
     });
 
     const padCell = (text, width) => String(text).padEnd(width, ' ');
@@ -603,13 +627,19 @@
     const mdRows = rows.map((r) => `| ${r.map((c, i) => padCell(c, widths[i])).join(' | ')} |`);
     const plain = [title, '', mdHeader, mdDivider, ...mdRows].join('\n');
 
-    const thCells = headers
-      .map((h) => `<th style="border:1px solid #333;background:#f5f5f5;padding:8px 12px;font-weight:600;">${escapeHtml(h)}</th>`)
+    const thCells = sheetData.columns
+      .map((col, i) => {
+        const label = col.label || `Column ${i + 1}`;
+        return `<th style="border:1px solid #333;background:#f5f5f5;padding:8px 12px;font-weight:600;">${cellForHtmlExport(label)}</th>`;
+      })
       .join('');
-    const bodyRows = rows
-      .map((r) => {
-        const tds = r
-          .map((c) => `<td style="border:1px solid #333;padding:8px 12px;">${escapeHtml(c)}</td>`)
+    const bodyRows = sheetData.rows
+      .map((row) => {
+        const tds = sheetData.columns
+          .map((col) => {
+            const value = row.cells[col.id] || '';
+            return `<td style="border:1px solid #333;padding:8px 12px;">${cellForHtmlExport(value)}</td>`;
+          })
           .join('');
         return `<tr>${tds}</tr>`;
       })
