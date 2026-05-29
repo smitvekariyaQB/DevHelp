@@ -107,7 +107,6 @@ def edit(request, pk):
         'tables/edit.html',
         {
             'sheet': sheet,
-            'colors': TableSheet.COLORS,
             'sheet_data_json': json.dumps(sheet.data),
         },
     )

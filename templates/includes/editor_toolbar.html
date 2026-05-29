@@ -17,6 +17,9 @@
       </div>
     </div>
     {% endif %}
+    {% if search_button_id %}
+    <button type="button" class="btn btn-default" id="{{ search_button_id }}" title="Search in table (Ctrl+F)">Search</button>
+    {% endif %}
     {% if copy_button_id %}
     <button type="button" class="btn btn-default" id="{{ copy_button_id }}" title="Copy to clipboard">Copy</button>
     {% endif %}

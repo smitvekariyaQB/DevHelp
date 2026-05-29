@@ -1,7 +1,6 @@
 (function () {
   const cfg = window.TABLE_EDITOR_CONFIG;
   const container = document.getElementById('spreadsheetContainer');
-  const panel = document.getElementById('tableEditorPanel');
   const titleInput = document.getElementById('tableTitle');
   const statusEl = document.getElementById('tableAutosaveStatus');
   const statusTextEl = statusEl?.querySelector('.autosave-badge-text');
@@ -53,21 +52,10 @@
     if (statusTextEl) statusTextEl.textContent = label;
   }
 
-  function getColor() {
-    const el = document.querySelector('#colorOptions input:checked');
-    return el ? el.value : cfg.initialColor;
-  }
-
-  function applySheetColor(hex) {
-    if (panel && hex) panel.style.setProperty('--sheet-color', hex);
-    const dot = document.querySelector('.color-picker-dot');
-    if (dot && hex) dot.style.background = hex;
-  }
-
   function getFullState() {
     return {
       title: titleInput ? titleInput.value : '',
-      color: getColor(),
+      color: cfg.initialColor,
       data: JSON.parse(JSON.stringify(collectData())),
     };
   }
@@ -75,9 +63,6 @@
   function restoreState(state) {
     isRestoring = true;
     if (titleInput) titleInput.value = state.title;
-    applySheetColor(state.color);
-    const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
-    if (colorInput) colorInput.checked = true;
     sheetData = JSON.parse(JSON.stringify(state.data));
     render();
     isRestoring = false;
@@ -438,6 +423,7 @@
       labelInput.addEventListener('input', () => {
         scheduleHistoryCapture();
         scheduleAutosave();
+        if (findBar && !findBar.classList.contains('hidden') && findInput?.value) runFind();
       });
 
       const delCol = makeIconButton(
@@ -508,6 +494,7 @@
           autoResizeTextarea(ta);
           scheduleHistoryCapture();
           scheduleAutosave();
+          if (findBar && !findBar.classList.contains('hidden') && findInput?.value) runFind();
         });
         td.appendChild(ta);
         tr.appendChild(td);
@@ -552,6 +539,7 @@
     container.querySelector('[data-action="add-row"]')?.addEventListener('click', addRow);
 
     applyColumnWidths();
+    refreshFindAfterRender();
   }
 
   function doUndo() {
@@ -567,7 +555,156 @@
   btnUndo?.addEventListener('click', doUndo);
   btnRedo?.addEventListener('click', doRedo);
 
+  const btnSearch = document.getElementById('btnTableSearch');
+  const findBar = document.getElementById('tableFindBar');
+  const findInput = document.getElementById('tableFindInput');
+  const findCount = document.getElementById('tableFindCount');
+  const btnFindPrev = document.getElementById('btnTableFindPrev');
+  const btnFindNext = document.getElementById('btnTableFindNext');
+  const btnFindClose = document.getElementById('btnTableFindClose');
+
+  let findMatches = [];
+  let findIndex = -1;
+
+  function clearFindHighlight() {
+    container.querySelectorAll('.table-find-active').forEach((el) => {
+      el.classList.remove('table-find-active');
+    });
+  }
+
+  function collectSearchTargets() {
+    const targets = [];
+    container.querySelectorAll('.col-header-input').forEach((el) => {
+      targets.push({ type: 'header', element: el });
+    });
+    container.querySelectorAll('.cell-input').forEach((el) => {
+      targets.push({ type: 'cell', element: el });
+    });
+    return targets;
+  }
+
+  function runFind() {
+    if (!findInput) return;
+    const query = findInput.value;
+    findMatches = [];
+    findIndex = -1;
+    clearFindHighlight();
+
+    if (!query) {
+      if (findCount) findCount.textContent = '';
+      return;
+    }
+
+    const lowerQuery = query.toLowerCase();
+    collectSearchTargets().forEach(({ type, element }) => {
+      const lowerText = element.value.toLowerCase();
+      let pos = 0;
+      while (pos < lowerText.length) {
+        const idx = lowerText.indexOf(lowerQuery, pos);
+        if (idx === -1) break;
+        findMatches.push({
+          type,
+          element,
+          start: idx,
+          end: idx + query.length,
+        });
+        pos = idx + lowerQuery.length;
+      }
+    });
+
+    if (findCount) {
+      if (!findMatches.length) {
+        findCount.textContent = 'No matches';
+      } else {
+        findCount.textContent = `${findMatches.length} match${findMatches.length === 1 ? '' : 'es'}`;
+      }
+    }
+  }
+
+  function scrollElementIntoView(el) {
+    const scrollEl = container.closest('.spreadsheet-scroll');
+    if (!scrollEl || !el) return;
+    const scrollRect = scrollEl.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    if (elRect.top < scrollRect.top + 40) {
+      scrollEl.scrollTop += elRect.top - scrollRect.top - 40;
+    } else if (elRect.bottom > scrollRect.bottom - 40) {
+      scrollEl.scrollTop += elRect.bottom - scrollRect.bottom + 40;
+    }
+    if (elRect.left < scrollRect.left + 20) {
+      scrollEl.scrollLeft += elRect.left - scrollRect.left - 20;
+    } else if (elRect.right > scrollRect.right - 20) {
+      scrollEl.scrollLeft += elRect.right - scrollRect.right + 20;
+    }
+  }
+
+  function goToFindMatch(index, updateCount = true) {
+    if (!findInput || !findMatches.length) return;
+    findIndex = ((index % findMatches.length) + findMatches.length) % findMatches.length;
+    const match = findMatches[findIndex];
+    clearFindHighlight();
+
+    const parent = match.type === 'header'
+      ? match.element.closest('.spreadsheet-col-head')
+      : match.element.closest('.spreadsheet-cell');
+    parent?.classList.add('table-find-active');
+
+    setTimeout(() => {
+      scrollElementIntoView(match.element);
+      match.element.focus({ preventScroll: true });
+      match.element.setSelectionRange(match.start, match.end);
+      findInput?.focus();
+    }, 0);
+
+    if (updateCount && findCount) {
+      findCount.textContent = `${findIndex + 1} of ${findMatches.length}`;
+    }
+  }
+
+  function findNextMatch() {
+    if (!findInput?.value.trim()) return;
+    if (!findMatches.length) runFind();
+    if (!findMatches.length) return;
+    goToFindMatch(findIndex === -1 ? 0 : findIndex + 1);
+  }
+
+  function findPrevMatch() {
+    if (!findInput?.value.trim()) return;
+    if (!findMatches.length) runFind();
+    if (!findMatches.length) return;
+    goToFindMatch(findIndex === -1 ? findMatches.length - 1 : findIndex - 1);
+  }
+
+  function openFindBar() {
+    findBar?.classList.remove('hidden');
+    findInput?.focus();
+    findInput?.select();
+  }
+
+  function closeFindBar() {
+    findBar?.classList.add('hidden');
+    findMatches = [];
+    findIndex = -1;
+    if (findInput) findInput.value = '';
+    if (findCount) findCount.textContent = '';
+    clearFindHighlight();
+  }
+
+  function refreshFindAfterRender() {
+    if (!findBar || findBar.classList.contains('hidden') || !findInput?.value) return;
+    const savedIndex = findIndex;
+    runFind();
+    if (findMatches.length) {
+      goToFindMatch(Math.min(savedIndex >= 0 ? savedIndex : 0, findMatches.length - 1));
+    }
+  }
+
   function onDocKeydown(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      openFindBar();
+      return;
+    }
     if (!e.ctrlKey && !e.metaKey) return;
     if (e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -587,51 +724,23 @@
     });
   }
 
-  let onColorPickerPanelClick;
-  let onColorPickerChange;
-  let onDocumentColorClick;
-
-  function closeColorPopover() {
-    const popover = document.getElementById('colorPickerPopover');
-    const pickerBtn = document.getElementById('btnColorPicker');
-    if (popover) popover.hidden = true;
-    if (pickerBtn) pickerBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  function initColorPicker() {
-    const panel = document.getElementById('tableEditorPanel');
-    if (!panel?.querySelector('.color-picker-wrap')) return;
-
-    onColorPickerPanelClick = (e) => {
-      const pickerBtn = e.target.closest('#btnColorPicker');
-      if (pickerBtn && panel.contains(pickerBtn)) {
-        e.stopPropagation();
-        const popover = document.getElementById('colorPickerPopover');
-        if (!popover) return;
-        const open = popover.hidden;
-        popover.hidden = !open;
-        pickerBtn.setAttribute('aria-expanded', String(open));
-      }
-    };
-
-    onColorPickerChange = (e) => {
-      const input = e.target.closest('#colorOptions input[name="color"]');
-      if (!input || !panel.contains(input)) return;
-      recordHistoryNow();
-      applySheetColor(input.value);
-      scheduleAutosave(true);
-      closeColorPopover();
-    };
-
-    onDocumentColorClick = (e) => {
-      if (e.target.closest('.color-picker-wrap')) return;
-      closeColorPopover();
-    };
-
-    panel.addEventListener('click', onColorPickerPanelClick);
-    panel.addEventListener('change', onColorPickerChange);
-    document.addEventListener('click', onDocumentColorClick);
-  }
+  btnSearch?.addEventListener('click', openFindBar);
+  findInput?.addEventListener('input', runFind);
+  findInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      findPrevMatch();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      findNextMatch();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeFindBar();
+    }
+  });
+  btnFindPrev?.addEventListener('click', findPrevMatch);
+  btnFindNext?.addEventListener('click', findNextMatch);
+  btnFindClose?.addEventListener('click', closeFindBar);
 
   btnSave?.addEventListener('click', () => {
     clearTimeout(saveTimer);
@@ -828,9 +937,6 @@
   history.reset(getFullState());
   setStatus('saved');
 
-  initColorPicker();
-  applySheetColor(cfg.initialColor);
-
   function flushSave() {
     clearTimeout(saveTimer);
     if (!cfg.autosaveUrl) return;
@@ -849,17 +955,6 @@
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
       flushSave();
-      const panel = document.getElementById('tableEditorPanel');
-      if (panel && onColorPickerPanelClick) {
-        panel.removeEventListener('click', onColorPickerPanelClick);
-      }
-      if (panel && onColorPickerChange) {
-        panel.removeEventListener('change', onColorPickerChange);
-      }
-      if (onDocumentColorClick) {
-        document.removeEventListener('click', onDocumentColorClick);
-      }
-      closeColorPopover();
       document.removeEventListener('keydown', onDocKeydown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', stopResize);

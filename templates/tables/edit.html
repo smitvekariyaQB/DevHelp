@@ -17,12 +17,25 @@
     </div>
   </header>
 
-  <div class="table-editor-panel" id="tableEditorPanel" style="--sheet-color: {{ sheet.color }}">
+  <div class="table-editor-panel" id="tableEditorPanel">
     <div class="editor-title-row">
       <div class="editor-title-field">
         <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
       </div>
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" colors=colors current_color=sheet.color color_picker_title="Table color" %}
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" %}
+    </div>
+
+    <div class="table-find-bar hidden" id="tableFindBar">
+      <input type="text"
+             id="tableFindInput"
+             class="table-find-input"
+             placeholder="Search in table…"
+             autocomplete="off"
+             aria-label="Search in table">
+      <span class="table-find-count" id="tableFindCount"></span>
+      <button type="button" class="table-find-nav" id="btnTableFindPrev" title="Previous match">↑</button>
+      <button type="button" class="table-find-nav" id="btnTableFindNext" title="Next match">↓</button>
+      <button type="button" class="table-find-close" id="btnTableFindClose" title="Close search">×</button>
     </div>
 
     <div class="spreadsheet-scroll-wrap">

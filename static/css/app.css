@@ -1539,6 +1539,79 @@ body.modal-open {
   overflow: visible;
 }
 
+.table-find-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 12px;
+  flex-shrink: 0;
+}
+
+.table-find-bar.hidden {
+  display: none;
+}
+
+.table-find-input {
+  flex: 1;
+  min-width: 120px;
+  max-width: 320px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.table-find-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+.table-find-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.table-find-nav,
+.table-find-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.table-find-nav:hover,
+.table-find-close:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text);
+}
+
+.spreadsheet-col-head.table-find-active,
+.spreadsheet-cell.table-find-active {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgba(0, 122, 255, 0.08);
+}
+
+html.dark-mode .spreadsheet-col-head.table-find-active,
+html.dark-mode .spreadsheet-cell.table-find-active {
+  background: rgba(0, 122, 255, 0.15);
+}
+
 .table-editor-panel .spreadsheet-scroll-wrap {
   position: relative;
   z-index: 0;
@@ -4620,6 +4693,7 @@ html.dark-mode .ql-snow .ql-toolbar button.ql-active .ql-fill {
 /* Editor frames, toolbars, and nested panels */
 html.dark-mode .markdown-pane-head,
 html.dark-mode .markdown-find-bar,
+html.dark-mode .table-find-bar,
 html.dark-mode .json-find-bar,
 html.dark-mode .code-find-bar,
 html.dark-mode .json-tab-bar,
@@ -4680,11 +4754,14 @@ html.dark-mode .json-search-input,
 html.dark-mode .md-search-input,
 html.dark-mode .code-search-input,
 html.dark-mode .markdown-find-input,
+html.dark-mode .table-find-input,
 html.dark-mode .json-find-input,
 html.dark-mode .json-find-nav,
 html.dark-mode .json-find-close,
 html.dark-mode .markdown-find-nav,
 html.dark-mode .markdown-find-close,
+html.dark-mode .table-find-nav,
+html.dark-mode .table-find-close,
 html.dark-mode .code-find-nav,
 html.dark-mode .code-find-close {
   background: #1c1c1e;
@@ -4696,6 +4773,7 @@ html.dark-mode .json-search-input:focus,
 html.dark-mode .md-search-input:focus,
 html.dark-mode .code-search-input:focus,
 html.dark-mode .markdown-find-input:focus,
+html.dark-mode .table-find-input:focus,
 html.dark-mode .json-find-input:focus {
   border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
