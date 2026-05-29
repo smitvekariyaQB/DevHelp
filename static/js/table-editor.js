@@ -126,11 +126,13 @@
     return Math.max(scroll ? scroll.clientWidth : 0, 400);
   }
 
-  function fitColumnsToWidth() {
-    if (!sheetData.columns.length) return;
-    const available = Math.max(240, getSpreadsheetWidth() - ROW_HEADER_WIDTH);
-    const perCol = Math.max(MIN_COL_WIDTH, Math.floor(available / sheetData.columns.length));
-    sheetData.columns.forEach((col) => { col.width = perCol; });
+  function normalizeColumnWidths() {
+    sheetData.columns.forEach((col) => {
+      const parsed = parseInt(col.width, 10);
+      col.width = Number.isFinite(parsed)
+        ? Math.max(MIN_COL_WIDTH, Math.min(800, parsed))
+        : 160;
+    });
   }
 
   function applyColumnWidths() {
@@ -155,7 +157,6 @@
   }
 
   function updateTableLayout() {
-    fitColumnsToWidth();
     applyColumnWidths();
   }
 
@@ -163,11 +164,7 @@
   function scheduleLayoutFit() {
     if (resizing) return;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      collectData();
-      fitColumnsToWidth();
-      updateTableLayout();
-    }, 100);
+    resizeTimer = setTimeout(applyColumnWidths, 100);
   }
 
   function collectData() {
@@ -247,7 +244,6 @@
     const col = { id: uid(), width: MIN_COL_WIDTH, label: `Column ${n}` };
     sheetData.columns.push(col);
     sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
-    fitColumnsToWidth();
     render();
     scheduleAutosave(true);
   }
@@ -274,7 +270,6 @@
     collectData();
     sheetData.columns = sheetData.columns.filter((c) => c.id !== colId);
     sheetData.rows.forEach((row) => { delete row.cells[colId]; });
-    fitColumnsToWidth();
     render();
     scheduleAutosave(true);
   }
@@ -345,7 +340,7 @@
 
   function render() {
     ensureStructure();
-    fitColumnsToWidth();
+    normalizeColumnWidths();
 
     const table = document.createElement('table');
     table.className = 'spreadsheet';
@@ -750,9 +745,24 @@
   initColorPicker();
   applySheetColor(cfg.initialColor);
 
+  function flushSave() {
+    clearTimeout(saveTimer);
+    if (!cfg.autosaveUrl) return;
+    fetch(cfg.autosaveUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': cfg.csrfToken,
+      },
+      body: JSON.stringify(getFullState()),
+      keepalive: true,
+    }).catch(() => {});
+  }
+
   // Register cleanup for the router so listeners/timers are removed on navigate
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
+      flushSave();
       const panel = document.getElementById('tableEditorPanel');
       if (panel && onColorPickerPanelClick) {
         panel.removeEventListener('click', onColorPickerPanelClick);
