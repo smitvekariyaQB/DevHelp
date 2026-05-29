@@ -12,7 +12,15 @@
   {% block extra_css %}{% endblock %}
   <script>
     try {
-      if (localStorage.getItem('appSidebarCollapsed') === '1') {
+      if (localStorage.getItem('appDarkMode') === '1') {
+        document.documentElement.classList.add('dark-mode');
+      }
+      var sidebarDefault = localStorage.getItem('appSidebarDefaultOpen');
+      if (sidebarDefault === '0') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      } else if (sidebarDefault === '1') {
+        document.documentElement.classList.remove('sidebar-collapsed');
+      } else if (localStorage.getItem('appSidebarCollapsed') === '1') {
         document.documentElement.classList.add('sidebar-collapsed');
       }
     } catch (_) {}
@@ -30,6 +38,7 @@
   {% block content %}{% endblock %}
   {% include "includes/modal.html" %}
   <script src="{% static 'js/modals.js' %}"></script>
+  <script src="{% static 'js/preferences.js' %}"></script>
   <script src="{% static 'js/router.js' %}"></script>
   <script src="{% static 'js/sidebar.js' %}"></script>
   {% block extra_js %}{% endblock %}

@@ -17,15 +17,12 @@
     </div>
   </header>
 
-  <p class="editor-page-label">Edit table</p>
-
   <div class="table-editor-panel" id="tableEditorPanel" style="--sheet-color: {{ sheet.color }}">
     <div class="editor-title-row">
       <div class="editor-title-field">
-        <label class="field-label" for="tableTitle">Table name</label>
         <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
       </div>
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" %}
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" colors=colors current_color=sheet.color color_picker_title="Table color" %}
     </div>
 
     <div class="spreadsheet-scroll-wrap">
@@ -33,18 +30,6 @@
         <div class="spreadsheet-container" id="spreadsheetContainer"></div>
       </div>
       <button type="button" class="sheet-add-col-rail" id="sheetAddColRail" title="Add column" aria-label="Add column"></button>
-    </div>
-
-    <div class="note-color-picker table-color-picker">
-      <span class="color-label">Table color</span>
-      <div class="color-options" id="tableColorOptions">
-        {% for hex, label in colors %}
-        <label class="color-option">
-          <input type="radio" name="color" value="{{ hex }}" {% if sheet.color == hex %}checked{% endif %}>
-          <span class="color-swatch" style="background: {{ hex }}" title="{{ label }}"></span>
-        </label>
-        {% endfor %}
-      </div>
     </div>
   </div>
 </div>

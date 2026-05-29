@@ -50,6 +50,8 @@
 
   function applyNoteColor(hex) {
     if (form && hex) form.style.setProperty('--note-color', hex);
+    const dot = document.querySelector('.color-picker-dot');
+    if (dot && hex) dot.style.background = hex;
   }
 
   function restoreState(state) {
@@ -127,19 +129,46 @@
     if (next) restoreState(next);
   }
 
+  function closeColorPopover() {
+    const popover = document.getElementById('colorPickerPopover');
+    const pickerBtn = document.getElementById('btnColorPicker');
+    if (popover) popover.hidden = true;
+    if (pickerBtn) pickerBtn.setAttribute('aria-expanded', 'false');
+  }
+
   function initColorPicker() {
+    const pickerBtn = document.getElementById('btnColorPicker');
+    const popover = document.getElementById('colorPickerPopover');
+
+    if (pickerBtn && popover) {
+      pickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = popover.hidden;
+        popover.hidden = !open;
+        pickerBtn.setAttribute('aria-expanded', String(open));
+      });
+      popover.addEventListener('click', (e) => e.stopPropagation());
+    }
+
     document.querySelectorAll('#colorOptions input[name="color"]').forEach((input) => {
       const pick = () => {
         recordHistoryNow();
         applyNoteColor(input.value);
         scheduleAutosave(true);
+        closeColorPopover();
       };
       input.addEventListener('change', pick);
       input.addEventListener('click', pick);
     });
   }
 
+  function onDocumentColorClick(e) {
+    if (e.target.closest('.color-picker-wrap')) return;
+    closeColorPopover();
+  }
+
   initColorPicker();
+  document.addEventListener('click', onDocumentColorClick);
 
   btnSave?.addEventListener('click', () => {
     clearTimeout(saveTimer);
@@ -255,6 +284,8 @@
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
       document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('click', onDocumentColorClick);
+      closeColorPopover();
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
       ready = false;

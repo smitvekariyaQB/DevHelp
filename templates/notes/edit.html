@@ -20,34 +20,18 @@
     </div>
   </header>
 
-  <p class="editor-page-label">Edit note</p>
-
   <div id="noteForm" class="note-edit-form" style="--note-color: {{ note.color }}">
     {% csrf_token %}
     <input type="hidden" name="content" id="noteContentInput">
     <div class="editor-title-row">
       <div class="editor-title-field">
-        <label class="field-label" for="noteTitleInput">Note title</label>
         <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
       </div>
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyNote" %}
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyNote" colors=colors current_color=note.color %}
     </div>
 
-    <label class="field-label editor-content-label">Note content</label>
     <div class="editor-wrap">
       <div id="noteEditor"></div>
-    </div>
-
-    <div class="note-color-picker">
-      <span class="color-label">Note color</span>
-      <div class="color-options" id="colorOptions">
-        {% for hex, label in colors %}
-        <label class="color-option">
-          <input type="radio" name="color" value="{{ hex }}" {% if note.color == hex %}checked{% endif %}>
-          <span class="color-swatch" style="background: {{ hex }}" title="{{ label }}"></span>
-        </label>
-        {% endfor %}
-      </div>
     </div>
   </div>
 </div>

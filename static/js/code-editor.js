@@ -744,9 +744,14 @@
   }
 
   syncTextHighlight();
+  window.__codeEditorSyncHighlight = syncTextHighlight;
+  window.AppPreferences?.syncHighlightTheme?.();
 
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
+      if (window.__codeEditorSyncHighlight === syncTextHighlight) {
+        window.__codeEditorSyncHighlight = null;
+      }
       saveBeforeLeave();
       clearTimeout(saveTimer);
       resizeObserver?.disconnect();

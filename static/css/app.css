@@ -764,6 +764,87 @@ body.modal-open {
   margin-bottom: 6px;
 }
 
+.preference-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.preference-row + .preference-row {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.preference-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.preference-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.preference-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: #d1d1d6;
+  transition: background 0.15s;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s;
+}
+
+.toggle-switch input:checked + .toggle-track {
+  background: #34c759;
+}
+
+.toggle-switch input:checked + .toggle-track::after {
+  transform: translateX(18px);
+}
+
+.toggle-switch input:focus-visible + .toggle-track {
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+}
+
 /* To Do — MS To-Do style */
 .todo-app {
   display: flex;
@@ -1204,11 +1285,15 @@ body.modal-open {
 
 .editor-title-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
   flex-shrink: 0;
+}
+
+.editor-title-row:has(.field-label) {
+  align-items: flex-end;
 }
 
 .editor-title-field {
@@ -1225,6 +1310,9 @@ body.modal-open {
   flex-shrink: 0;
   margin-bottom: 0;
   padding-bottom: 4px;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
 }
 
 .editor-wrap {
@@ -1302,46 +1390,67 @@ body.modal-open {
   gap: 10px;
 }
 
-.autosave-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 100px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: #ebebf0;
-  text-align: center;
+.autosave-status {
+  cursor: default;
+  pointer-events: none;
+  min-width: auto;
 }
 
-.autosave-badge-title {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-
-.autosave-badge-text {
-  font-size: 12px;
+.autosave-status .autosave-badge-text {
+  font-size: 13px;
   font-weight: 500;
-  margin-top: 2px;
 }
 
-.autosave-badge[data-state="saving"] .autosave-badge-text {
+.autosave-status[data-state="saving"] {
   color: var(--accent);
 }
 
-.autosave-badge[data-state="saved"] .autosave-badge-text {
+.autosave-status[data-state="saved"] {
   color: #34c759;
 }
 
-.autosave-badge[data-state="unsaved"] .autosave-badge-text {
+.autosave-status[data-state="unsaved"] {
   color: #ff9500;
 }
 
-.autosave-badge[data-state="error"] .autosave-badge-text {
+.autosave-status[data-state="error"] {
   color: #ff3b30;
+}
+
+.color-picker-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.color-picker-btn {
+  padding: 7px 10px;
+}
+
+.color-picker-dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.color-picker-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1000;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.color-picker-popover .color-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 168px;
 }
 
 .editor-page-label {
@@ -1424,7 +1533,15 @@ body.modal-open {
   letter-spacing: -0.02em;
 }
 
+.table-editor-panel .editor-title-row {
+  position: relative;
+  z-index: 100;
+  overflow: visible;
+}
+
 .table-editor-panel .spreadsheet-scroll-wrap {
+  position: relative;
+  z-index: 0;
   margin-bottom: 16px;
 }
 
@@ -1447,13 +1564,6 @@ body.modal-open {
   overflow: auto;
   scrollbar-gutter: stable;
 }
-
-.table-color-picker {
-  flex-shrink: 0;
-  margin-top: auto;
-  padding-top: 16px;
-}
-
 .spreadsheet-container {
   width: 100%;
   min-width: 0;
@@ -4006,8 +4116,7 @@ body.markdown-resizing {
 }
 
 .code-text-highlight.hljs {
-  background: transparent;
-  color: #24292e;
+  background: transparent !important;
 }
 
 .code-text-highlight mark.code-find-match,
@@ -4147,4 +4256,567 @@ body.markdown-resizing {
 .json-files-panel.files-panel-collapsed .files-panel-toggle svg,
 .md-files-panel.files-panel-collapsed .files-panel-toggle svg {
   transform: rotate(180deg);
+}
+
+/* Dark mode — black-based palette (not blue-tinted) */
+html.dark-mode {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --window-bg: #0a0a0a;
+  --sidebar-bg: rgba(12, 12, 12, 0.98);
+  --panel-bg: #141414;
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #f2f2f7;
+  --text-secondary: #98989d;
+  --accent: #f2f2f7;
+  --accent-hover: #ffffff;
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.65);
+}
+
+html.dark-mode .sidebar-toggle:hover,
+html.dark-mode .nav-item:hover,
+html.dark-mode .settings-nav-item:hover,
+html.dark-mode .user-panel-profile:hover,
+html.dark-mode .user-action-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark-mode .nav-item.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+html.dark-mode .user-panel {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark-mode .user-action-btn {
+  background: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f2f2f7;
+}
+
+html.dark-mode .user-action-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f2f2f7;
+}
+
+html.dark-mode .user-action-signout {
+  color: #ff6961;
+  border-color: rgba(255, 105, 97, 0.35);
+}
+
+html.dark-mode .user-action-signout:hover {
+  background: rgba(255, 105, 97, 0.12);
+}
+
+html.dark-mode .brand-logo {
+  filter: brightness(0) invert(1);
+}
+
+html.dark-mode .btn {
+  background: #2c2c2e;
+  color: #f2f2f7;
+}
+
+html.dark-mode .btn:hover:not(:disabled) {
+  background: #3a3a3c;
+}
+
+html.dark-mode .btn:active:not(:disabled) {
+  background: #48484a;
+}
+
+html.dark-mode .btn-default,
+html.dark-mode .btn-secondary,
+html.dark-mode .btn-danger,
+html.dark-mode .btn-modal-cancel {
+  background: #2c2c2e;
+  color: #f2f2f7;
+}
+
+html.dark-mode .btn-default:hover:not(:disabled),
+html.dark-mode .btn-secondary:hover:not(:disabled),
+html.dark-mode .btn-modal-cancel:hover {
+  background: #3a3a3c;
+}
+
+html.dark-mode .btn-danger,
+html.dark-mode .btn.btn-danger {
+  color: #ff6961;
+}
+
+html.dark-mode .btn-danger:hover:not(:disabled),
+html.dark-mode .btn.btn-danger:hover:not(:disabled) {
+  background: rgba(255, 105, 97, 0.14);
+  color: #ff8a84;
+}
+
+html.dark-mode .btn-primary,
+html.dark-mode .btn-modal-confirm:not(.btn-danger) {
+  background: #f2f2f7;
+  color: #0a0a0a;
+}
+
+html.dark-mode .btn-primary:hover:not(:disabled),
+html.dark-mode .btn-modal-confirm:not(.btn-danger):hover {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+html.dark-mode .back-link,
+html.dark-mode .auth-footer a {
+  color: #f2f2f7;
+}
+
+html.dark-mode .auth-form input,
+html.dark-mode .settings-form input,
+html.dark-mode input,
+html.dark-mode textarea,
+html.dark-mode select {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f2f2f7;
+}
+
+html.dark-mode .auth-form input:focus,
+html.dark-mode .settings-form input:focus,
+html.dark-mode input:focus,
+html.dark-mode textarea:focus,
+html.dark-mode select:focus {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .auth-card,
+html.dark-mode .settings-sidebar,
+html.dark-mode .panel-card,
+html.dark-mode .todo-lists-panel,
+html.dark-mode .modal-card {
+  background: #141414;
+}
+
+html.dark-mode .settings-nav-item.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .note-edit-form,
+html.dark-mode .table-editor-panel,
+html.dark-mode .editor-wrap .ql-toolbar {
+  background: color-mix(in srgb, var(--sheet-color, var(--note-color, #141414)) 12%, #141414);
+}
+
+html.dark-mode .editor-wrap .ql-toolbar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .editor-wrap .ql-container,
+html.dark-mode .editor-wrap .ql-editor {
+  color: var(--text);
+}
+
+html.dark-mode .editor-wrap .ql-editor.ql-blank::before {
+  color: #636366;
+}
+
+html.dark-mode .color-picker-popover {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .note-card {
+  background: color-mix(in srgb, var(--note-color, #1c1c1e) 22%, #1c1c1e) !important;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  color: #f2f2f7;
+}
+
+html.dark-mode .note-card-preview {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+html.dark-mode .note-card-date {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+html.dark-mode .spreadsheet-scroll-wrap {
+  background: #0a0a0a;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+html.dark-mode .spreadsheet-container table,
+html.dark-mode .spreadsheet-cell {
+  background: #0a0a0a;
+  color: var(--text);
+}
+
+html.dark-mode .spreadsheet-corner,
+html.dark-mode .spreadsheet-col-head,
+html.dark-mode .spreadsheet-row-label {
+  background: #141414;
+}
+
+html.dark-mode .spreadsheet-add-row td,
+html.dark-mode .spreadsheet-add-row-cell {
+  background: #141414 !important;
+}
+
+html.dark-mode .sheet-add-col-rail {
+  background: #141414;
+  border-left-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .sheet-add-col-rail-icon {
+  background: #2c2c2e;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .cell-input:focus {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+html.dark-mode .toast {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+html.dark-mode .toggle-track {
+  background: #48484a;
+}
+
+html.dark-mode .toggle-switch input:checked + .toggle-track {
+  background: #30d158;
+}
+
+html.dark-mode .toggle-switch input:focus-visible + .toggle-track {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .autosave-status[data-state="saved"] {
+  color: #30d158;
+}
+
+html.dark-mode .autosave-status[data-state="saving"] {
+  color: #f2f2f7;
+}
+
+html.dark-mode .files-panel,
+html.dark-mode .json-files-panel,
+html.dark-mode .code-files-panel,
+html.dark-mode .md-files-panel,
+html.dark-mode .markdown-pane,
+html.dark-mode .code-editor-wrap,
+html.dark-mode .json-editor-wrap {
+  background: #141414;
+}
+
+html.dark-mode .file-item:hover,
+html.dark-mode .todo-list-item:hover,
+html.dark-mode .todo-task:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark-mode .todo-list-item.active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .ql-snow .ql-stroke {
+  stroke: #98989d;
+}
+
+html.dark-mode .ql-snow .ql-fill {
+  fill: #98989d;
+}
+
+html.dark-mode .ql-snow .ql-picker {
+  color: #98989d;
+}
+
+html.dark-mode .ql-snow .ql-picker-options {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .ql-snow.ql-toolbar button:hover,
+html.dark-mode .ql-snow .ql-toolbar button:hover,
+html.dark-mode .ql-snow.ql-toolbar button.ql-active,
+html.dark-mode .ql-snow .ql-toolbar button.ql-active {
+  color: #f2f2f7;
+}
+
+html.dark-mode .ql-snow.ql-toolbar button:hover .ql-stroke,
+html.dark-mode .ql-snow .ql-toolbar button:hover .ql-stroke,
+html.dark-mode .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+html.dark-mode .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #f2f2f7;
+}
+
+html.dark-mode .ql-snow.ql-toolbar button:hover .ql-fill,
+html.dark-mode .ql-snow .ql-toolbar button:hover .ql-fill,
+html.dark-mode .ql-snow.ql-toolbar button.ql-active .ql-fill,
+html.dark-mode .ql-snow .ql-toolbar button.ql-active .ql-fill {
+  fill: #f2f2f7;
+}
+
+/* Editor frames, toolbars, and nested panels */
+html.dark-mode .markdown-pane-head,
+html.dark-mode .markdown-find-bar,
+html.dark-mode .json-find-bar,
+html.dark-mode .code-find-bar,
+html.dark-mode .json-tab-bar,
+html.dark-mode .json-workspace {
+  background: #141414;
+}
+
+html.dark-mode .json-tab-gutter-spacer,
+html.dark-mode .json-tree-viewer::before {
+  background: #141414;
+}
+
+html.dark-mode .json-editor-panel,
+html.dark-mode .markdown-main-panel,
+html.dark-mode .code-main-panel {
+  background: #0a0a0a;
+}
+
+html.dark-mode .markdown-text-editor,
+html.dark-mode .code-text-editor,
+html.dark-mode .json-text-editor {
+  background: #0a0a0a;
+}
+
+html.dark-mode .markdown-line-gutter,
+html.dark-mode .code-line-gutter,
+html.dark-mode .json-line-gutter,
+html.dark-mode .spreadsheet-corner,
+html.dark-mode .spreadsheet-col-head,
+html.dark-mode .spreadsheet-row-label {
+  background: #141414;
+}
+
+html.dark-mode .spreadsheet th,
+html.dark-mode .spreadsheet td {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .spreadsheet-cell,
+html.dark-mode .spreadsheet-cell input {
+  background: #0a0a0a;
+  color: var(--text);
+}
+
+html.dark-mode .spreadsheet-add-row td,
+html.dark-mode .spreadsheet-add-row-cell {
+  background: #141414 !important;
+}
+
+html.dark-mode .markdown-title-input:focus,
+html.dark-mode .json-title-input:focus,
+html.dark-mode .code-title-input:focus {
+  background: #1c1c1e;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .json-search-input,
+html.dark-mode .md-search-input,
+html.dark-mode .code-search-input,
+html.dark-mode .markdown-find-input,
+html.dark-mode .json-find-input,
+html.dark-mode .json-find-nav,
+html.dark-mode .json-find-close,
+html.dark-mode .markdown-find-nav,
+html.dark-mode .markdown-find-close,
+html.dark-mode .code-find-nav,
+html.dark-mode .code-find-close {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+html.dark-mode .json-search-input:focus,
+html.dark-mode .md-search-input:focus,
+html.dark-mode .code-search-input:focus,
+html.dark-mode .markdown-find-input:focus,
+html.dark-mode .json-find-input:focus {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .json-file-btn:hover,
+html.dark-mode .md-file-btn:hover,
+html.dark-mode .code-file-btn:hover,
+html.dark-mode .json-file-context-menu button:hover,
+html.dark-mode .md-file-context-menu button:hover,
+html.dark-mode .code-file-context-menu button:hover,
+html.dark-mode .json-find-nav:hover,
+html.dark-mode .json-find-close:hover,
+html.dark-mode .markdown-find-nav:hover,
+html.dark-mode .markdown-find-close:hover,
+html.dark-mode .code-find-nav:hover,
+html.dark-mode .code-find-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark-mode .json-file-item.active .json-file-btn,
+html.dark-mode .md-file-item.active .md-file-btn,
+html.dark-mode .code-file-item.active .code-file-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+html.dark-mode .json-file-context-menu,
+html.dark-mode .md-file-context-menu,
+html.dark-mode .code-file-context-menu {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .json-view-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark-mode .json-view-tab.active {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-bottom-color: #1c1c1e;
+}
+
+html.dark-mode .json-file-name-input,
+html.dark-mode .md-file-name-input,
+html.dark-mode .code-file-name-input {
+  background: #1c1c1e;
+}
+
+html.dark-mode .markdown-preview th {
+  background: #141414;
+}
+
+html.dark-mode .markdown-preview-pane .markdown-pane-body,
+html.dark-mode .markdown-preview {
+  background: #0a0a0a;
+  color: var(--text);
+}
+
+html.dark-mode .markdown-preview code {
+  background: #1c1c1e;
+  color: #e6edf3;
+}
+
+html.dark-mode .markdown-preview pre {
+  background: #0d1117;
+}
+
+html.dark-mode .markdown-preview pre code {
+  color: inherit;
+}
+
+html.dark-mode .markdown-scroll-sync-switch {
+  background: #48484a;
+}
+
+html.dark-mode .markdown-scroll-sync-input:checked + .markdown-scroll-sync-switch {
+  background: #f2f2f7;
+}
+
+html.dark-mode .markdown-resizer:hover .markdown-resizer-handle,
+html.dark-mode body.markdown-resizing .markdown-resizer-handle {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .markdown-resizer:hover::before,
+html.dark-mode body.markdown-resizing .markdown-resizer::before {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+html.dark-mode .json-error-snippet {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+html.dark-mode .btn-new-json:hover,
+html.dark-mode .btn-new-md:hover,
+html.dark-mode .btn-new-code:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .markdown-preview-pane {
+  background: #0a0a0a;
+}
+
+html.dark-mode .markdown-editor,
+html.dark-mode .json-editor,
+html.dark-mode .code-editor {
+  caret-color: #f2f2f7;
+}
+
+/* JSON syntax highlighting */
+html.dark-mode .json-hl-key {
+  color: #c678dd;
+}
+
+html.dark-mode .json-hl-string {
+  color: #98c379;
+}
+
+html.dark-mode .json-hl-number {
+  color: #d19a66;
+}
+
+html.dark-mode .json-hl-boolean {
+  color: #56b6c2;
+}
+
+html.dark-mode .json-hl-null {
+  color: #abb2bf;
+}
+
+html.dark-mode .json-tree-key {
+  color: #c678dd;
+}
+
+html.dark-mode .json-tree-icon {
+  color: #c678dd;
+}
+
+html.dark-mode .json-tree-icon-array {
+  color: #98c379;
+}
+
+html.dark-mode .json-tree-children {
+  border-left-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .json-tree-toggle {
+  background: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f2f2f7;
+}
+
+html.dark-mode .json-tree-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark-mode .json-val-string {
+  color: #98c379;
+}
+
+html.dark-mode .json-val-number {
+  color: #d19a66;
+}
+
+html.dark-mode .json-val-boolean {
+  color: #56b6c2;
+}
+
+html.dark-mode .json-val-null {
+  color: #abb2bf;
+}
+
+html.dark-mode .app-modal-dialog {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
 }

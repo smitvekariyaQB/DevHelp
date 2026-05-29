@@ -1,5 +1,22 @@
 <div class="editor-toolbar">
   <div class="editor-toolbar-buttons">
+    {% if colors %}
+    <div class="color-picker-wrap">
+      <button type="button" class="btn btn-default color-picker-btn" id="btnColorPicker" title="{{ color_picker_title|default:'Note color' }}" aria-label="{{ color_picker_title|default:'Note color' }}" aria-expanded="false" aria-haspopup="true">
+        <span class="color-picker-dot" style="background: {{ current_color }}"></span>
+      </button>
+      <div class="color-picker-popover" id="colorPickerPopover" hidden>
+        <div class="color-options" id="colorOptions">
+          {% for hex, label in colors %}
+          <label class="color-option">
+            <input type="radio" name="color" value="{{ hex }}" {% if current_color == hex %}checked{% endif %}>
+            <span class="color-swatch" style="background: {{ hex }}" title="{{ label }}"></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
     {% if copy_button_id %}
     <button type="button" class="btn btn-default" id="{{ copy_button_id }}" title="Copy to clipboard">Copy</button>
     {% endif %}

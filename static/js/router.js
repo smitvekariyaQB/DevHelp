@@ -67,9 +67,11 @@
   /** Set of base script sources that should never be re-executed. */
   const BASE_SCRIPTS = new Set();
 
-  /** Populate BASE_SCRIPTS with currently-loaded script sources. */
+  /** Populate BASE_SCRIPTS with persistent app scripts only (not page-specific). */
   function captureBaseScripts() {
     document.querySelectorAll('script[src]').forEach((s) => {
+      if (s.closest('#page-scripts')) return;
+      if (s.closest(MAIN_SELECTOR)) return;
       BASE_SCRIPTS.add(s.getAttribute('src'));
     });
   }

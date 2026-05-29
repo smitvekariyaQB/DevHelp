@@ -51,12 +51,14 @@
   }
 
   function getColor() {
-    const el = document.querySelector('#tableColorOptions input:checked');
+    const el = document.querySelector('#colorOptions input:checked');
     return el ? el.value : cfg.initialColor;
   }
 
   function applySheetColor(hex) {
     if (panel && hex) panel.style.setProperty('--sheet-color', hex);
+    const dot = document.querySelector('.color-picker-dot');
+    if (dot && hex) dot.style.background = hex;
   }
 
   function getFullState() {
@@ -71,7 +73,7 @@
     isRestoring = true;
     if (titleInput) titleInput.value = state.title;
     applySheetColor(state.color);
-    const colorInput = document.querySelector(`#tableColorOptions input[value="${state.color}"]`);
+    const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
     if (colorInput) colorInput.checked = true;
     sheetData = JSON.parse(JSON.stringify(state.data));
     render();
@@ -523,17 +525,51 @@
     });
   }
 
-  document.querySelectorAll('#tableColorOptions input').forEach((input) => {
-    const pick = () => {
+  let onColorPickerPanelClick;
+  let onColorPickerChange;
+  let onDocumentColorClick;
+
+  function closeColorPopover() {
+    const popover = document.getElementById('colorPickerPopover');
+    const pickerBtn = document.getElementById('btnColorPicker');
+    if (popover) popover.hidden = true;
+    if (pickerBtn) pickerBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function initColorPicker() {
+    const panel = document.getElementById('tableEditorPanel');
+    if (!panel?.querySelector('.color-picker-wrap')) return;
+
+    onColorPickerPanelClick = (e) => {
+      const pickerBtn = e.target.closest('#btnColorPicker');
+      if (pickerBtn && panel.contains(pickerBtn)) {
+        e.stopPropagation();
+        const popover = document.getElementById('colorPickerPopover');
+        if (!popover) return;
+        const open = popover.hidden;
+        popover.hidden = !open;
+        pickerBtn.setAttribute('aria-expanded', String(open));
+      }
+    };
+
+    onColorPickerChange = (e) => {
+      const input = e.target.closest('#colorOptions input[name="color"]');
+      if (!input || !panel.contains(input)) return;
       recordHistoryNow();
       applySheetColor(input.value);
       scheduleAutosave(true);
+      closeColorPopover();
     };
-    input.addEventListener('change', pick);
-    input.addEventListener('click', pick);
-  });
 
-  applySheetColor(cfg.initialColor);
+    onDocumentColorClick = (e) => {
+      if (e.target.closest('.color-picker-wrap')) return;
+      closeColorPopover();
+    };
+
+    panel.addEventListener('click', onColorPickerPanelClick);
+    panel.addEventListener('change', onColorPickerChange);
+    document.addEventListener('click', onDocumentColorClick);
+  }
 
   btnSave?.addEventListener('click', () => {
     clearTimeout(saveTimer);
@@ -711,9 +747,23 @@
   history.reset(getFullState());
   setStatus('saved');
 
+  initColorPicker();
+  applySheetColor(cfg.initialColor);
+
   // Register cleanup for the router so listeners/timers are removed on navigate
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
+      const panel = document.getElementById('tableEditorPanel');
+      if (panel && onColorPickerPanelClick) {
+        panel.removeEventListener('click', onColorPickerPanelClick);
+      }
+      if (panel && onColorPickerChange) {
+        panel.removeEventListener('change', onColorPickerChange);
+      }
+      if (onDocumentColorClick) {
+        document.removeEventListener('click', onDocumentColorClick);
+      }
+      closeColorPopover();
       document.removeEventListener('keydown', onDocKeydown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', stopResize);
