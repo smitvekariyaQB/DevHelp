@@ -16,10 +16,12 @@
   const HISTORY_DELAY = 900;
 
   const MIN_COL_WIDTH = 80;
+  const DEFAULT_COL_WIDTH = 160;
 
   const ICONS = {
     plus: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
     close: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.75 4.75l6.5 6.5M11.25 4.75l-6.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    grip: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="5.5" cy="4" r="1.1" fill="currentColor"/><circle cx="10.5" cy="4" r="1.1" fill="currentColor"/><circle cx="5.5" cy="8" r="1.1" fill="currentColor"/><circle cx="10.5" cy="8" r="1.1" fill="currentColor"/><circle cx="5.5" cy="12" r="1.1" fill="currentColor"/><circle cx="10.5" cy="12" r="1.1" fill="currentColor"/></svg>',
   };
 
   let sheetData = JSON.parse(JSON.stringify(cfg.initialData || { columns: [], rows: [] }));
@@ -31,6 +33,7 @@
   let resizing = null;
   let colgroupEl = null;
   let isRestoring = false;
+  let dragColId = null;
 
   const history = window.createEditorHistory(60);
 
@@ -103,7 +106,7 @@
       for (let i = 0; i < 3; i += 1) {
         sheetData.columns.push({
           id: uid(),
-          width: MIN_COL_WIDTH,
+          width: DEFAULT_COL_WIDTH,
           label: `Column ${i + 1}`,
         });
       }
@@ -121,9 +124,8 @@
     }
   }
 
-  function getSpreadsheetWidth() {
-    const scroll = container.closest('.spreadsheet-scroll');
-    return Math.max(scroll ? scroll.clientWidth : 0, 400);
+  function getTableWidth() {
+    return ROW_HEADER_WIDTH + sheetData.columns.reduce((sum, col) => sum + col.width, 0);
   }
 
   function normalizeColumnWidths() {
@@ -146,25 +148,18 @@
       if (colEl) colEl.style.width = `${col.width}px`;
     });
 
+    const tableWidth = getTableWidth();
     const table = container.querySelector('.spreadsheet');
     if (table) {
-      const tableWidth = ROW_HEADER_WIDTH
-        + sheetData.columns.reduce((sum, col) => sum + col.width, 0);
-      const scrollWidth = getSpreadsheetWidth();
-      table.style.width = `${Math.max(tableWidth, scrollWidth)}px`;
-      table.style.minWidth = `${scrollWidth}px`;
+      table.style.width = `${tableWidth}px`;
+      table.style.minWidth = `${tableWidth}px`;
     }
+    container.style.width = `${tableWidth}px`;
+    container.style.minWidth = `${tableWidth}px`;
   }
 
   function updateTableLayout() {
     applyColumnWidths();
-  }
-
-  let resizeTimer;
-  function scheduleLayoutFit() {
-    if (resizing) return;
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(applyColumnWidths, 100);
   }
 
   function collectData() {
@@ -241,10 +236,14 @@
     recordHistoryNow();
     collectData();
     const n = sheetData.columns.length + 1;
-    const col = { id: uid(), width: MIN_COL_WIDTH, label: `Column ${n}` };
+    const col = { id: uid(), width: DEFAULT_COL_WIDTH, label: `Column ${n}` };
     sheetData.columns.push(col);
     sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
     render();
+    requestAnimationFrame(() => {
+      const scrollEl = container.closest('.spreadsheet-scroll');
+      if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth;
+    });
     scheduleAutosave(true);
   }
 
@@ -289,6 +288,71 @@
     scheduleAutosave(true);
   }
 
+  function reorderColumns(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    collectData();
+    const fromIdx = sheetData.columns.findIndex((c) => c.id === sourceId);
+    const toIdx = sheetData.columns.findIndex((c) => c.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    recordHistoryNow();
+    const [moved] = sheetData.columns.splice(fromIdx, 1);
+    sheetData.columns.splice(toIdx, 0, moved);
+    render();
+    scheduleAutosave(true);
+  }
+
+  function clearColDragState() {
+    dragColId = null;
+    document.body.classList.remove('col-dragging');
+    container.querySelectorAll('.spreadsheet-col-head').forEach((head) => {
+      head.classList.remove('col-drag-source', 'col-drag-over');
+    });
+  }
+
+  function bindColumnDrag(th, col) {
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'col-drag-handle';
+    dragHandle.title = 'Drag to reorder column';
+    dragHandle.setAttribute('aria-label', 'Drag to reorder column');
+    dragHandle.innerHTML = ICONS.grip;
+    dragHandle.draggable = true;
+
+    dragHandle.addEventListener('dragstart', (e) => {
+      dragColId = col.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', col.id);
+      th.classList.add('col-drag-source');
+      document.body.classList.add('col-dragging');
+    });
+
+    dragHandle.addEventListener('dragend', () => {
+      clearColDragState();
+    });
+
+    th.addEventListener('dragover', (e) => {
+      if (!dragColId || dragColId === col.id) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      container.querySelectorAll('.spreadsheet-col-head.col-drag-over').forEach((el) => {
+        if (el !== th) el.classList.remove('col-drag-over');
+      });
+      th.classList.add('col-drag-over');
+    });
+
+    th.addEventListener('dragleave', (e) => {
+      if (!th.contains(e.relatedTarget)) th.classList.remove('col-drag-over');
+    });
+
+    th.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const sourceId = e.dataTransfer.getData('text/plain') || dragColId;
+      clearColDragState();
+      reorderColumns(sourceId, col.id);
+    });
+
+    return dragHandle;
+  }
+
   function startResize(e, colId) {
     e.preventDefault();
     e.stopPropagation();
@@ -307,10 +371,11 @@
     colgroupEl?.querySelector(`col[data-col-id="${col.id}"]`)?.style.setProperty('width', `${col.width}px`);
     const table = container.querySelector('.spreadsheet');
     if (table) {
-      const tableWidth = ROW_HEADER_WIDTH
-        + sheetData.columns.reduce((sum, c) => sum + c.width, 0);
-      const scrollWidth = getSpreadsheetWidth();
-      table.style.width = `${Math.max(tableWidth, scrollWidth)}px`;
+      const tableWidth = getTableWidth();
+      table.style.width = `${tableWidth}px`;
+      table.style.minWidth = `${tableWidth}px`;
+      container.style.width = `${tableWidth}px`;
+      container.style.minWidth = `${tableWidth}px`;
     }
   }
 
@@ -361,6 +426,8 @@
 
       const headInner = document.createElement('div');
       headInner.className = 'col-head-inner';
+
+      headInner.appendChild(bindColumnDrag(th, col));
 
       const labelInput = document.createElement('input');
       labelInput.type = 'text';
@@ -756,18 +823,7 @@
   }
 
   render();
-  requestAnimationFrame(() => {
-    updateTableLayout();
-  });
-
-  let scrollResizeObserver;
-  const scrollEl = container.closest('.spreadsheet-scroll');
-  if (scrollEl && window.ResizeObserver) {
-    scrollResizeObserver = new ResizeObserver(scheduleLayoutFit);
-    scrollResizeObserver.observe(scrollEl);
-  } else {
-    window.addEventListener('resize', scheduleLayoutFit);
-  }
+  requestAnimationFrame(updateTableLayout);
 
   history.reset(getFullState());
   setStatus('saved');
@@ -809,8 +865,7 @@
       document.removeEventListener('mouseup', stopResize);
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
-      clearTimeout(resizeTimer);
-      scrollResizeObserver?.disconnect();
+      clearColDragState();
     });
   }
 })();
