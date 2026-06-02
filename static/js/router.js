@@ -35,6 +35,7 @@
       if (u.pathname.startsWith('/admin/')) return false;
       if (u.pathname.startsWith('/accounts/log')) return false;
       if (u.pathname.startsWith('/accounts/register')) return false;
+      if (u.pathname.startsWith('/accounts/verify-email')) return false;
       if (u.pathname.startsWith('/accounts/password-reset')) return false;
       if (u.pathname.startsWith('/accounts/reset/')) return false;
       return true;

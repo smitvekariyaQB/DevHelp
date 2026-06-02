@@ -649,6 +649,14 @@ body.modal-open {
   text-decoration: underline;
 }
 
+.auth-resend-form {
+  margin-top: 12px;
+}
+
+.auth-resend-form .btn-resend {
+  width: 100%;
+}
+
 .autofill-trap {
   position: absolute;
   opacity: 0;

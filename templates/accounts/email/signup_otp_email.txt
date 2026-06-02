@@ -1,0 +1,12 @@
+Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Thanks for signing up for {{ site_name }}.
+
+Your email verification code is: {{ otp_code }}
+
+This code expires in {{ expiry_minutes }} minutes.
+
+If you did not create an account, you can ignore this email.
+
+Thanks,
+The {{ site_name }} team

@@ -15,9 +15,9 @@
       {% if form.non_field_errors %}
       <div class="form-error">{{ form.non_field_errors }}</div>
       {% endif %}
-      <label>Username</label>
-      {{ form.username }}
-      {% if form.username.errors %}<span class="field-error">{{ form.username.errors.0 }}</span>{% endif %}
+      <label for="{{ form.email.id_for_label }}">Email</label>
+      {{ form.email }}
+      {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
       <label>Password</label>
       {{ form.password }}
       <input type="text" name="prevent_autofill" tabindex="-1" autocomplete="off" class="autofill-trap" aria-hidden="true">

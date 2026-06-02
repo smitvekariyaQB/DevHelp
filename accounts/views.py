@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib.auth.views import (
     INTERNAL_RESET_SESSION_TOKEN,
     LoginView,
@@ -26,7 +27,18 @@ from .forms import (
     PasswordResetRequestForm,
     ProfileForm,
     RegisterForm,
+    VerifyOTPForm,
 )
+from .services import activate_verified_user, send_signup_otp, verify_signup_otp
+
+PENDING_VERIFICATION_SESSION_KEY = 'pending_verification_user_id'
+
+
+def _get_pending_verification_user(request):
+    user_id = request.session.get(PENDING_VERIFICATION_SESSION_KEY)
+    if not user_id:
+        return None
+    return User.objects.filter(pk=user_id, is_active=False).first()
 
 
 class UserLoginView(LoginView):
@@ -114,15 +126,68 @@ def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            ensure_default_lists(user)
-            login(request, user)
-            messages.success(request, 'Welcome! Your account is ready.')
-            return redirect('todos:index')
+            email = form.cleaned_data['email']
+            existing = User.objects.filter(email__iexact=email, is_active=False).first()
+            if existing:
+                user = existing
+                user.first_name = form.cleaned_data['first_name']
+                user.last_name = form.cleaned_data['last_name']
+                user.set_password(form.cleaned_data['password1'])
+                user.email = email
+                user.username = email
+                user.save()
+            else:
+                user = form.save(commit=False)
+                user.is_active = False
+                user.save()
+
+            send_signup_otp(user)
+            request.session[PENDING_VERIFICATION_SESSION_KEY] = user.pk
+            messages.info(request, f'We sent a verification code to {user.email}.')
+            return redirect('accounts:verify_email')
     else:
         form = RegisterForm()
 
     return render(request, 'accounts/register.html', {'form': form})
+
+
+def verify_email(request):
+    if request.user.is_authenticated:
+        return redirect('todos:index')
+
+    user = _get_pending_verification_user(request)
+    if user is None:
+        messages.error(request, 'Start by creating an account to receive a verification code.')
+        return redirect('accounts:register')
+
+    if request.method == 'POST':
+        if request.POST.get('action') == 'resend':
+            send_signup_otp(user)
+            messages.success(request, f'A new verification code was sent to {user.email}.')
+            return redirect('accounts:verify_email')
+
+        form = VerifyOTPForm(request.POST)
+        if form.is_valid():
+            ok, error_message = verify_signup_otp(user, form.cleaned_data['otp'])
+            if ok:
+                activate_verified_user(user)
+                ensure_default_lists(user)
+                request.session.pop(PENDING_VERIFICATION_SESSION_KEY, None)
+                login(request, user)
+                messages.success(request, 'Email verified. Welcome to ArcBook!')
+                return redirect('todos:index')
+            form.add_error('otp', error_message)
+    else:
+        form = VerifyOTPForm()
+
+    return render(
+        request,
+        'accounts/verify_email.html',
+        {
+            'form': form,
+            'email': user.email,
+        },
+    )
 
 
 @login_required

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Verify email — ArcBook{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <div class="auth-body">
+    <h1>Verify your email</h1>
+    <p class="auth-sub">We sent a 6-digit code to <strong>{{ email }}</strong>. Enter it below to activate your account.</p>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <label for="{{ form.otp.id_for_label }}">Verification code</label>
+      {{ form.otp }}
+      {% if form.otp.errors %}<span class="field-error">{{ form.otp.errors.0 }}</span>{% endif %}
+      <button type="submit" class="btn btn-primary">Verify email</button>
+    </form>
+    <form method="post" class="auth-resend-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="resend">
+      <button type="submit" class="btn btn-secondary btn-resend">Send new code</button>
+    </form>
+    <p class="auth-footer"><a href="{% url 'accounts:register' %}">Back to sign up</a></p>
+  </div>
+</div>
+{% endblock %}

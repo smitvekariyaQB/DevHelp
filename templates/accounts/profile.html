@@ -32,11 +32,7 @@
             {% csrf_token %}
             <input type="hidden" name="form_type" value="profile">
             <div class="form-row">
-              <label>Username</label>
-              {{ profile_form.username }}
-            </div>
-            <div class="form-row">
-              <label>Email</label>
+              <label for="{{ profile_form.email.id_for_label }}">Email</label>
               {{ profile_form.email }}
             </div>
             <div class="form-row">

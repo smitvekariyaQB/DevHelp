@@ -11,9 +11,11 @@
       {% if form.non_field_errors %}
       <div class="form-error">{{ form.non_field_errors }}</div>
       {% endif %}
-      <label>Username</label>
-      {{ form.username }}
-      <label>Email</label>
+      <label for="{{ form.first_name.id_for_label }}">First name</label>
+      {{ form.first_name }}
+      <label for="{{ form.last_name.id_for_label }}">Last name</label>
+      {{ form.last_name }}
+      <label for="{{ form.email.id_for_label }}">Email</label>
       {{ form.email }}
       <label>Password</label>
       {{ form.password1 }}
