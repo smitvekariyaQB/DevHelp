@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth.forms import (
     AuthenticationForm,
     PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
     UserCreationForm,
 )
 from django.contrib.auth.models import User
@@ -24,6 +26,12 @@ class RegisterForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         for name in ('password1', 'password2', 'email'):
             self.fields[name].widget.attrs.update(_input)
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+        return email
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -58,6 +66,27 @@ class LoginForm(AuthenticationForm):
 
 
 class CustomPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update(_input)
+
+
+class PasswordResetRequestForm(PasswordResetForm):
+    email = forms.EmailField(
+        label='Email',
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                **_input,
+                'placeholder': 'Email address',
+                'autocomplete': 'email',
+            },
+        ),
+    )
+
+
+class CustomSetPasswordForm(SetPasswordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
