@@ -1760,9 +1760,9 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   height: 44px;
-  padding: 0 4px 0 4px;
+  padding: 0 6px;
   box-sizing: border-box;
 }
 
@@ -1778,6 +1778,9 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   cursor: grab;
   user-select: none;
   touch-action: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
 .col-drag-handle svg {
@@ -1795,9 +1798,25 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   cursor: grabbing;
 }
 
+.spreadsheet-col-head:hover .col-drag-handle,
+.col-head-inner:hover .col-drag-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.spreadsheet-col-head:has(.col-header-input:focus) .col-drag-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
 body.col-dragging,
 body.col-dragging .col-drag-handle {
   cursor: grabbing;
+}
+
+body.col-dragging .col-drag-handle {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 tr.spreadsheet-data-row.row-drag-source {
@@ -1811,7 +1830,7 @@ tr.spreadsheet-data-row.row-drag-over .row-label-inner {
 
 .row-drag-handle {
   position: absolute;
-  left: 0;
+  left: 3px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
@@ -1826,6 +1845,9 @@ tr.spreadsheet-data-row.row-drag-over .row-label-inner {
   user-select: none;
   touch-action: none;
   z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
 .row-drag-handle svg {
@@ -1843,9 +1865,19 @@ tr.spreadsheet-data-row.row-drag-over .row-label-inner {
   cursor: grabbing;
 }
 
+.spreadsheet-row-label:not(.spreadsheet-add-row-label):hover .row-drag-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 body.row-dragging,
 body.row-dragging .row-drag-handle {
   cursor: grabbing;
+}
+
+body.row-dragging .row-drag-handle {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .col-header-input {
@@ -1894,7 +1926,7 @@ body.row-dragging .row-drag-handle {
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 4px;
+  padding: 0 6px;
   box-sizing: border-box;
 }
 
@@ -1946,9 +1978,9 @@ body.row-dragging .row-drag-handle {
 .sheet-del-row {
   position: absolute;
   top: 50%;
-  left: 50%;
-  right: auto;
-  transform: translate(-50%, -50%);
+  right: 3px;
+  left: auto;
+  transform: translateY(-50%);
   z-index: 2;
 }
 
