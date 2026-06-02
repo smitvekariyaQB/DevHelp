@@ -18,10 +18,6 @@
   const MIN_COL_WIDTH = 80;
   const DEFAULT_COL_WIDTH = 160;
 
-  const ICONS = {
-    grip: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="5.5" cy="4" r="1.1" fill="currentColor"/><circle cx="10.5" cy="4" r="1.1" fill="currentColor"/><circle cx="5.5" cy="8" r="1.1" fill="currentColor"/><circle cx="10.5" cy="8" r="1.1" fill="currentColor"/><circle cx="5.5" cy="12" r="1.1" fill="currentColor"/><circle cx="10.5" cy="12" r="1.1" fill="currentColor"/></svg>',
-  };
-
   let sheetData = JSON.parse(JSON.stringify(cfg.initialData || { columns: [], rows: [] }));
   let saveTimer;
   let historyTimer;
@@ -344,15 +340,15 @@
     if (findBar && !findBar.classList.contains('hidden') && findInput?.value) runFind();
   }
 
-  function bindColumnDrag(th, col) {
-    const dragHandle = document.createElement('span');
-    dragHandle.className = 'col-drag-handle';
-    dragHandle.title = 'Drag to reorder column';
-    dragHandle.setAttribute('aria-label', 'Drag to reorder column');
-    dragHandle.innerHTML = ICONS.grip;
-    dragHandle.draggable = true;
+  function bindColumnDrag(th, col, headInner) {
+    headInner.draggable = true;
+    headInner.title = 'Drag to reorder column';
 
-    dragHandle.addEventListener('dragstart', (e) => {
+    headInner.addEventListener('dragstart', (e) => {
+      if (headInner.classList.contains('col-head-editing')) {
+        e.preventDefault();
+        return;
+      }
       dragColId = col.id;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', col.id);
@@ -360,7 +356,7 @@
       document.body.classList.add('col-dragging');
     });
 
-    dragHandle.addEventListener('dragend', () => {
+    headInner.addEventListener('dragend', () => {
       clearColDragState();
     });
 
@@ -384,8 +380,6 @@
       clearColDragState();
       reorderColumns(sourceId, col.id);
     });
-
-    return dragHandle;
   }
 
   function reorderRows(sourceId, targetId) {
@@ -409,18 +403,14 @@
     });
   }
 
-  function bindRowDrag(tr, row) {
+  function bindRowDrag(tr, row, rowLabel) {
     tr.classList.add('spreadsheet-data-row');
     tr.dataset.rowId = row.id;
 
-    const dragHandle = document.createElement('span');
-    dragHandle.className = 'row-drag-handle';
-    dragHandle.title = 'Drag to reorder row';
-    dragHandle.setAttribute('aria-label', 'Drag to reorder row');
-    dragHandle.innerHTML = ICONS.grip;
-    dragHandle.draggable = true;
+    rowLabel.draggable = true;
+    rowLabel.title = 'Drag to reorder row';
 
-    dragHandle.addEventListener('dragstart', (e) => {
+    rowLabel.addEventListener('dragstart', (e) => {
       dragRowId = row.id;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', row.id);
@@ -428,7 +418,7 @@
       document.body.classList.add('row-dragging');
     });
 
-    dragHandle.addEventListener('dragend', () => {
+    rowLabel.addEventListener('dragend', () => {
       clearRowDragState();
     });
 
@@ -452,8 +442,6 @@
       clearRowDragState();
       reorderRows(sourceId, row.id);
     });
-
-    return dragHandle;
   }
 
   function startResize(e, colId) {
@@ -530,8 +518,6 @@
       const headInner = document.createElement('div');
       headInner.className = 'col-head-inner';
 
-      headInner.appendChild(bindColumnDrag(th, col));
-
       const labelText = col.label || defaultColumnLabel(index);
 
       const labelSpan = document.createElement('span');
@@ -565,13 +551,13 @@
       });
 
       headInner.addEventListener('dblclick', (e) => {
-        if (e.target.closest('.col-drag-handle')) return;
         e.preventDefault();
         startColumnLabelEdit(headInner, labelInput, labelSpan);
       });
 
       headInner.appendChild(labelSpan);
       headInner.appendChild(labelInput);
+      bindColumnDrag(th, col, headInner);
 
       th.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -603,10 +589,10 @@
       rowNum.className = 'row-num';
       rowNum.textContent = String(rowIndex + 1);
 
-      rowInner.appendChild(bindRowDrag(tr, row));
       rowInner.appendChild(rowNum);
       rowLabel.appendChild(rowInner);
       tr.appendChild(rowLabel);
+      bindRowDrag(tr, row, rowLabel);
 
       rowLabel.addEventListener('contextmenu', (e) => {
         e.preventDefault();

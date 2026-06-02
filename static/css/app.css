@@ -1764,59 +1764,19 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   height: 44px;
   padding: 0 6px;
   box-sizing: border-box;
-}
-
-.col-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  color: var(--text-secondary);
   cursor: grab;
   user-select: none;
   touch-action: none;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
-.col-drag-handle svg {
-  width: 12px;
-  height: 12px;
-  pointer-events: none;
-}
-
-.col-drag-handle:hover {
-  color: var(--text);
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.col-drag-handle:active {
-  cursor: grabbing;
-}
-
-.spreadsheet-col-head:hover .col-drag-handle,
-.col-head-inner:hover .col-drag-handle {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.spreadsheet-col-head:has(.col-head-editing) .col-drag-handle {
-  opacity: 0;
-  pointer-events: none;
+.col-head-inner.col-head-editing {
+  cursor: text;
+  user-select: text;
 }
 
 body.col-dragging,
-body.col-dragging .col-drag-handle {
+body.col-dragging .col-head-inner {
   cursor: grabbing;
-}
-
-body.col-dragging .col-drag-handle {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 tr.spreadsheet-data-row.row-drag-source {
@@ -1826,58 +1786,6 @@ tr.spreadsheet-data-row.row-drag-source {
 tr.spreadsheet-data-row.row-drag-over .row-label-inner {
   box-shadow: inset 0 0 0 2px var(--accent);
   border-radius: 6px;
-}
-
-.row-drag-handle {
-  position: absolute;
-  left: 3px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  color: var(--text-secondary);
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-  z-index: 3;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
-}
-
-.row-drag-handle svg {
-  width: 10px;
-  height: 10px;
-  pointer-events: none;
-}
-
-.row-drag-handle:hover {
-  color: var(--text);
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.row-drag-handle:active {
-  cursor: grabbing;
-}
-
-.spreadsheet-row-label:not(.spreadsheet-add-row-label):hover .row-drag-handle {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-body.row-dragging,
-body.row-dragging .row-drag-handle {
-  cursor: grabbing;
-}
-
-body.row-dragging .row-drag-handle {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .col-header-label {
@@ -1896,7 +1804,6 @@ body.row-dragging .row-drag-handle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: default;
   user-select: none;
 }
 
@@ -1940,6 +1847,14 @@ body.row-dragging .row-drag-handle {
   z-index: 2;
   vertical-align: top;
   overflow: visible;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+body.row-dragging,
+body.row-dragging .spreadsheet-row-label {
+  cursor: grabbing;
 }
 
 .row-label-inner {
@@ -4770,18 +4685,8 @@ html.dark-mode .spreadsheet-col-head.col-drag-over .col-head-inner {
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 
-html.dark-mode .col-drag-handle:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
-}
-
 html.dark-mode tr.spreadsheet-data-row.row-drag-over .row-label-inner {
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
-}
-
-html.dark-mode .row-drag-handle:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
 }
 
 html.dark-mode .spreadsheet-add-row td,
