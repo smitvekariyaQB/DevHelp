@@ -342,7 +342,11 @@
 
   function bindColumnDrag(th, col, headInner) {
     headInner.draggable = true;
-    headInner.title = 'Drag to reorder column';
+
+    headInner.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || headInner.classList.contains('col-head-editing')) return;
+      document.body.classList.add('col-drag-pending');
+    });
 
     headInner.addEventListener('dragstart', (e) => {
       if (headInner.classList.contains('col-head-editing')) {
@@ -357,6 +361,7 @@
     });
 
     headInner.addEventListener('dragend', () => {
+      document.body.classList.remove('col-drag-pending');
       clearColDragState();
     });
 
@@ -408,7 +413,11 @@
     tr.dataset.rowId = row.id;
 
     rowLabel.draggable = true;
-    rowLabel.title = 'Drag to reorder row';
+
+    rowLabel.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      document.body.classList.add('row-drag-pending');
+    });
 
     rowLabel.addEventListener('dragstart', (e) => {
       dragRowId = row.id;
@@ -419,6 +428,7 @@
     });
 
     rowLabel.addEventListener('dragend', () => {
+      document.body.classList.remove('row-drag-pending');
       clearRowDragState();
     });
 
@@ -477,8 +487,17 @@
     scheduleAutosave(true);
   }
 
+  function clearDragPendingCursors() {
+    document.body.classList.remove('col-drag-pending', 'row-drag-pending');
+  }
+
+  function onDocumentMouseUp() {
+    stopResize();
+    clearDragPendingCursors();
+  }
+
   document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', stopResize);
+  document.addEventListener('mouseup', onDocumentMouseUp);
 
   function buildColgroup() {
     const colgroup = document.createElement('colgroup');
@@ -667,9 +686,10 @@
     sheetContextMenu = document.createElement('div');
     sheetContextMenu.className = 'sheet-context-menu hidden';
     sheetContextMenu.innerHTML = `
-      <button type="button" data-action="delete" class="danger">Delete</button>
-      <button type="button" data-action="insert-right">Add right</button>
-      <button type="button" data-action="insert-left">Add left</button>
+    <button type="button" data-action="insert-left">Add left</button>
+    <button type="button" data-action="insert-right">Add right</button>
+    <button type="button" data-action="copy">Copy</button>
+    <button type="button" data-action="delete" class="danger">Delete</button>
     `;
     document.body.appendChild(sheetContextMenu);
 
@@ -681,11 +701,13 @@
       hideSheetContextMenu();
 
       if (kind === 'column') {
-        if (action === 'delete') await deleteColumn(id);
+        if (action === 'copy') copyColumn(id);
+        else if (action === 'delete') await deleteColumn(id);
         else if (action === 'insert-left') insertColumnRelative(id, 'left');
         else if (action === 'insert-right') insertColumnRelative(id, 'right');
       } else if (kind === 'row') {
-        if (action === 'delete') await deleteRow(id);
+        if (action === 'copy') copyRow(id);
+        else if (action === 'delete') await deleteRow(id);
         else if (action === 'insert-left') insertRowRelative(id, 'above');
         else if (action === 'insert-right') insertRowRelative(id, 'below');
       }
@@ -694,12 +716,15 @@
 
   function updateSheetContextMenuLabels(kind) {
     if (!sheetContextMenu) return;
+    const copyBtn = sheetContextMenu.querySelector('[data-action="copy"]');
     const leftBtn = sheetContextMenu.querySelector('[data-action="insert-left"]');
     const rightBtn = sheetContextMenu.querySelector('[data-action="insert-right"]');
     if (kind === 'column') {
+      copyBtn.textContent = 'Copy column';
       leftBtn.textContent = 'Add column left';
       rightBtn.textContent = 'Add column right';
     } else {
+      copyBtn.textContent = 'Copy row';
       leftBtn.textContent = 'Add row above';
       rightBtn.textContent = 'Add row below';
     }
@@ -939,6 +964,97 @@
       .trim();
   }
 
+  function cellForClipboard(text) {
+    return normalizeCellText(text).replace(/\n/g, ' ');
+  }
+
+  function buildColumnCopyPayload(colId) {
+    collectData();
+    const colIndex = sheetData.columns.findIndex((c) => c.id === colId);
+    const col = sheetData.columns[colIndex];
+    if (!col) return null;
+
+    const header = cellForClipboard(col.label || defaultColumnLabel(colIndex));
+    const values = sheetData.rows.map((row) => cellForClipboard(row.cells[col.id]));
+    const plain = [header, ...values].join('\n');
+
+    const th = `<th style="border:1px solid #333;background:#f5f5f5;padding:8px 12px;font-weight:600;">${cellForHtmlExport(header)}</th>`;
+    const bodyRows = values
+      .map((value) => `<tr><td style="border:1px solid #333;padding:8px 12px;">${cellForHtmlExport(value)}</td></tr>`)
+      .join('');
+    const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #333;font-family:Arial,sans-serif;font-size:14px;"><thead><tr>${th}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${tableHtml}<!--EndFragment--></body></html>`;
+
+    return { plain, htmlDoc, tableHtml };
+  }
+
+  function buildRowCopyPayload(rowId) {
+    collectData();
+    const row = sheetData.rows.find((r) => r.id === rowId);
+    if (!row) return null;
+
+    const values = sheetData.columns.map((col, i) =>
+      cellForClipboard(row.cells[col.id] ?? ''),
+    );
+    const plain = values.join('\t');
+
+    const tds = values
+      .map((value) => `<td style="border:1px solid #333;padding:8px 12px;">${cellForHtmlExport(value)}</td>`)
+      .join('');
+    const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #333;font-family:Arial,sans-serif;font-size:14px;"><tbody><tr>${tds}</tr></tbody></table>`;
+    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${tableHtml}<!--EndFragment--></body></html>`;
+
+    return { plain, htmlDoc, tableHtml };
+  }
+
+  async function copySheetFragment(payload) {
+    if (!payload) return;
+    const { plain, htmlDoc, tableHtml } = payload;
+    let ok = false;
+
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
+            'text/plain': new Blob([plain], { type: 'text/plain' }),
+          }),
+        ]);
+        ok = true;
+      } catch {
+        /* try fallbacks */
+      }
+    }
+
+    if (!ok) ok = await copyRichHtml(tableHtml);
+
+    if (!ok) {
+      try {
+        await navigator.clipboard.writeText(plain);
+        ok = true;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = plain;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    }
+
+    if (ok) showCopiedFeedback();
+  }
+
+  function copyColumn(colId) {
+    copySheetFragment(buildColumnCopyPayload(colId));
+  }
+
+  function copyRow(rowId) {
+    copySheetFragment(buildRowCopyPayload(rowId));
+  }
+
   function cellLineWidth(text) {
     const normalized = normalizeCellText(text);
     if (!normalized) return 0;
@@ -1135,7 +1251,8 @@
       flushSave();
       document.removeEventListener('keydown', onDocKeydown);
       document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', stopResize);
+      document.removeEventListener('mouseup', onDocumentMouseUp);
+      clearDragPendingCursors();
       document.removeEventListener('click', onSheetContextMenuDismiss);
       document.removeEventListener('scroll', hideSheetContextMenu, true);
       hideSheetContextMenu();

@@ -1764,7 +1764,6 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   height: 44px;
   padding: 0 6px;
   box-sizing: border-box;
-  cursor: grab;
   user-select: none;
   touch-action: none;
 }
@@ -1774,7 +1773,7 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   user-select: text;
 }
 
-body.col-dragging,
+body.col-drag-pending .col-head-inner,
 body.col-dragging .col-head-inner {
   cursor: grabbing;
 }
@@ -1847,12 +1846,11 @@ tr.spreadsheet-data-row.row-drag-over .row-label-inner {
   z-index: 2;
   vertical-align: top;
   overflow: visible;
-  cursor: grab;
   user-select: none;
   touch-action: none;
 }
 
-body.row-dragging,
+body.row-drag-pending .spreadsheet-row-label,
 body.row-dragging .spreadsheet-row-label {
   cursor: grabbing;
 }
