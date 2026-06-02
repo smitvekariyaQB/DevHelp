@@ -25,5 +25,15 @@
     {% endif %}
     <button type="button" class="btn btn-default" id="btnUndo" title="Undo (Ctrl+Z)" disabled>Undo</button>
     <button type="button" class="btn btn-default" id="btnRedo" title="Redo (Ctrl+Y)" disabled>Redo</button>
+    {% if show_delete_list %}
+    <button type="button"
+            class="btn btn-default btn-delete-list"
+            id="btnDeleteList"
+            data-list-id="{{ delete_list_id }}"
+            data-list-title="{{ delete_list_title }}"
+            title="Delete this list">
+      Delete list
+    </button>
+    {% endif %}
   </div>
 </div>

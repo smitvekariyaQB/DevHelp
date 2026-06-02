@@ -59,9 +59,16 @@ def index(request):
     completed_tasks = get_completed_tasks(request.user, current_list) if current_list else []
 
     list_data = []
+    sidebar_list_ids = {}
     for todo_list in lists:
         count = get_active_tasks(request.user, todo_list).count()
         list_data.append({**_list_payload(todo_list, count), 'selected': todo_list.pk == current_list.pk})
+        if todo_list.smart_type == TodoList.SMART_IMPORTANT:
+            sidebar_list_ids['important'] = todo_list.pk
+        elif todo_list.smart_type == TodoList.SMART_MY_DAY:
+            sidebar_list_ids['my_day'] = todo_list.pk
+        elif not todo_list.smart_type:
+            sidebar_list_ids['tasks'] = todo_list.pk
 
     return render(
         request,
@@ -71,6 +78,7 @@ def index(request):
             'current_list': current_list,
             'active_tasks': active_tasks,
             'completed_tasks': completed_tasks,
+            'sidebar_list_ids': sidebar_list_ids,
         },
     )
 
@@ -126,6 +134,15 @@ def task_create(request):
         task_kwargs['in_my_day'] = True
     if todo_list.smart_type == TodoList.SMART_IMPORTANT:
         task_kwargs['is_important'] = True
+
+    if 'is_important' in data:
+        task_kwargs['is_important'] = bool(data['is_important'])
+    if 'in_my_day' in data:
+        task_kwargs['in_my_day'] = bool(data['in_my_day'])
+    if 'is_completed' in data:
+        task_kwargs['is_completed'] = bool(data['is_completed'])
+    if task_kwargs.get('is_completed'):
+        task_kwargs['completed_at'] = timezone.now()
 
     task = TodoTask.objects.create(**task_kwargs)
     return JsonResponse({'task': _task_payload(task)})

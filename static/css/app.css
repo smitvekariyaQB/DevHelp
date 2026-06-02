@@ -957,9 +957,37 @@ body.modal-open {
   gap: 16px;
 }
 
+.tasks-header-actions {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.tasks-header-actions .editor-toolbar {
+  margin: 0;
+}
+
+.editor-toolbar-buttons .btn-delete-list {
+  color: #ff3b30;
+  border-color: rgba(255, 59, 48, 0.45);
+}
+
+.editor-toolbar-buttons .btn-delete-list:hover:not(:disabled) {
+  background: rgba(255, 59, 48, 0.08);
+  color: #e6352b;
+  border-color: rgba(255, 59, 48, 0.55);
+}
+
 .tasks-header-main {
   flex: 1;
   min-width: 0;
+}
+
+.task-item.task-search-match {
+  background: rgba(0, 122, 255, 0.08);
+}
+
+.task-item.task-search-hidden {
+  display: none;
 }
 
 .tasks-header h1 {

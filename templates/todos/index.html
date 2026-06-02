@@ -28,16 +28,27 @@
         <h1 style="color: {{ current_list.color }}">{{ current_list.title }}</h1>
         <p class="tasks-date" id="tasksDate"></p>
       </div>
-      {% if not current_list.is_smart %}
-      <button type="button"
-              class="btn-delete-list"
-              id="btnDeleteList"
-              data-list-id="{{ current_list.id }}"
-              data-list-title="{{ current_list.title }}">
-        Delete list
-      </button>
-      {% endif %}
+      <div class="tasks-header-actions">
+        {% if not current_list.is_smart %}
+        {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" show_delete_list=True delete_list_id=current_list.id delete_list_title=current_list.title %}
+        {% else %}
+        {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" %}
+        {% endif %}
+      </div>
     </header>
+
+    <div class="table-find-bar hidden" id="todoFindBar">
+      <input type="text"
+             id="todoFindInput"
+             class="table-find-input"
+             placeholder="Search tasks…"
+             autocomplete="off"
+             aria-label="Search tasks">
+      <span class="table-find-count" id="todoFindCount"></span>
+      <button type="button" class="table-find-nav" id="btnTodoFindPrev" title="Previous match">↑</button>
+      <button type="button" class="table-find-nav" id="btnTodoFindNext" title="Next match">↓</button>
+      <button type="button" class="table-find-close" id="btnTodoFindClose" title="Close search">×</button>
+    </div>
 
     <div class="add-task-row">
       <button type="button" class="task-check-placeholder" disabled aria-hidden="true"></button>
@@ -51,7 +62,7 @@
 
     <ul class="task-list active-tasks" id="activeTasks">
       {% for task in active_tasks %}
-      <li class="task-item" data-task-id="{{ task.id }}">
+      <li class="task-item" data-task-id="{{ task.id }}"{% if task.todo_list_id %} data-list-id="{{ task.todo_list_id }}"{% endif %}{% if task.in_my_day %} data-in-my-day="1"{% endif %}>
         <button type="button" class="task-check" data-action="toggle" aria-label="Complete task"></button>
         <div class="task-body">
           <span class="task-title">{{ task.title }}</span>
@@ -65,9 +76,10 @@
       {% endfor %}
     </ul>
 
-    {% if completed_tasks %}
-    <details class="completed-section" open>
-      <summary>Completed ({{ completed_tasks|length }})</summary>
+    <details class="completed-section{% if not completed_tasks %} hidden{% endif %}"
+             id="completedSection"
+             {% if completed_tasks %}open{% endif %}>
+      <summary>Completed (<span id="completedCount">{{ completed_tasks|length }}</span>)</summary>
       <ul class="task-list completed-tasks" id="completedTasks">
         {% for task in completed_tasks %}
         <li class="task-item completed" data-task-id="{{ task.id }}">
@@ -80,12 +92,6 @@
         {% endfor %}
       </ul>
     </details>
-    {% else %}
-    <details class="completed-section hidden" id="completedSection">
-      <summary>Completed (<span id="completedCount">0</span>)</summary>
-      <ul class="task-list completed-tasks" id="completedTasks"></ul>
-    </details>
-    {% endif %}
   </section>
 </div>
 {% endblock %}
@@ -95,6 +101,10 @@
   window.TODO_CONFIG = {
     csrfToken: '{{ csrf_token }}',
     listId: {{ current_list.id }},
+    smartListType: '{{ current_list.smart_type|escapejs }}',
+    importantListId: {% if sidebar_list_ids.important %}{{ sidebar_list_ids.important }}{% else %}null{% endif %},
+    tasksListId: {% if sidebar_list_ids.tasks %}{{ sidebar_list_ids.tasks }}{% else %}null{% endif %},
+    myDayListId: {% if sidebar_list_ids.my_day %}{{ sidebar_list_ids.my_day }}{% else %}null{% endif %},
     urls: {
       taskCreate: '{% url "todos:task_create" %}',
       taskToggle: (id) => `/todos/api/tasks/${id}/toggle/`,
