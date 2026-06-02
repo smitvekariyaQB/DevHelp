@@ -1804,7 +1804,7 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   pointer-events: auto;
 }
 
-.spreadsheet-col-head:has(.col-header-input:focus) .col-drag-handle {
+.spreadsheet-col-head:has(.col-head-editing) .col-drag-handle {
   opacity: 0;
   pointer-events: none;
 }
@@ -1880,10 +1880,9 @@ body.row-dragging .row-drag-handle {
   pointer-events: auto;
 }
 
-.col-header-input {
+.col-header-label {
   flex: 1;
   min-width: 0;
-  width: 100%;
   height: 28px;
   padding: 0 8px;
   border: 1px solid transparent;
@@ -1892,19 +1891,42 @@ body.row-dragging .row-drag-handle {
   font-weight: 600;
   font-family: inherit;
   color: var(--text);
-  background: transparent;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.col-head-inner .col-header-input {
+  display: none;
+}
+
+.col-head-inner.col-head-editing .col-header-label {
+  display: none;
+}
+
+.col-head-inner.col-head-editing .col-header-input {
+  display: block;
+}
+
+.col-header-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
   outline: none;
   letter-spacing: -0.01em;
-}
-
-.col-header-input:hover {
-  background: rgba(255, 255, 255, 0.65);
-  border-color: rgba(0, 0, 0, 0.06);
-}
-
-.col-header-input:focus {
-  border-color: var(--accent);
-  background: #fff;
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 
@@ -2005,9 +2027,45 @@ body.row-dragging .row-drag-handle {
   pointer-events: auto;
 }
 
-.spreadsheet-row-label:not(.spreadsheet-add-row-label):hover .row-num {
-  opacity: 0;
-  pointer-events: none;
+.sheet-context-menu {
+  position: fixed;
+  z-index: 1100;
+  min-width: 168px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.sheet-context-menu.hidden {
+  display: none;
+}
+
+.sheet-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-context-menu button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sheet-context-menu button.danger {
+  color: #ff3b30;
+}
+
+.sheet-context-menu button.danger:hover {
+  background: rgba(255, 59, 48, 0.08);
 }
 
 .spreadsheet-add-row {
@@ -4926,6 +4984,7 @@ html.dark-mode .json-find-input:focus {
 html.dark-mode .json-file-btn:hover,
 html.dark-mode .md-file-btn:hover,
 html.dark-mode .code-file-btn:hover,
+html.dark-mode .sheet-context-menu button:hover,
 html.dark-mode .json-file-context-menu button:hover,
 html.dark-mode .md-file-context-menu button:hover,
 html.dark-mode .code-file-context-menu button:hover,
@@ -4945,6 +5004,7 @@ html.dark-mode .code-file-item.active .code-file-btn {
   color: var(--text);
 }
 
+html.dark-mode .sheet-context-menu,
 html.dark-mode .json-file-context-menu,
 html.dark-mode .md-file-context-menu,
 html.dark-mode .code-file-context-menu {

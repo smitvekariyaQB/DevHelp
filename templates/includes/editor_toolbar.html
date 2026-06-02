@@ -25,6 +25,10 @@
     {% endif %}
     <button type="button" class="btn btn-default" id="btnUndo" title="Undo (Ctrl+Z)" disabled>Undo</button>
     <button type="button" class="btn btn-default" id="btnRedo" title="Redo (Ctrl+Y)" disabled>Redo</button>
+    {% if show_sheet_add_buttons %}
+    <button type="button" class="btn btn-default" id="btnAddColumn" title="Add column at end">Add column</button>
+    <button type="button" class="btn btn-default" id="btnAddRow" title="Add row at end">Add row</button>
+    {% endif %}
     {% if show_delete_list %}
     <button type="button"
             class="btn btn-default btn-delete-list"

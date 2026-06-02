@@ -7,10 +7,11 @@
   const btnSave = document.getElementById('btnManualSave');
   const btnUndo = document.getElementById('btnUndo');
   const btnRedo = document.getElementById('btnRedo');
+  const btnAddColumn = document.getElementById('btnAddColumn');
+  const btnAddRow = document.getElementById('btnAddRow');
   if (!cfg || !container) return;
 
   const ROW_HEADER_WIDTH = 48;
-  const ADD_COL_WIDTH = 48;
   const AUTOSAVE_DELAY = 800;
   const HISTORY_DELAY = 900;
 
@@ -18,8 +19,6 @@
   const DEFAULT_COL_WIDTH = 160;
 
   const ICONS = {
-    plus: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
-    close: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.75 4.75l6.5 6.5M11.25 4.75l-6.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
     grip: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="5.5" cy="4" r="1.1" fill="currentColor"/><circle cx="10.5" cy="4" r="1.1" fill="currentColor"/><circle cx="5.5" cy="8" r="1.1" fill="currentColor"/><circle cx="10.5" cy="8" r="1.1" fill="currentColor"/><circle cx="5.5" cy="12" r="1.1" fill="currentColor"/><circle cx="10.5" cy="12" r="1.1" fill="currentColor"/></svg>',
   };
 
@@ -153,9 +152,16 @@
       const row = sheetData.rows.find((r) => r.id === ta.dataset.rowId);
       if (row) row.cells[ta.dataset.colId] = ta.value;
     });
-    container.querySelectorAll('.col-header-input').forEach((inp) => {
-      const col = sheetData.columns.find((c) => c.id === inp.dataset.colId);
-      if (col) col.label = inp.value;
+    container.querySelectorAll('.spreadsheet-col-head').forEach((th) => {
+      const col = sheetData.columns.find((c) => c.id === th.dataset.colId);
+      if (!col) return;
+      const editing = th.querySelector('.col-head-inner.col-head-editing .col-header-input');
+      if (editing) {
+        col.label = editing.value;
+        return;
+      }
+      const label = th.querySelector('.col-header-label');
+      if (label) col.label = label.textContent;
     });
     return sheetData;
   }
@@ -197,16 +203,6 @@
     ta.style.height = `${Math.max(44, ta.scrollHeight)}px`;
   }
 
-  function makeIconButton(className, title, icon, onClick) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = className;
-    btn.title = title;
-    btn.innerHTML = icon;
-    btn.addEventListener('click', onClick);
-    return btn;
-  }
-
   async function confirmDelete(message) {
     if (!window.AppModal) return true;
     return AppModal.confirm({
@@ -218,29 +214,55 @@
     });
   }
 
-  function addColumn() {
+  function insertColumnAt(index) {
     recordHistoryNow();
     collectData();
     const n = sheetData.columns.length + 1;
     const col = { id: uid(), width: DEFAULT_COL_WIDTH, label: `Column ${n}` };
-    sheetData.columns.push(col);
+    const at = Math.max(0, Math.min(index, sheetData.columns.length));
+    sheetData.columns.splice(at, 0, col);
     sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
     render();
+    scheduleAutosave(true);
+    return col;
+  }
+
+  function addColumn() {
+    const col = insertColumnAt(sheetData.columns.length);
     requestAnimationFrame(() => {
       const scrollEl = container.closest('.spreadsheet-scroll');
       if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth;
     });
-    scheduleAutosave(true);
+    return col;
   }
 
-  function addRow() {
+  function insertColumnRelative(colId, side) {
+    const idx = sheetData.columns.findIndex((c) => c.id === colId);
+    if (idx < 0) return;
+    insertColumnAt(side === 'left' ? idx : idx + 1);
+  }
+
+  function insertRowAt(index) {
     recordHistoryNow();
     collectData();
     const cells = {};
     sheetData.columns.forEach((col) => { cells[col.id] = ''; });
-    sheetData.rows.push({ id: uid(), cells });
+    const row = { id: uid(), cells };
+    const at = Math.max(0, Math.min(index, sheetData.rows.length));
+    sheetData.rows.splice(at, 0, row);
     render();
     scheduleAutosave(true);
+    return row;
+  }
+
+  function addRow() {
+    insertRowAt(sheetData.rows.length);
+  }
+
+  function insertRowRelative(rowId, side) {
+    const idx = sheetData.rows.findIndex((r) => r.id === rowId);
+    if (idx < 0) return;
+    insertRowAt(side === 'above' ? idx : idx + 1);
   }
 
   async function deleteColumn(colId) {
@@ -293,6 +315,33 @@
     container.querySelectorAll('.spreadsheet-col-head').forEach((head) => {
       head.classList.remove('col-drag-source', 'col-drag-over');
     });
+  }
+
+  function defaultColumnLabel(index) {
+    return `Column ${index + 1}`;
+  }
+
+  function startColumnLabelEdit(headInner, labelInput, labelSpan) {
+    headInner.classList.add('col-head-editing');
+    labelInput.value = labelSpan.textContent;
+    labelInput.focus();
+    labelInput.select();
+  }
+
+  function finishColumnLabelEdit(headInner, labelInput, labelSpan, col, index, revert) {
+    headInner.classList.remove('col-head-editing');
+    if (revert) {
+      labelInput.value = labelSpan.textContent;
+      return;
+    }
+    const next = labelInput.value.trim() || defaultColumnLabel(index);
+    labelInput.value = next;
+    labelSpan.textContent = next;
+    labelSpan.title = next;
+    col.label = next;
+    scheduleHistoryCapture();
+    scheduleAutosave();
+    if (findBar && !findBar.classList.contains('hidden') && findInput?.value) runFind();
   }
 
   function bindColumnDrag(th, col) {
@@ -483,30 +532,51 @@
 
       headInner.appendChild(bindColumnDrag(th, col));
 
+      const labelText = col.label || defaultColumnLabel(index);
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'col-header-label';
+      labelSpan.dataset.colId = col.id;
+      labelSpan.textContent = labelText;
+      labelSpan.title = labelText;
+
       const labelInput = document.createElement('input');
       labelInput.type = 'text';
       labelInput.className = 'col-header-input';
       labelInput.dataset.colId = col.id;
-      labelInput.value = col.label || `Column ${index + 1}`;
-      labelInput.placeholder = `Column ${index + 1}`;
-      labelInput.addEventListener('input', () => {
-        scheduleHistoryCapture();
-        scheduleAutosave();
-        if (findBar && !findBar.classList.contains('hidden') && findInput?.value) runFind();
+      labelInput.value = labelText;
+      labelInput.placeholder = defaultColumnLabel(index);
+      labelInput.setAttribute('aria-label', `Rename ${labelText}`);
+
+      labelInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          labelInput.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finishColumnLabelEdit(headInner, labelInput, labelSpan, col, index, true);
+          labelInput.blur();
+        }
       });
 
-      const delCol = makeIconButton(
-        'sheet-icon-btn sheet-del-col',
-        'Delete column',
-        ICONS.close,
-        (e) => {
-          e.stopPropagation();
-          deleteColumn(col.id);
-        },
-      );
+      labelInput.addEventListener('blur', () => {
+        if (!headInner.classList.contains('col-head-editing')) return;
+        finishColumnLabelEdit(headInner, labelInput, labelSpan, col, index, false);
+      });
 
+      headInner.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.col-drag-handle')) return;
+        e.preventDefault();
+        startColumnLabelEdit(headInner, labelInput, labelSpan);
+      });
+
+      headInner.appendChild(labelSpan);
       headInner.appendChild(labelInput);
-      headInner.appendChild(delCol);
+
+      th.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showSheetContextMenu(e.clientX, e.clientY, 'column', col.id);
+      });
 
       const resize = document.createElement('span');
       resize.className = 'col-resize-handle';
@@ -533,21 +603,15 @@
       rowNum.className = 'row-num';
       rowNum.textContent = String(rowIndex + 1);
 
-      const delRow = makeIconButton(
-        'sheet-icon-btn sheet-del-row',
-        'Delete row',
-        ICONS.close,
-        (e) => {
-          e.stopPropagation();
-          deleteRow(row.id);
-        },
-      );
-
       rowInner.appendChild(bindRowDrag(tr, row));
       rowInner.appendChild(rowNum);
-      rowInner.appendChild(delRow);
       rowLabel.appendChild(rowInner);
       tr.appendChild(rowLabel);
+
+      rowLabel.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showSheetContextMenu(e.clientX, e.clientY, 'row', row.id);
+      });
 
       sheetData.columns.forEach((col) => {
         const td = document.createElement('td');
@@ -574,27 +638,6 @@
       tbody.appendChild(tr);
     });
 
-    const addRowTr = document.createElement('tr');
-    addRowTr.className = 'spreadsheet-add-row';
-    addRowTr.dataset.action = 'add-row';
-    addRowTr.title = 'Add row';
-
-    const addRowLabel = document.createElement('td');
-    addRowLabel.className = 'spreadsheet-row-label spreadsheet-add-row-label';
-    const addRowIcon = document.createElement('span');
-    addRowIcon.className = 'sheet-add-row-icon';
-    addRowIcon.innerHTML = ICONS.plus;
-    addRowLabel.appendChild(addRowIcon);
-    addRowTr.appendChild(addRowLabel);
-
-    sheetData.columns.forEach(() => {
-      const td = document.createElement('td');
-      td.className = 'spreadsheet-add-row-cell';
-      addRowTr.appendChild(td);
-    });
-
-    tbody.appendChild(addRowTr);
-
     table.appendChild(tbody);
     container.innerHTML = '';
     container.appendChild(table);
@@ -605,8 +648,6 @@
         startResize(e, handle.dataset.colId);
       });
     });
-
-    container.querySelector('[data-action="add-row"]')?.addEventListener('click', addRow);
 
     applyColumnWidths();
     refreshFindAfterRender();
@@ -624,6 +665,79 @@
 
   btnUndo?.addEventListener('click', doUndo);
   btnRedo?.addEventListener('click', doRedo);
+  btnAddColumn?.addEventListener('click', addColumn);
+  btnAddRow?.addEventListener('click', addRow);
+
+  let sheetContextMenu = null;
+  let sheetContextTarget = null;
+
+  function hideSheetContextMenu() {
+    sheetContextMenu?.classList.add('hidden');
+    sheetContextTarget = null;
+  }
+
+  function ensureSheetContextMenu() {
+    if (sheetContextMenu) return;
+    sheetContextMenu = document.createElement('div');
+    sheetContextMenu.className = 'sheet-context-menu hidden';
+    sheetContextMenu.innerHTML = `
+      <button type="button" data-action="delete" class="danger">Delete</button>
+      <button type="button" data-action="insert-right">Add right</button>
+      <button type="button" data-action="insert-left">Add left</button>
+    `;
+    document.body.appendChild(sheetContextMenu);
+
+    sheetContextMenu.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn || !sheetContextTarget) return;
+      const { kind, id } = sheetContextTarget;
+      const action = btn.dataset.action;
+      hideSheetContextMenu();
+
+      if (kind === 'column') {
+        if (action === 'delete') await deleteColumn(id);
+        else if (action === 'insert-left') insertColumnRelative(id, 'left');
+        else if (action === 'insert-right') insertColumnRelative(id, 'right');
+      } else if (kind === 'row') {
+        if (action === 'delete') await deleteRow(id);
+        else if (action === 'insert-left') insertRowRelative(id, 'above');
+        else if (action === 'insert-right') insertRowRelative(id, 'below');
+      }
+    });
+  }
+
+  function updateSheetContextMenuLabels(kind) {
+    if (!sheetContextMenu) return;
+    const leftBtn = sheetContextMenu.querySelector('[data-action="insert-left"]');
+    const rightBtn = sheetContextMenu.querySelector('[data-action="insert-right"]');
+    if (kind === 'column') {
+      leftBtn.textContent = 'Add column left';
+      rightBtn.textContent = 'Add column right';
+    } else {
+      leftBtn.textContent = 'Add row above';
+      rightBtn.textContent = 'Add row below';
+    }
+  }
+
+  function showSheetContextMenu(x, y, kind, id) {
+    ensureSheetContextMenu();
+    sheetContextTarget = { kind, id };
+    updateSheetContextMenuLabels(kind);
+    sheetContextMenu.classList.remove('hidden');
+
+    const menuRect = sheetContextMenu.getBoundingClientRect();
+    const maxX = window.innerWidth - menuRect.width - 8;
+    const maxY = window.innerHeight - menuRect.height - 8;
+    sheetContextMenu.style.left = `${Math.min(x, maxX)}px`;
+    sheetContextMenu.style.top = `${Math.min(y, maxY)}px`;
+  }
+
+  function onSheetContextMenuDismiss(e) {
+    if (!e.target.closest('.sheet-context-menu')) hideSheetContextMenu();
+  }
+
+  document.addEventListener('click', onSheetContextMenuDismiss);
+  document.addEventListener('scroll', hideSheetContextMenu, true);
 
   const btnSearch = document.getElementById('btnTableSearch');
   const findBar = document.getElementById('tableFindBar');
@@ -642,10 +756,17 @@
     });
   }
 
+  function getSearchableText(el) {
+    if (el.matches?.('.col-header-label')) return el.textContent || '';
+    return el.value || '';
+  }
+
   function collectSearchTargets() {
     const targets = [];
-    container.querySelectorAll('.col-header-input').forEach((el) => {
-      targets.push({ type: 'header', element: el });
+    container.querySelectorAll('.spreadsheet-col-head').forEach((th) => {
+      const el = th.querySelector('.col-head-inner.col-head-editing .col-header-input')
+        || th.querySelector('.col-header-label');
+      if (el) targets.push({ type: 'header', element: el });
     });
     container.querySelectorAll('.cell-input').forEach((el) => {
       targets.push({ type: 'cell', element: el });
@@ -667,7 +788,7 @@
 
     const lowerQuery = query.toLowerCase();
     collectSearchTargets().forEach(({ type, element }) => {
-      const lowerText = element.value.toLowerCase();
+      const lowerText = getSearchableText(element).toLowerCase();
       let pos = 0;
       while (pos < lowerText.length) {
         const idx = lowerText.indexOf(lowerQuery, pos);
@@ -721,8 +842,15 @@
 
     setTimeout(() => {
       scrollElementIntoView(match.element);
-      match.element.focus({ preventScroll: true });
-      match.element.setSelectionRange(match.start, match.end);
+      if (match.type === 'header' && match.element.matches('.col-header-label')) {
+        match.element.tabIndex = -1;
+        match.element.focus({ preventScroll: true });
+      } else {
+        match.element.focus({ preventScroll: true });
+        if (typeof match.element.setSelectionRange === 'function') {
+          match.element.setSelectionRange(match.start, match.end);
+        }
+      }
       findInput?.focus();
     }, 0);
 
@@ -995,12 +1123,6 @@
     if (!col.label) col.label = `Column ${i + 1}`;
   });
 
-  const addColRail = document.getElementById('sheetAddColRail');
-  if (addColRail) {
-    addColRail.innerHTML = `<span class="sheet-add-col-rail-icon">${ICONS.plus}</span>`;
-    addColRail.addEventListener('click', addColumn);
-  }
-
   render();
   requestAnimationFrame(updateTableLayout);
 
@@ -1028,6 +1150,9 @@
       document.removeEventListener('keydown', onDocKeydown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', stopResize);
+      document.removeEventListener('click', onSheetContextMenuDismiss);
+      document.removeEventListener('scroll', hideSheetContextMenu, true);
+      hideSheetContextMenu();
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
       clearColDragState();

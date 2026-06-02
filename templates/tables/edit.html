@@ -22,7 +22,7 @@
       <div class="editor-title-field">
         <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
       </div>
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" %}
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True %}
     </div>
 
     <div class="table-find-bar hidden" id="tableFindBar">
@@ -42,7 +42,6 @@
       <div class="spreadsheet-scroll">
         <div class="spreadsheet-container" id="spreadsheetContainer"></div>
       </div>
-      <button type="button" class="sheet-add-col-rail" id="sheetAddColRail" title="Add column" aria-label="Add column"></button>
     </div>
   </div>
 </div>
