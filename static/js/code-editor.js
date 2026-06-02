@@ -743,9 +743,20 @@
     resizeObserver.observe(textWrap);
   }
 
-  syncTextHighlight();
   window.__codeEditorSyncHighlight = syncTextHighlight;
-  window.AppPreferences?.syncHighlightTheme?.();
+
+  function initCodeHighlight() {
+    if (window.AppPreferences?.syncHighlightTheme) {
+      window.AppPreferences.syncHighlightTheme();
+    } else {
+      syncTextHighlight();
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(syncTextHighlight);
+    });
+  }
+
+  initCodeHighlight();
 
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {

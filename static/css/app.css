@@ -4713,9 +4713,13 @@ html.dark-mode .code-main-panel {
 }
 
 html.dark-mode .markdown-text-editor,
-html.dark-mode .code-text-editor,
 html.dark-mode .json-text-editor {
   background: #0a0a0a;
+}
+
+html.dark-mode .code-text-editor,
+html.dark-mode .code-text-stack {
+  background: #141414;
 }
 
 html.dark-mode .markdown-line-gutter,
@@ -4883,7 +4887,100 @@ html.dark-mode .markdown-preview-pane {
 html.dark-mode .markdown-editor,
 html.dark-mode .json-editor,
 html.dark-mode .code-editor {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: transparent;
+  border-color: transparent;
   caret-color: #f2f2f7;
+}
+
+html.dark-mode .markdown-editor:focus,
+html.dark-mode .json-editor:focus,
+html.dark-mode .code-editor:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Code syntax colors in dark mode (inlined so SPA nav does not wait on CDN theme CSS). */
+html.dark-mode .code-text-highlight.hljs {
+  color: #c9d1d9;
+}
+
+html.dark-mode .code-text-highlight .hljs-doctag,
+html.dark-mode .code-text-highlight .hljs-keyword,
+html.dark-mode .code-text-highlight .hljs-meta .hljs-keyword,
+html.dark-mode .code-text-highlight .hljs-template-tag,
+html.dark-mode .code-text-highlight .hljs-template-variable,
+html.dark-mode .code-text-highlight .hljs-type,
+html.dark-mode .code-text-highlight .hljs-variable.language_ {
+  color: #ff7b72;
+}
+
+html.dark-mode .code-text-highlight .hljs-title,
+html.dark-mode .code-text-highlight .hljs-title.class_,
+html.dark-mode .code-text-highlight .hljs-title.class_.inherited__,
+html.dark-mode .code-text-highlight .hljs-title.function_ {
+  color: #d2a8ff;
+}
+
+html.dark-mode .code-text-highlight .hljs-attr,
+html.dark-mode .code-text-highlight .hljs-attribute,
+html.dark-mode .code-text-highlight .hljs-literal,
+html.dark-mode .code-text-highlight .hljs-meta,
+html.dark-mode .code-text-highlight .hljs-number,
+html.dark-mode .code-text-highlight .hljs-operator,
+html.dark-mode .code-text-highlight .hljs-selector-attr,
+html.dark-mode .code-text-highlight .hljs-selector-class,
+html.dark-mode .code-text-highlight .hljs-selector-id,
+html.dark-mode .code-text-highlight .hljs-variable {
+  color: #79c0ff;
+}
+
+html.dark-mode .code-text-highlight .hljs-meta .hljs-string,
+html.dark-mode .code-text-highlight .hljs-regexp,
+html.dark-mode .code-text-highlight .hljs-string {
+  color: #a5d6ff;
+}
+
+html.dark-mode .code-text-highlight .hljs-built_in,
+html.dark-mode .code-text-highlight .hljs-symbol {
+  color: #ffa657;
+}
+
+html.dark-mode .code-text-highlight .hljs-code,
+html.dark-mode .code-text-highlight .hljs-comment,
+html.dark-mode .code-text-highlight .hljs-formula {
+  color: #8b949e;
+}
+
+html.dark-mode .code-text-highlight .hljs-name,
+html.dark-mode .code-text-highlight .hljs-quote,
+html.dark-mode .code-text-highlight .hljs-selector-pseudo,
+html.dark-mode .code-text-highlight .hljs-selector-tag {
+  color: #7ee787;
+}
+
+html.dark-mode .code-text-highlight .hljs-subst {
+  color: #c9d1d9;
+}
+
+html.dark-mode .code-text-highlight .hljs-section {
+  color: #1f6feb;
+  font-weight: 700;
+}
+
+html.dark-mode .code-text-highlight .hljs-bullet {
+  color: #f2cc60;
+}
+
+html.dark-mode .code-text-highlight .hljs-emphasis {
+  color: #c9d1d9;
+  font-style: italic;
+}
+
+html.dark-mode .code-text-highlight .hljs-strong {
+  color: #c9d1d9;
+  font-weight: 700;
 }
 
 /* JSON syntax highlighting */

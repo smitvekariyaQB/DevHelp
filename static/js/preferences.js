@@ -28,14 +28,39 @@
 
   const HLJS_THEME_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles';
 
+  function findHljsThemeLink() {
+    return (
+      document.getElementById('hljsTheme')
+      || document.querySelector('link[data-dynamic][href*="highlight.js"][href*="/styles/"]')
+      || document.querySelector('link[href*="highlight.js"][href*="/styles/"]')
+    );
+  }
+
   function syncHighlightTheme(enabled) {
     const dark = typeof enabled === 'boolean' ? enabled : getDarkMode();
-    const link = document.getElementById('hljsTheme');
-    if (link) {
-      const href = `${HLJS_THEME_BASE}/${dark ? 'github-dark' : 'github'}.min.css`;
-      if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+    const link = findHljsThemeLink();
+    if (!link) return;
+
+    const href = `${HLJS_THEME_BASE}/${dark ? 'github-dark' : 'github'}.min.css`;
+    const resync = () => window.__codeEditorSyncHighlight?.();
+
+    if (link.getAttribute('href') === href) {
+      resync();
+      return;
     }
-    window.__codeEditorSyncHighlight?.();
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      resync();
+    };
+
+    link.addEventListener('load', finish, { once: true });
+    link.addEventListener('error', finish, { once: true });
+    link.setAttribute('href', href);
+    // Cached stylesheets may not emit load; resync shortly after href swap.
+    setTimeout(finish, 150);
   }
 
   function applyDarkMode(enabled) {

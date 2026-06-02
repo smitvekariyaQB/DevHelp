@@ -9,11 +9,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" id="hljsTheme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   {% block extra_css %}{% endblock %}
   <script>
     try {
       if (localStorage.getItem('appDarkMode') === '1') {
         document.documentElement.classList.add('dark-mode');
+        var hljsTheme = document.getElementById('hljsTheme');
+        if (hljsTheme) {
+          hljsTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+        }
       }
       var sidebarDefault = localStorage.getItem('appSidebarDefaultOpen');
       if (sidebarDefault === '0') {

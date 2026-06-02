@@ -2,10 +2,6 @@
 {% load static %}
 {% block title %}Code — ArcBook{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" id="hljsTheme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-{% endblock %}
-
 {% block main %}
 <div class="code-app" id="codeApp" data-current-doc="{% if current_doc %}{{ current_doc.id }}{% endif %}">
   <aside class="code-files-panel" id="codeFilesPanel">

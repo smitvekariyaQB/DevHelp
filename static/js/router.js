@@ -142,30 +142,36 @@
       permanentHrefs.add(l.getAttribute('href'));
     });
 
-    // Gather new page's stylesheets
-    const newHrefs = new Set();
+    const newPageLinks = [];
     newDoc.querySelectorAll('head link[rel="stylesheet"]').forEach((l) => {
       const href = l.getAttribute('href');
-      if (!permanentHrefs.has(href)) newHrefs.add(href);
+      if (!permanentHrefs.has(href)) newPageLinks.push(l);
     });
+
+    const pendingHrefs = new Set(newPageLinks.map((l) => l.getAttribute('href')));
 
     // Remove old dynamic links that are no longer needed
     dynamicLinks = dynamicLinks.filter((link) => {
       const href = link.getAttribute('href');
-      if (newHrefs.has(href)) {
-        newHrefs.delete(href); // already loaded, keep it
+      if (pendingHrefs.has(href)) {
+        pendingHrefs.delete(href);
         return true;
       }
       link.remove();
       return false;
     });
 
-    // Add new dynamic links
-    newHrefs.forEach((href) => {
+    // Add new dynamic links (preserve id and other attributes from the source page)
+    newPageLinks.forEach((sourceLink) => {
+      const href = sourceLink.getAttribute('href');
+      if (!pendingHrefs.has(href)) return;
+
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = href;
       link.setAttribute('data-dynamic', '');
+      const id = sourceLink.getAttribute('id');
+      if (id) link.id = id;
       document.head.appendChild(link);
       dynamicLinks.push(link);
     });
@@ -294,6 +300,14 @@
       const newPageScripts = newDoc.querySelector(PAGE_SCRIPTS_SELECTOR);
       if (newPageScripts) {
         await executeScripts(newPageScripts);
+      }
+
+      // Re-sync code syntax theme/highlight after SPA navigation (CSS may load async).
+      if (document.getElementById('codeApp')) {
+        window.AppPreferences?.syncHighlightTheme?.();
+        requestAnimationFrame(() => {
+          window.__codeEditorSyncHighlight?.();
+        });
       }
 
       // 9. Scroll to top
