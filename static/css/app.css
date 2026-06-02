@@ -1772,6 +1772,54 @@ body.col-dragging .col-drag-handle {
   cursor: grabbing;
 }
 
+tr.spreadsheet-data-row.row-drag-source {
+  opacity: 0.45;
+}
+
+tr.spreadsheet-data-row.row-drag-over .row-label-inner {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  border-radius: 6px;
+}
+
+.row-drag-handle {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  z-index: 3;
+}
+
+.row-drag-handle svg {
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+
+.row-drag-handle:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.row-drag-handle:active {
+  cursor: grabbing;
+}
+
+body.row-dragging,
+body.row-dragging .row-drag-handle {
+  cursor: grabbing;
+}
+
 .col-header-input {
   flex: 1;
   min-width: 0;
@@ -4605,6 +4653,15 @@ html.dark-mode .spreadsheet-col-head.col-drag-over .col-head-inner {
 }
 
 html.dark-mode .col-drag-handle:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode tr.spreadsheet-data-row.row-drag-over .row-label-inner {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+html.dark-mode .row-drag-handle:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
 }

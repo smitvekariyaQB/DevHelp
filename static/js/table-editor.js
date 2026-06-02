@@ -33,6 +33,7 @@
   let colgroupEl = null;
   let isRestoring = false;
   let dragColId = null;
+  let dragRowId = null;
 
   const history = window.createEditorHistory(60);
 
@@ -338,6 +339,74 @@
     return dragHandle;
   }
 
+  function reorderRows(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    collectData();
+    const fromIdx = sheetData.rows.findIndex((r) => r.id === sourceId);
+    const toIdx = sheetData.rows.findIndex((r) => r.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    recordHistoryNow();
+    const [moved] = sheetData.rows.splice(fromIdx, 1);
+    sheetData.rows.splice(toIdx, 0, moved);
+    render();
+    scheduleAutosave(true);
+  }
+
+  function clearRowDragState() {
+    dragRowId = null;
+    document.body.classList.remove('row-dragging');
+    container.querySelectorAll('tr.spreadsheet-data-row').forEach((tr) => {
+      tr.classList.remove('row-drag-source', 'row-drag-over');
+    });
+  }
+
+  function bindRowDrag(tr, row) {
+    tr.classList.add('spreadsheet-data-row');
+    tr.dataset.rowId = row.id;
+
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'row-drag-handle';
+    dragHandle.title = 'Drag to reorder row';
+    dragHandle.setAttribute('aria-label', 'Drag to reorder row');
+    dragHandle.innerHTML = ICONS.grip;
+    dragHandle.draggable = true;
+
+    dragHandle.addEventListener('dragstart', (e) => {
+      dragRowId = row.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', row.id);
+      tr.classList.add('row-drag-source');
+      document.body.classList.add('row-dragging');
+    });
+
+    dragHandle.addEventListener('dragend', () => {
+      clearRowDragState();
+    });
+
+    tr.addEventListener('dragover', (e) => {
+      if (!dragRowId || dragRowId === row.id) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      container.querySelectorAll('tr.spreadsheet-data-row.row-drag-over').forEach((el) => {
+        if (el !== tr) el.classList.remove('row-drag-over');
+      });
+      tr.classList.add('row-drag-over');
+    });
+
+    tr.addEventListener('dragleave', (e) => {
+      if (!tr.contains(e.relatedTarget)) tr.classList.remove('row-drag-over');
+    });
+
+    tr.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const sourceId = e.dataTransfer.getData('text/plain') || dragRowId;
+      clearRowDragState();
+      reorderRows(sourceId, row.id);
+    });
+
+    return dragHandle;
+  }
+
   function startResize(e, colId) {
     e.preventDefault();
     e.stopPropagation();
@@ -474,6 +543,7 @@
         },
       );
 
+      rowInner.appendChild(bindRowDrag(tr, row));
       rowInner.appendChild(rowNum);
       rowInner.appendChild(delRow);
       rowLabel.appendChild(rowInner);
@@ -961,6 +1031,7 @@
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
       clearColDragState();
+      clearRowDragState();
     });
   }
 })();
