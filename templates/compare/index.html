@@ -1,0 +1,148 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block title %}Compare — ArcBook{% endblock %}
+
+{% block main %}
+<div class="compare-app" id="compareApp">
+  <header class="compare-header">
+    <div class="compare-header-main">
+      <h1 class="compare-page-title">Compare</h1>
+    </div>
+    <div class="compare-actions">
+      <label class="compare-scroll-sync" for="compareScrollSync" title="Sync left and right scroll position">
+        <span class="compare-scroll-sync-label">Scroll sync</span>
+        <input type="checkbox"
+               id="compareScrollSync"
+               class="compare-scroll-sync-input"
+               checked
+               aria-label="Sync scroll">
+        <span class="compare-scroll-sync-switch" aria-hidden="true"></span>
+      </label>
+      <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareSearch" title="Search in active pane (Ctrl+F)">Search</button>
+    </div>
+  </header>
+
+  <div class="compare-find-bar hidden" id="compareFindBar">
+    <input type="text"
+           id="compareFindInput"
+           class="compare-find-input"
+           placeholder="Find in active pane…"
+           autocomplete="off"
+           aria-label="Find in file">
+    <span class="compare-find-count" id="compareFindCount"></span>
+    <button type="button" class="compare-find-nav" id="btnCompareFindPrev" title="Previous match">↑</button>
+    <button type="button" class="compare-find-nav" id="btnCompareFindNext" title="Next match">↓</button>
+    <button type="button" class="compare-find-close" id="btnCompareFindClose" title="Close search">×</button>
+  </div>
+
+  <div class="compare-workspace" id="compareWorkspace">
+    <div class="compare-pane compare-pane-left" id="compareLeftPane">
+      <div class="compare-pane-head">
+        <div class="compare-pane-file-controls">
+          <label class="btn btn-default btn-compare-local">
+            Open local…
+            <input type="file" id="compareLeftFile" class="compare-file-input" hidden accept="*/*">
+          </label>
+          <select id="compareLeftSelect" class="compare-select" aria-label="Original file source">
+            <option value="">Choose…</option>
+          </select>
+          <span class="compare-filename is-empty" id="compareLeftFilename" title="No file selected">No file</span>
+          <span class="compare-pane-title">Original file</span>
+        </div>
+      </div>
+      <div class="compare-pane-body">
+        <div class="compare-editor-wrap" id="compareLeftWrap">
+          <div class="compare-text-editor">
+            <div class="compare-line-gutter">
+              <pre class="compare-line-numbers" id="compareLeftLineNumbers" aria-hidden="true">1</pre>
+            </div>
+            <div class="compare-text-stack">
+              <pre class="compare-text-highlight hljs" id="compareLeftHighlight" aria-hidden="true"></pre>
+              <textarea id="compareLeftEditor"
+                        class="compare-editor"
+                        spellcheck="false"
+                        aria-label="Original file content"
+                        placeholder="Paste or type content here (Ctrl+V)…"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-resizer" id="compareResizer" role="separator" aria-orientation="vertical" aria-label="Resize panes" tabindex="-1">
+      <span class="compare-resizer-handle" aria-hidden="true"></span>
+    </div>
+
+    <div class="compare-pane compare-pane-right" id="compareRightPane">
+      <div class="compare-pane-head">
+        <div class="compare-pane-file-controls">
+          <label class="btn btn-default btn-compare-local">
+            Open local…
+            <input type="file" id="compareRightFile" class="compare-file-input" hidden accept="*/*">
+          </label>
+          <select id="compareRightSelect" class="compare-select" aria-label="Changed file source">
+            <option value="">Choose…</option>
+          </select>
+          <span class="compare-filename is-empty" id="compareRightFilename" title="No file selected">No file</span>
+          <span class="compare-pane-title">Changed file</span>
+        </div>
+      </div>
+      <div class="compare-pane-body">
+        <div class="compare-editor-wrap" id="compareRightWrap">
+          <div class="compare-text-editor">
+            <div class="compare-line-gutter">
+              <pre class="compare-line-numbers" id="compareRightLineNumbers" aria-hidden="true">1</pre>
+            </div>
+            <div class="compare-text-stack">
+              <pre class="compare-text-highlight hljs" id="compareRightHighlight" aria-hidden="true"></pre>
+              <textarea id="compareRightEditor"
+                        class="compare-editor"
+                        spellcheck="false"
+                        aria-label="Changed file content"
+                        placeholder="Paste or type content here (Ctrl+V)…"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  window.COMPARE_CONFIG = {
+    csrfToken: '{{ csrf_token }}',
+    extensionLanguages: {{ extension_languages_json|safe }},
+    urls: {
+      index: '{% url "compare:index" %}',
+      apiFiles: '{% url "compare:api_files" %}',
+      apiFile: '{% url "compare:api_file" %}',
+    },
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/scss.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/ini.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/ruby.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
+<script src="{% static 'js/compare-editor.js' %}"></script>
+{% endblock %}

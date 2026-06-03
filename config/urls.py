@@ -12,4 +12,5 @@ urlpatterns = [
     path('json/', include('jsondocs.urls')),
     path('markdown/', include('markdown.urls')),
     path('code/', include('codefiles.urls')),
+    path('compare/', include('compare.urls')),
 ]
