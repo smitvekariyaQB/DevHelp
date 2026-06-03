@@ -315,6 +315,132 @@
     });
   }
 
+  function setTaskTitle(item, title) {
+    const titleEl = item.querySelector('.task-title');
+    if (titleEl) titleEl.textContent = title;
+  }
+
+  function initTaskInlineEdit(container) {
+    if (!container) return;
+
+    let editingItem = null;
+
+    function finishTaskEdit(item, input, save) {
+      const id = item.dataset.taskId;
+      const oldTitle = input.dataset.originalTitle || '';
+      const newTitle = input.value.trim();
+      const span = document.createElement('span');
+      span.className = 'task-title';
+
+      const applyTitle = (title) => {
+        span.textContent = title;
+        input.replaceWith(span);
+        item.classList.remove('is-editing');
+      };
+
+      if (!save || !newTitle || newTitle === oldTitle) {
+        applyTitle(oldTitle);
+        editingItem = null;
+        return;
+      }
+
+      post(cfg.urls.taskUpdate(id), { title: newTitle }).then((data) => {
+        if (data.error || !data.task) {
+          applyTitle(oldTitle);
+          editingItem = null;
+          return;
+        }
+        applyTitle(data.task.title);
+        const dueEl = item.querySelector('.task-due');
+        if (data.task.due_date) {
+          if (dueEl) dueEl.textContent = data.task.due_date;
+          else {
+            const body = item.querySelector('.task-body');
+            if (body) {
+              const due = document.createElement('span');
+              due.className = 'task-due';
+              due.textContent = data.task.due_date;
+              body.appendChild(due);
+            }
+          }
+        } else if (dueEl) dueEl.remove();
+
+        pushHistory({
+          type: 'rename',
+          undo: () =>
+            post(cfg.urls.taskUpdate(id), { title: oldTitle }).then((res) => {
+              if (res.task) setTaskTitle(item, res.task.title);
+            }),
+          redo: () =>
+            post(cfg.urls.taskUpdate(id), { title: newTitle }).then((res) => {
+              if (res.task) setTaskTitle(item, res.task.title);
+            }),
+        });
+        editingItem = null;
+      });
+    }
+
+    function startTaskEdit(item) {
+      const titleSpan = item.querySelector('.task-title');
+      if (!titleSpan) return;
+
+      const oldTitle = titleSpan.textContent.trim();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'task-title-input';
+      input.value = oldTitle;
+      input.maxLength = 255;
+      input.dataset.originalTitle = oldTitle;
+      input.setAttribute('aria-label', 'Task name');
+      titleSpan.replaceWith(input);
+      item.classList.add('is-editing');
+      editingItem = item;
+      input.focus();
+      input.select();
+
+      const done = (save) => {
+        if (editingItem !== item) return;
+        input.removeEventListener('keydown', onKeydown);
+        finishTaskEdit(item, input, save);
+      };
+
+      function onKeydown(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          done(true);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          done(false);
+        }
+      }
+
+      input.addEventListener('keydown', onKeydown);
+      input.addEventListener(
+        'blur',
+        () => {
+          setTimeout(() => done(true), 0);
+        },
+        { once: true }
+      );
+    }
+
+    container.addEventListener('dblclick', (e) => {
+      if (e.target.closest('[data-action]')) return;
+      const item = e.target.closest('.task-item');
+      if (!item || item.classList.contains('task-empty')) return;
+      const body = e.target.closest('.task-body');
+      if (!body) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (editingItem && editingItem !== item) {
+        const prevInput = editingItem.querySelector('.task-title-input');
+        if (prevInput) finishTaskEdit(editingItem, prevInput, false);
+      }
+      if (editingItem === item) return;
+      startTaskEdit(item);
+    });
+  }
+
   function bindTaskActions(container) {
     if (!container) return;
     container.addEventListener('click', (e) => {
@@ -610,6 +736,108 @@
     });
   }
 
+  function initListInlineEdit() {
+    const ul = document.getElementById('todoLists');
+    if (!ul) return;
+
+    let editingLink = null;
+
+    function finishListEdit(link, input, save) {
+      const listId = link.dataset.listId;
+      const oldTitle = input.dataset.originalTitle || '';
+      const newTitle = input.value.trim();
+      const span = document.createElement('span');
+      span.className = 'list-title';
+
+      const applyTitle = (title) => {
+        span.textContent = title;
+        input.replaceWith(span);
+        link.classList.remove('is-editing');
+        if (link.classList.contains('active')) {
+          const h1 = document.querySelector('.tasks-header-main h1');
+          if (h1) h1.textContent = title;
+          const btnDelete = document.getElementById('btnDeleteList');
+          if (btnDelete) btnDelete.dataset.listTitle = title;
+        }
+      };
+
+      if (!save || !newTitle || newTitle === oldTitle) {
+        applyTitle(oldTitle);
+        editingLink = null;
+        return;
+      }
+
+      post(cfg.urls.listUpdate(listId), { title: newTitle }).then((data) => {
+        if (data.error) {
+          applyTitle(oldTitle);
+          AppModal.alert({ title: 'Error', message: data.error });
+          editingLink = null;
+          return;
+        }
+        applyTitle(data.list.title);
+        editingLink = null;
+      });
+    }
+
+    function startListEdit(link) {
+      if (link.dataset.isSmart === '1') return;
+      const titleSpan = link.querySelector('.list-title');
+      if (!titleSpan) return;
+
+      const oldTitle = titleSpan.textContent.trim();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'list-title-input';
+      input.value = oldTitle;
+      input.maxLength = 120;
+      input.dataset.originalTitle = oldTitle;
+      input.setAttribute('aria-label', 'List name');
+      titleSpan.replaceWith(input);
+      link.classList.add('is-editing');
+      editingLink = link;
+      input.focus();
+      input.select();
+
+      const done = (save) => {
+        if (editingLink !== link) return;
+        input.removeEventListener('keydown', onKeydown);
+        finishListEdit(link, input, save);
+      };
+
+      function onKeydown(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          done(true);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          done(false);
+        }
+      }
+
+      input.addEventListener('keydown', onKeydown);
+      input.addEventListener(
+        'blur',
+        () => {
+          setTimeout(() => done(true), 0);
+        },
+        { once: true }
+      );
+    }
+
+    ul.addEventListener('dblclick', (e) => {
+      const link = e.target.closest('.todo-list-item');
+      if (!link || link.dataset.isSmart === '1') return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (editingLink && editingLink !== link) {
+        const prevInput = editingLink.querySelector('.list-title-input');
+        if (prevInput) finishListEdit(editingLink, prevInput, false);
+      }
+      if (editingLink === link) return;
+      startListEdit(link);
+    });
+  }
+
   const btnNewList = document.getElementById('btnNewList');
   if (btnNewList) {
     btnNewList.addEventListener('click', async () => {
@@ -639,8 +867,13 @@
     });
   }
 
-  bindTaskActions(document.getElementById('activeTasks'));
-  bindTaskActions(document.getElementById('completedTasks'));
+  const activeTasks = document.getElementById('activeTasks');
+  const completedTasks = document.getElementById('completedTasks');
+  bindTaskActions(activeTasks);
+  bindTaskActions(completedTasks);
+  initTaskInlineEdit(activeTasks);
+  initTaskInlineEdit(completedTasks);
+  initListInlineEdit();
   initSearch();
   updateCompletedCount();
   updateUndoRedoButtons();

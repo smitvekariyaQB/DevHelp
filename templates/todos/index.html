@@ -12,6 +12,7 @@
         <a href="?list={{ lst.id }}"
            class="todo-list-item {% if lst.selected %}active{% endif %}"
            data-list-id="{{ lst.id }}"
+           {% if lst.is_smart %}data-is-smart="1"{% endif %}
            style="--list-color: {{ lst.color }}">
           <span class="list-dot"></span>
           <span class="list-title">{{ lst.title }}</span>
@@ -111,6 +112,7 @@
       taskUpdate: (id) => `/todos/api/tasks/${id}/update/`,
       taskDelete: (id) => `/todos/api/tasks/${id}/delete/`,
       listCreate: '{% url "todos:list_create" %}',
+      listUpdate: (id) => `/todos/api/lists/${id}/update/`,
       listDelete: (id) => `/todos/api/lists/${id}/delete/`,
     },
   };

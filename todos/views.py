@@ -101,6 +101,27 @@ def list_create(request):
 
 @login_required
 @require_http_methods(['POST'])
+def list_update(request, list_id):
+    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user)
+    if todo_list.is_smart:
+        return JsonResponse({'error': 'Cannot rename built-in lists'}, status=400)
+    data = _json_body(request)
+    if 'title' in data:
+        title = (data.get('title') or '').strip()[:120]
+        if not title:
+            return JsonResponse({'error': 'Title required'}, status=400)
+        todo_list.title = title
+    if 'color' in data:
+        color = (data.get('color') or '').strip()
+        if color:
+            todo_list.color = color[:7]
+    todo_list.save()
+    count = get_active_tasks(request.user, todo_list).count()
+    return JsonResponse({'list': _list_payload(todo_list, count)})
+
+
+@login_required
+@require_http_methods(['POST'])
 def list_delete(request, list_id):
     todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user)
     if todo_list.is_smart:

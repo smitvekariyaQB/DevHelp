@@ -936,6 +936,25 @@ body.modal-open {
   flex: 1;
 }
 
+.todo-list-item.is-editing {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.list-title-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
 .list-count {
   font-size: 12px;
   color: var(--text-secondary);
@@ -1105,6 +1124,25 @@ body.modal-open {
 .task-title {
   font-size: 15px;
   display: block;
+}
+
+.task-item.is-editing {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.task-title-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent);
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 
 .task-item.completed .task-title {
