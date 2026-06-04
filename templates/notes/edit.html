@@ -27,7 +27,20 @@
       <div class="editor-title-field">
         <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
       </div>
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyNote" colors=colors current_color=note.color %}
+      {% include "includes/editor_toolbar.html" with search_button_id="btnNoteSearch" search_button_title="Search in note (Ctrl+F)" copy_button_id="btnCopyNote" colors=colors current_color=note.color %}
+    </div>
+
+    <div class="table-find-bar hidden" id="noteFindBar">
+      <input type="text"
+             id="noteFindInput"
+             class="table-find-input"
+             placeholder="Search in note…"
+             autocomplete="off"
+             aria-label="Search in note">
+      <span class="table-find-count" id="noteFindCount"></span>
+      <button type="button" class="table-find-nav" id="btnNoteFindPrev" title="Previous match">↑</button>
+      <button type="button" class="table-find-nav" id="btnNoteFindNext" title="Next match">↓</button>
+      <button type="button" class="table-find-close" id="btnNoteFindClose" title="Close search">×</button>
     </div>
 
     <div class="editor-wrap">

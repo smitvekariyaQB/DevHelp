@@ -20,6 +20,12 @@
   let pending = false;
   let ready = false;
   let isRestoring = false;
+  let findMatches = [];
+  let findIndex = -1;
+  let findBarOpen = false;
+
+  const FIND_MATCH_BG = 'rgba(255, 214, 0, 0.45)';
+  const FIND_ACTIVE_BG = 'rgba(255, 149, 0, 0.55)';
 
   const history = window.createEditorHistory(60);
 
@@ -35,13 +41,22 @@
     if (statusTextEl) statusTextEl.textContent = label;
   }
 
+  function clearFindHighlights() {
+    if (!quill) return;
+    const len = Math.max(0, quill.getLength() - 1);
+    if (len > 0) quill.formatText(0, len, { background: false }, 'silent');
+  }
+
   function getPayload() {
+    clearFindHighlights();
     const colorInput = document.querySelector('#colorOptions input[name="color"]:checked');
-    return {
+    const payload = {
       title: titleInput ? titleInput.value : 'Untitled',
       content: quill ? quill.root.innerHTML : '',
       color: colorInput ? colorInput.value : undefined,
     };
+    if (findBarOpen) requestAnimationFrame(() => syncNoteFindHighlight());
+    return payload;
   }
 
   function getFullState() {
@@ -62,6 +77,7 @@
     const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
     if (colorInput) colorInput.checked = true;
     isRestoring = false;
+    if (findBarOpen) runFind();
     scheduleAutosave(true);
   }
 
@@ -190,10 +206,22 @@
     }, 1500);
   }
 
+  function getNoteBodyPlainText() {
+    if (!quill) return '';
+    let text = quill.getText();
+    if (text.endsWith('\n')) text = text.slice(0, -1);
+    text = text
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .join('\n')
+      .replace(/^\n+|\n+$/g, '')
+      .replace(/\n{3,}/g, '\n\n');
+    return text;
+  }
+
   async function copyNoteToClipboard() {
-    const title = titleInput?.value?.trim() || 'Untitled';
-    const body = quill ? quill.root.innerText.trim() : '';
-    const plain = body ? `${title}\n\n${body}` : title;
+    const plain = getNoteBodyPlainText();
     let ok = false;
     try {
       await navigator.clipboard.writeText(plain);
@@ -233,6 +261,157 @@
 
   if (initial) quill.root.innerHTML = initial;
 
+  function noteBodyText() {
+    if (!quill) return '';
+    let text = quill.getText();
+    if (text.endsWith('\n')) text = text.slice(0, -1);
+    return text;
+  }
+
+  function syncNoteFindHighlight() {
+    if (!quill) return;
+    clearFindHighlights();
+    const findInput = document.getElementById('noteFindInput');
+    const query = findInput?.value || '';
+    if (!query || !findMatches.length) return;
+    const len = query.length;
+    findMatches.forEach((start, i) => {
+      const bg = i === findIndex ? FIND_ACTIVE_BG : FIND_MATCH_BG;
+      quill.formatText(start, len, { background: bg }, 'silent');
+    });
+  }
+
+  function scrollNoteMatchIntoView(start, length) {
+    if (!quill) return;
+    quill.setSelection(start, length, 'api');
+    if (typeof quill.scrollSelectionIntoView === 'function') {
+      quill.scrollSelectionIntoView();
+    } else {
+      const bounds = quill.getBounds(start, length);
+      if (bounds && typeof quill.scrollRectIntoView === 'function') {
+        quill.scrollRectIntoView(bounds);
+      }
+    }
+  }
+
+  function runFind() {
+    const findInput = document.getElementById('noteFindInput');
+    const findCount = document.getElementById('noteFindCount');
+    if (!quill || !findInput) return;
+
+    const query = findInput.value;
+    findMatches = [];
+    findIndex = -1;
+
+    if (!query) {
+      if (findCount) findCount.textContent = '';
+      syncNoteFindHighlight();
+      return;
+    }
+
+    const lowerText = noteBodyText().toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    let pos = 0;
+    while (pos < lowerText.length) {
+      const idx = lowerText.indexOf(lowerQuery, pos);
+      if (idx === -1) break;
+      findMatches.push(idx);
+      pos = idx + lowerQuery.length;
+    }
+
+    if (findCount) {
+      if (!findMatches.length) {
+        findCount.textContent = 'No matches';
+      } else {
+        findCount.textContent = `${findMatches.length} match${findMatches.length === 1 ? '' : 'es'}`;
+      }
+    }
+    syncNoteFindHighlight();
+  }
+
+  function goToFindMatch(index, updateCount = true) {
+    const findInput = document.getElementById('noteFindInput');
+    const findCount = document.getElementById('noteFindCount');
+    if (!quill || !findInput || !findMatches.length) return;
+
+    findIndex = ((index % findMatches.length) + findMatches.length) % findMatches.length;
+    const start = findMatches[findIndex];
+    const end = start + findInput.value.length;
+
+    syncNoteFindHighlight();
+
+    const revealMatch = () => {
+      scrollNoteMatchIntoView(start, end - start);
+      findInput.focus({ preventScroll: true });
+    };
+
+    requestAnimationFrame(revealMatch);
+
+    if (updateCount && findCount) {
+      findCount.textContent = `${findIndex + 1} of ${findMatches.length}`;
+    }
+  }
+
+  function findNextMatch() {
+    const findInput = document.getElementById('noteFindInput');
+    if (!findInput?.value.trim()) return;
+    if (!findMatches.length) runFind();
+    if (!findMatches.length) return;
+    goToFindMatch(findIndex === -1 ? 0 : findIndex + 1);
+  }
+
+  function findPrevMatch() {
+    if (!findMatches.length) return;
+    goToFindMatch(findIndex === -1 ? findMatches.length - 1 : findIndex - 1);
+  }
+
+  function initNoteSearch() {
+    const btnSearch = document.getElementById('btnNoteSearch');
+    const findBar = document.getElementById('noteFindBar');
+    const findInput = document.getElementById('noteFindInput');
+    const btnPrev = document.getElementById('btnNoteFindPrev');
+    const btnNext = document.getElementById('btnNoteFindNext');
+    const btnClose = document.getElementById('btnNoteFindClose');
+
+    function openFindBar() {
+      findBar?.classList.remove('hidden');
+      findBarOpen = true;
+      findInput?.focus();
+      findInput?.select();
+      runFind();
+    }
+
+    function closeFindBar() {
+      findBar?.classList.add('hidden');
+      if (findInput) findInput.value = '';
+      findBarOpen = false;
+      findMatches = [];
+      findIndex = -1;
+      clearFindHighlights();
+      quill?.focus();
+    }
+
+    btnSearch?.addEventListener('click', openFindBar);
+    btnClose?.addEventListener('click', closeFindBar);
+    findInput?.addEventListener('input', runFind);
+    findInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.shiftKey) {
+        e.preventDefault();
+        findPrevMatch();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        findNextMatch();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeFindBar();
+      }
+    });
+    btnPrev?.addEventListener('click', findPrevMatch);
+    btnNext?.addEventListener('click', findNextMatch);
+
+    return { openFindBar, closeFindBar, runFind, isOpen: () => findBarOpen };
+  }
+
   if (titleInput) {
     titleInput.addEventListener('input', () => {
       scheduleHistoryCapture();
@@ -240,12 +419,26 @@
     });
   }
 
-  quill.on('text-change', () => {
+  quill.on('text-change', (_delta, _old, source) => {
+    if (source === 'silent') return;
     scheduleHistoryCapture();
     scheduleAutosave();
+    if (findBarOpen) runFind();
   });
 
+  let noteSearch = null;
+
   function onKeydown(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      noteSearch?.openFindBar();
+      return;
+    }
+    if (e.key === 'Escape' && noteSearch?.isOpen()) {
+      e.preventDefault();
+      noteSearch.closeFindBar();
+      return;
+    }
     if (!e.ctrlKey && !e.metaKey) return;
     if (e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -257,6 +450,8 @@
     }
   }
   document.addEventListener('keydown', onKeydown);
+
+  noteSearch = initNoteSearch();
 
   ready = true;
   history.reset(getFullState());
@@ -286,9 +481,12 @@
       document.removeEventListener('keydown', onKeydown);
       document.removeEventListener('click', onDocumentColorClick);
       closeColorPopover();
+      noteSearch?.closeFindBar();
+      clearFindHighlights();
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
       ready = false;
+      noteSearch = null;
     });
   }
 })();
