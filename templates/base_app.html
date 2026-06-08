@@ -24,73 +24,67 @@
       </div>
 
       <nav class="sidebar-nav">
-        <a href="{% url 'todos:index' %}" class="nav-item {% if request.resolver_match.app_name == 'todos' %}active{% endif %}" title="To Do">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-          </svg>
-          <span>To Do</span>
-        </a>
-        <a href="{% url 'notes:index' %}" class="nav-item {% if request.resolver_match.app_name == 'notes' %}active{% endif %}" title="Notes">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-          </svg>
-          <span>Notes</span>
-        </a>
-        <a href="{% url 'tables:index' %}" class="nav-item {% if request.resolver_match.app_name == 'tables' %}active{% endif %}" title="Tables">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
-          </svg>
-          <span>Tables</span>
-        </a>
-        <a href="{% url 'jsondocs:index' %}" class="nav-item {% if request.resolver_match.app_name == 'jsondocs' %}active{% endif %}" title="JSON">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2l1 3 1-6 1 6 1-3h2"/>
-          </svg>
-          <span>JSON</span>
-        </a>
-        <a href="{% url 'markdown:index' %}" class="nav-item {% if request.resolver_match.app_name == 'markdown' %}active{% endif %}" title="Markdown">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/>
-          </svg>
-          <span>Markdown</span>
-        </a>
-        <a href="{% url 'codefiles:index' %}" class="nav-item {% if request.resolver_match.app_name == 'codefiles' %}active{% endif %}" title="Code">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>
-          </svg>
-          <span>Code</span>
-        </a>
-        <a href="{% url 'compare:index' %}" class="nav-item {% if request.resolver_match.app_name == 'compare' %}active{% endif %}" title="Compare">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>
-          </svg>
-          <span>Compare</span>
-        </a>
+        <div class="nav-section">
+          <div class="nav-section-label">Workspace</div>
+          <a href="{% url 'todos:index' %}" class="nav-item {% if request.resolver_match.app_name == 'todos' %}active{% endif %}" title="To Do">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            <span>To Do</span>
+          </a>
+          <a href="{% url 'notes:index' %}" class="nav-item {% if request.resolver_match.app_name == 'notes' %}active{% endif %}" title="Notes">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+            </svg>
+            <span>Notes</span>
+          </a>
+          <a href="{% url 'tables:index' %}" class="nav-item {% if request.resolver_match.app_name == 'tables' %}active{% endif %}" title="Tables">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+            </svg>
+            <span>Tables</span>
+          </a>
+          <a href="{% url 'jsondocs:index' %}" class="nav-item {% if request.resolver_match.app_name == 'jsondocs' %}active{% endif %}" title="JSON">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2l1 3 1-6 1 6 1-3h2"/>
+            </svg>
+            <span>JSON</span>
+          </a>
+          <a href="{% url 'markdown:index' %}" class="nav-item {% if request.resolver_match.app_name == 'markdown' %}active{% endif %}" title="Markdown">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/>
+            </svg>
+            <span>Markdown</span>
+          </a>
+          <a href="{% url 'codefiles:index' %}" class="nav-item {% if request.resolver_match.app_name == 'codefiles' %}active{% endif %}" title="Code">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>
+            </svg>
+            <span>Code</span>
+          </a>
+        </div>
+
+        <div class="nav-section-divider"></div>
+
+        <div class="nav-section">
+          <div class="nav-section-label">Tools</div>
+          <a href="{% url 'compare:index' %}" class="nav-item {% if request.resolver_match.app_name == 'compare' %}active{% endif %}" title="Compare">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>
+            </svg>
+            <span>Compare</span>
+          </a>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="user-panel">
-          <a href="{% url 'accounts:profile' %}" class="user-panel-profile {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" title="{{ user.get_full_name }} — {{ user.email }}">
-            <div class="user-avatar">{% if user.first_name %}{{ user.first_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}</div>
-            <div class="user-info">
-              <span class="user-name">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.email }}{% endif %}</span>
-              {% if user.get_full_name %}<span class="user-email">{{ user.email }}</span>{% endif %}
-            </div>
-          </a>
-          <div class="user-panel-actions">
-            <a href="{% url 'accounts:profile' %}" class="user-action-btn {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" title="Settings">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
-              </svg>
-              <span class="user-action-label">Settings</span>
-            </a>
-            <button type="button" class="user-action-btn user-action-signout" id="btnSignOut" title="Sign out">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-              <span class="user-action-label">Sign out</span>
-            </button>
+        <a href="{% url 'accounts:profile' %}" class="user-panel-profile {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" title="{{ user.get_full_name }} — {{ user.email }}">
+          <div class="user-avatar">{% if user.first_name %}{{ user.first_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}</div>
+          <div class="user-info">
+            <span class="user-name">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.email }}{% endif %}</span>
+            {% if user.get_full_name %}<span class="user-email">{{ user.email }}</span>{% endif %}
           </div>
-        </div>
+        </a>
         <form method="post" action="{% url 'accounts:logout' %}" id="logoutForm" class="hidden-logout-form">
           {% csrf_token %}
         </form>

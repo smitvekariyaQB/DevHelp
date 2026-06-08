@@ -7,7 +7,6 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .defaults import (
     EXTENSION_LANGUAGES,
-    default_content_for_extension,
     extension_from_title,
 )
 from .models import CodeDocument
@@ -76,7 +75,7 @@ def doc_create(request):
     ext = extension_from_title(title)
     content = data.get('content')
     if not isinstance(content, str):
-        content = default_content_for_extension(ext)
+        content = ''
 
     doc = CodeDocument.objects.create(
         user=request.user,

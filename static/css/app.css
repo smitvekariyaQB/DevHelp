@@ -133,13 +133,20 @@ html.sidebar-collapsed .sidebar-brand-mark,
 
 html.sidebar-collapsed .brand-text,
 html.sidebar-collapsed .nav-item > span,
+html.sidebar-collapsed .nav-section-label,
 html.sidebar-collapsed .user-info,
 html.sidebar-collapsed .user-action-label,
 .sidebar.sidebar-collapsed .brand-text,
 .sidebar.sidebar-collapsed .nav-item > span,
+.sidebar.sidebar-collapsed .nav-section-label,
 .sidebar.sidebar-collapsed .user-info,
 .sidebar.sidebar-collapsed .user-action-label {
   display: none;
+}
+
+html.sidebar-collapsed .nav-section-divider,
+.sidebar.sidebar-collapsed .nav-section-divider {
+  margin: 6px 8px;
 }
 
 html.sidebar-collapsed .nav-item,
@@ -200,6 +207,31 @@ html.sidebar-collapsed .user-action-btn,
 
 .sidebar-nav {
   flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-section-label {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  user-select: none;
+}
+
+.nav-section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 12px;
 }
 
 .nav-item {
@@ -230,7 +262,6 @@ html.sidebar-collapsed .user-action-btn,
 }
 
 .sidebar-footer {
-  border-top: 1px solid var(--border);
   padding-top: 12px;
 }
 
@@ -247,9 +278,8 @@ html.sidebar-collapsed .user-action-btn,
   gap: 10px;
   text-decoration: none;
   color: inherit;
-  padding: 4px;
+  padding: 8px;
   border-radius: var(--radius-sm);
-  margin-bottom: 10px;
   transition: background 0.15s;
 }
 
@@ -685,6 +715,8 @@ body.modal-open {
   padding: 16px 12px;
   background: #fafafa;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-nav {
@@ -716,6 +748,20 @@ body.modal-open {
 .settings-nav-item.active {
   background: rgba(0, 0, 0, 0.06);
   font-weight: 500;
+}
+
+.settings-nav-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-nav-signout {
+  color: #ff3b30;
+}
+
+.settings-nav-signout:hover {
+  background: rgba(255, 59, 48, 0.08);
 }
 
 .settings-content {
