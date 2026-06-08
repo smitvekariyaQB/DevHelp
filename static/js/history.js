@@ -1,8 +1,12 @@
-window.createEditorHistory = function (maxSize) {
+window.createEditorHistory = function (maxSize, options) {
+  const opts = options || {};
   const limit = maxSize || 50;
   const undoStack = [];
   const redoStack = [];
   let lastSerialized = '';
+  const undoButtonId = opts.undoButtonId !== undefined ? opts.undoButtonId : 'btnUndo';
+  const redoButtonId = opts.redoButtonId !== undefined ? opts.redoButtonId : 'btnRedo';
+  const manageButtons = opts.manageButtons !== false;
 
   function snapshot(state) {
     return JSON.parse(JSON.stringify(state));
@@ -13,8 +17,9 @@ window.createEditorHistory = function (maxSize) {
   }
 
   function updateButtons() {
-    const undoBtn = document.getElementById('btnUndo');
-    const redoBtn = document.getElementById('btnRedo');
+    if (!manageButtons) return;
+    const undoBtn = undoButtonId ? document.getElementById(undoButtonId) : null;
+    const redoBtn = redoButtonId ? document.getElementById(redoButtonId) : null;
     if (undoBtn) undoBtn.disabled = undoStack.length === 0;
     if (redoBtn) redoBtn.disabled = redoStack.length === 0;
   }
@@ -53,6 +58,19 @@ window.createEditorHistory = function (maxSize) {
       redoStack.length = 0;
       lastSerialized = serialize(state);
       updateButtons();
+    },
+
+    canUndo() {
+      return undoStack.length > 0;
+    },
+
+    canRedo() {
+      return redoStack.length > 0;
+    },
+
+    /** Allow the same snapshot to be pushed again (e.g. after undo). */
+    clearDedup() {
+      lastSerialized = undefined;
     },
 
     updateButtons,

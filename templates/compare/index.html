@@ -18,6 +18,9 @@
                aria-label="Sync scroll">
         <span class="compare-scroll-sync-switch" aria-hidden="true"></span>
       </label>
+      <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareUndo" title="Undo in active pane (Ctrl+Z)" disabled>Undo</button>
+      <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareRedo" title="Redo in active pane (Ctrl+Y)" disabled>Redo</button>
+      <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareReset" title="Reset active pane to last loaded content" disabled>Reset</button>
       <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareSearch" title="Search in active pane (Ctrl+F)">Search</button>
     </div>
   </header>
@@ -52,6 +55,7 @@
       </div>
       <div class="compare-pane-body">
         <div class="compare-editor-wrap" id="compareLeftWrap">
+          <div class="compare-diff-minimap" id="compareLeftMinimap" aria-hidden="true"></div>
           <div class="compare-text-editor">
             <div class="compare-line-gutter">
               <pre class="compare-line-numbers" id="compareLeftLineNumbers" aria-hidden="true">1</pre>
@@ -69,8 +73,15 @@
       </div>
     </div>
 
-    <div class="compare-resizer" id="compareResizer" role="separator" aria-orientation="vertical" aria-label="Resize panes" tabindex="-1">
-      <span class="compare-resizer-handle" aria-hidden="true"></span>
+    <div class="compare-mid" id="compareMid">
+      <div class="compare-diff-gutter-scroll" id="compareDiffGutterScroll" aria-hidden="true">
+        <div class="compare-diff-gutter-inner" id="compareDiffGutterInner">
+          <div class="compare-diff-actions" id="compareDiffActions"></div>
+        </div>
+      </div>
+      <div class="compare-resizer" id="compareResizer" role="separator" aria-orientation="vertical" aria-label="Resize panes" tabindex="-1">
+        <span class="compare-resizer-handle" aria-hidden="true"></span>
+      </div>
     </div>
 
     <div class="compare-pane compare-pane-right" id="compareRightPane">
@@ -89,6 +100,7 @@
       </div>
       <div class="compare-pane-body">
         <div class="compare-editor-wrap" id="compareRightWrap">
+          <div class="compare-diff-minimap" id="compareRightMinimap" aria-hidden="true"></div>
           <div class="compare-text-editor">
             <div class="compare-line-gutter">
               <pre class="compare-line-numbers" id="compareRightLineNumbers" aria-hidden="true">1</pre>
@@ -144,5 +156,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
-<script src="{% static 'js/compare-editor.js' %}"></script>
+<script src="{% static 'js/history.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'js/compare-editor.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

@@ -4695,26 +4695,58 @@ body.markdown-resizing {
 }
 
 .compare-editor-wrap {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding-right: 10px;
+}
+
+.compare-diff-minimap {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  bottom: 0;
+  width: 8px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.compare-diff-minimap-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 1px;
+}
+
+.compare-diff-minimap-mark.compare-diff-removed {
+  background: rgba(255, 129, 130, 0.85);
+}
+
+.compare-diff-minimap-mark.compare-diff-added {
+  background: rgba(84, 218, 116, 0.85);
+}
+
+.compare-diff-minimap-mark.compare-diff-changed {
+  background: rgba(255, 200, 60, 0.9);
 }
 
 .compare-text-editor {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   flex: 1 1 auto;
-  min-height: 100%;
+  width: 100%;
   background: #fff;
 }
 
 .compare-line-gutter {
   flex: 0 0 52px;
-  align-self: stretch;
+  align-self: flex-start;
   background: #f5f5f7;
   border-right: 1px solid var(--border);
   user-select: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .compare-line-numbers {
@@ -4736,6 +4768,8 @@ body.markdown-resizing {
   flex: 1;
   min-width: 0;
   overflow-x: auto;
+  align-self: flex-start;
+  width: 100%;
 }
 
 .compare-text-highlight {
@@ -4761,6 +4795,11 @@ body.markdown-resizing {
   background: transparent !important;
 }
 
+.compare-line,
+.compare-line-num {
+  display: block;
+}
+
 .compare-diff-line {
   display: block;
   margin: 0 -20px;
@@ -4777,6 +4816,16 @@ body.markdown-resizing {
 
 .compare-diff-changed {
   background: rgba(255, 220, 100, 0.35);
+}
+
+.compare-diff-char-removed {
+  background: rgba(255, 129, 130, 0.55);
+  border-radius: 2px;
+}
+
+.compare-diff-char-added {
+  background: rgba(84, 218, 116, 0.55);
+  border-radius: 2px;
 }
 
 .compare-editor::selection {
@@ -4842,6 +4891,71 @@ body.markdown-resizing {
   white-space: pre-wrap;
   word-break: break-word;
   cursor: text;
+}
+
+.compare-mid {
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.compare-diff-gutter-scroll {
+  flex: 0 0 28px;
+  overflow: hidden;
+  background: #f0f0f2;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.compare-diff-gutter-inner {
+  position: relative;
+  min-height: 100%;
+}
+
+.compare-diff-actions {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+}
+
+.compare-diff-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  z-index: 2;
+}
+
+.compare-diff-action:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.compare-diff-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.compare-diff-action-group {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .compare-resizer {
@@ -4922,6 +5036,33 @@ body.compare-resizing {
 
   .compare-pane-right {
     flex: 1 1 0 !important;
+  }
+
+  .compare-mid {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .compare-diff-gutter-scroll {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 28px;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-diff-actions {
+    min-height: 28px;
+    height: 28px;
+  }
+
+  .compare-diff-action-group {
+    flex-direction: row;
+    justify-content: center;
+    top: 50% !important;
+    transform: translateY(-50%);
   }
 
   .compare-resizer {
@@ -5406,6 +5547,30 @@ html.dark-mode .compare-diff-added {
 
 html.dark-mode .compare-diff-changed {
   background: rgba(210, 153, 34, 0.25);
+}
+
+html.dark-mode .compare-diff-char-removed {
+  background: rgba(248, 81, 73, 0.45);
+}
+
+html.dark-mode .compare-diff-char-added {
+  background: rgba(63, 185, 80, 0.45);
+}
+
+html.dark-mode .compare-diff-gutter-scroll {
+  background: #1a1a1a;
+}
+
+html.dark-mode .compare-diff-action {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ccc;
+}
+
+html.dark-mode .compare-diff-action:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 html.dark-mode .compare-line-numbers .compare-diff-gutter.compare-diff-removed {
