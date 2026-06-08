@@ -59,15 +59,16 @@ def _validate_data(data):
 
 @login_required
 def index(request):
-    sheets = request.user.table_sheets.all()
+    sheets = request.user.table_sheets.filter(workspace=request.workspace)
     return render(request, 'tables/index.html', {'sheets': sheets})
 
 
 @login_required
 def duplicate_sheet(request, pk):
-    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user)
+    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user, workspace=request.workspace)
     new_sheet = TableSheet.objects.create(
         user=request.user,
+        workspace=request.workspace,
         title=f'Copy of {sheet.title}'[:200],
         color=sheet.color,
         data=copy.deepcopy(sheet.data),
@@ -79,14 +80,14 @@ def duplicate_sheet(request, pk):
 @login_required
 def create(request):
     if request.method == 'POST':
-        sheet = TableSheet.objects.create(user=request.user, title='Untitled table')
+        sheet = TableSheet.objects.create(user=request.user, workspace=request.workspace, title='Untitled table')
         return redirect('tables:edit', pk=sheet.pk)
     return redirect('tables:index')
 
 
 @login_required
 def edit(request, pk):
-    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user)
+    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user, workspace=request.workspace)
 
     if request.method == 'POST':
         if request.POST.get('action') == 'delete':
@@ -115,7 +116,7 @@ def edit(request, pk):
 @login_required
 @require_POST
 def autosave(request, pk):
-    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user)
+    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user, workspace=request.workspace)
     data = _parse_body(request)
 
     sheet.title = (data.get('title') or sheet.title).strip()[:200] or 'Untitled table'

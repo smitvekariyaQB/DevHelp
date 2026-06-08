@@ -2,8 +2,10 @@ from django.conf import settings
 from django.db import models
 from django.utils.html import strip_tags
 
+from core.models import SoftDeleteModel
 
-class Note(models.Model):
+
+class Note(SoftDeleteModel):
     COLORS = [
         ('#FFFFFF', 'White'),
         ('#FFF9C4', 'Yellow'),
@@ -17,6 +19,11 @@ class Note(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notes',
+    )
+    workspace = models.ForeignKey(
+        'workspaces.Workspace',
         on_delete=models.CASCADE,
         related_name='notes',
     )

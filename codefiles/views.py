@@ -33,14 +33,14 @@ def _doc_payload(doc):
 
 @login_required
 def index(request):
-    documents = request.user.code_documents.all()
+    documents = request.user.code_documents.filter(workspace=request.workspace)
     selected_id = request.GET.get('doc')
     current_doc = None
 
     if not documents.exists():
         current_doc = None
     elif selected_id:
-        current_doc = get_object_or_404(CodeDocument, pk=selected_id, user=request.user)
+        current_doc = get_object_or_404(CodeDocument, pk=selected_id, user=request.user, workspace=request.workspace)
     else:
         current_doc = documents.first()
 
@@ -79,6 +79,7 @@ def doc_create(request):
 
     doc = CodeDocument.objects.create(
         user=request.user,
+        workspace=request.workspace,
         title=title,
         content=content[:500000],
     )
@@ -88,7 +89,7 @@ def doc_create(request):
 @login_required
 @require_POST
 def doc_autosave(request, pk):
-    doc = get_object_or_404(CodeDocument, pk=pk, user=request.user)
+    doc = get_object_or_404(CodeDocument, pk=pk, user=request.user, workspace=request.workspace)
     data = _json_body(request)
 
     if 'title' in data:
@@ -110,6 +111,6 @@ def doc_autosave(request, pk):
 @login_required
 @require_http_methods(['POST'])
 def doc_delete(request, pk):
-    doc = get_object_or_404(CodeDocument, pk=pk, user=request.user)
+    doc = get_object_or_404(CodeDocument, pk=pk, user=request.user, workspace=request.workspace)
     doc.delete()
     return JsonResponse({'ok': True})

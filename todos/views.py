@@ -47,11 +47,11 @@ def _list_payload(todo_list, active_count):
 
 @login_required
 def index(request):
-    ensure_default_lists(request.user)
-    lists = request.user.todo_lists.all()
+    ensure_default_lists(request.user, request.workspace)
+    lists = request.user.todo_lists.filter(workspace=request.workspace)
     selected_id = request.GET.get('list')
     if selected_id:
-        current_list = get_object_or_404(TodoList, pk=selected_id, user=request.user)
+        current_list = get_object_or_404(TodoList, pk=selected_id, user=request.user, workspace=request.workspace)
     else:
         current_list = lists.first()
 
@@ -89,9 +89,10 @@ def list_create(request):
     data = _json_body(request)
     title = (data.get('title') or 'New list').strip()[:120]
     color = data.get('color') or '#5856D6'
-    max_order = request.user.todo_lists.count()
+    max_order = request.user.todo_lists.filter(workspace=request.workspace).count()
     todo_list = TodoList.objects.create(
         user=request.user,
+        workspace=request.workspace,
         title=title,
         color=color,
         order=max_order,
@@ -102,7 +103,7 @@ def list_create(request):
 @login_required
 @require_http_methods(['POST'])
 def list_update(request, list_id):
-    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user)
+    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user, workspace=request.workspace)
     if todo_list.is_smart:
         return JsonResponse({'error': 'Cannot rename built-in lists'}, status=400)
     data = _json_body(request)
@@ -123,9 +124,10 @@ def list_update(request, list_id):
 @login_required
 @require_http_methods(['POST'])
 def list_delete(request, list_id):
-    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user)
+    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user, workspace=request.workspace)
     if todo_list.is_smart:
         return JsonResponse({'error': 'Cannot delete built-in lists'}, status=400)
+    TodoTask.all_objects.filter(todo_list=todo_list).update(is_deleted=True)
     todo_list.delete()
     return JsonResponse({'ok': True})
 
@@ -135,20 +137,21 @@ def list_delete(request, list_id):
 def task_create(request):
     data = _json_body(request)
     list_id = data.get('list_id')
-    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user)
+    todo_list = get_object_or_404(TodoList, pk=list_id, user=request.user, workspace=request.workspace)
     title = (data.get('title') or '').strip()
     if not title:
         return JsonResponse({'error': 'Title required'}, status=400)
 
     task_kwargs = {
         'user': request.user,
+        'workspace': request.workspace,
         'title': title,
         'order': get_tasks_for_list(request.user, todo_list).count(),
     }
     if not todo_list.is_smart:
         task_kwargs['todo_list'] = todo_list
     else:
-        default_list = request.user.todo_lists.filter(smart_type='').first()
+        default_list = request.user.todo_lists.filter(workspace=request.workspace, smart_type='').first()
         task_kwargs['todo_list'] = default_list
 
     if todo_list.smart_type == TodoList.SMART_MY_DAY:
@@ -172,7 +175,7 @@ def task_create(request):
 @login_required
 @require_http_methods(['POST'])
 def task_toggle(request, task_id):
-    task = get_object_or_404(TodoTask, pk=task_id, user=request.user)
+    task = get_object_or_404(TodoTask, pk=task_id, user=request.user, workspace=request.workspace)
     task.is_completed = not task.is_completed
     task.completed_at = timezone.now() if task.is_completed else None
     task.save(update_fields=['is_completed', 'completed_at'])
@@ -182,7 +185,7 @@ def task_toggle(request, task_id):
 @login_required
 @require_http_methods(['POST'])
 def task_update(request, task_id):
-    task = get_object_or_404(TodoTask, pk=task_id, user=request.user)
+    task = get_object_or_404(TodoTask, pk=task_id, user=request.user, workspace=request.workspace)
     data = _json_body(request)
 
     if 'title' in data:
@@ -203,6 +206,6 @@ def task_update(request, task_id):
 @login_required
 @require_http_methods(['POST'])
 def task_delete(request, task_id):
-    task = get_object_or_404(TodoTask, pk=task_id, user=request.user)
+    task = get_object_or_404(TodoTask, pk=task_id, user=request.user, workspace=request.workspace)
     task.delete()
     return JsonResponse({'ok': True})

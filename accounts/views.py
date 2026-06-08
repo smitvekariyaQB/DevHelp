@@ -171,7 +171,9 @@ def verify_email(request):
             ok, error_message = verify_signup_otp(user, form.cleaned_data['otp'])
             if ok:
                 activate_verified_user(user)
-                ensure_default_lists(user)
+                default_ws = user.workspaces.filter(is_default=True).first()
+                if default_ws:
+                    ensure_default_lists(user, default_ws)
                 request.session.pop(PENDING_VERIFICATION_SESSION_KEY, None)
                 login(request, user)
                 messages.success(request, 'Email verified. Welcome to ArcBook!')
@@ -203,6 +205,7 @@ def profile(request):
                 password_form.save()
                 messages.success(request, 'Password changed successfully.')
                 return redirect(f'{reverse("accounts:profile")}#password')
+
         else:
             profile_form = ProfileForm(request.POST, instance=request.user)
             if profile_form.is_valid():

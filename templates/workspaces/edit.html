@@ -1,0 +1,76 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit Workspace{% else %}Create Workspace{% endif %} — ArcBook{% endblock %}
+
+{% block main %}
+<div class="settings-app">
+  <aside class="settings-sidebar">
+    <ul class="settings-nav">
+      <li>
+        <a href="{% url 'accounts:profile' %}" class="settings-nav-item" style="text-decoration: none;">Profile</a>
+      </li>
+      <li>
+        <a href="{% url 'accounts:profile' %}#password" class="settings-nav-item" style="text-decoration: none;">Change password</a>
+      </li>
+      <li>
+        <a href="{% url 'accounts:profile' %}#preferences" class="settings-nav-item" style="text-decoration: none;">Preferences</a>
+      </li>
+      <li>
+        <a href="{% url 'workspaces:list' %}" class="settings-nav-item active" style="text-decoration: none;">Workspaces</a>
+      </li>
+    </ul>
+    <div class="settings-nav-footer">
+      <button type="button" class="settings-nav-item settings-nav-signout" id="btnSignOut">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Sign out
+      </button>
+    </div>
+  </aside>
+
+  <section class="settings-content">
+    <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+        <a href="{% url 'workspaces:list' %}" style="display: inline-flex; align-items: center; color: var(--text-secondary); text-decoration: none;" title="Back to Workspaces">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <h1>{% if is_edit %}Edit Workspace{% else %}Create Workspace{% endif %}</h1>
+      </div>
+      <p class="panel-sub">{% if is_edit %}Update workspace name and enabled tools{% else %}Create a new workspace with custom tools{% endif %}</p>
+    </div>
+
+    <div class="profile-sections" style="padding-left: 0; padding-right: 0;">
+      <section class="panel-card" style="max-width: 100%; width: 100%;">
+        <form method="post" action="{% if is_edit %}{% url 'workspaces:edit' workspace.id %}{% else %}{% url 'workspaces:create' %}{% endif %}">
+          {% csrf_token %}
+
+          <div style="margin-bottom: 20px;">
+            <label for="workspaceName" style="display: block; font-weight: 600; margin-bottom: 8px;">Workspace Name</label>
+            <input type="text" id="workspaceName" name="name" value="{{ workspace.name|default:'' }}" required autofocus
+                   style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; background: var(--bg-primary); color: var(--text-primary);">
+          </div>
+
+          <div style="margin-bottom: 32px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 12px;">Enabled Tools</label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              {% for tool_key, tool_label in tool_choices %}
+              <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin: 0; cursor: pointer; user-select: none;">
+                <input type="checkbox" name="tools" value="{{ tool_key }}" {% if not is_edit or tool_key in workspace.enabled_tools %}checked{% endif %}>
+                <span>{{ tool_label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="{% url 'workspaces:list' %}" class="btn btn-secondary" style="text-decoration: none; padding: 8px 16px;">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 8px 24px;">Save</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </section>
+</div>
+{% endblock %}

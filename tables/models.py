@@ -3,6 +3,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from core.models import SoftDeleteModel
+
 
 def default_sheet_data():
     columns = [
@@ -16,7 +18,7 @@ def default_sheet_data():
     return {'columns': columns, 'rows': rows}
 
 
-class TableSheet(models.Model):
+class TableSheet(SoftDeleteModel):
     COLORS = [
         ('#FFFFFF', 'White'),
         ('#FFF9C4', 'Yellow'),
@@ -30,6 +32,11 @@ class TableSheet(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='table_sheets',
+    )
+    workspace = models.ForeignKey(
+        'workspaces.Workspace',
         on_delete=models.CASCADE,
         related_name='table_sheets',
     )

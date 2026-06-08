@@ -13,4 +13,5 @@ urlpatterns = [
     path('markdown/', include('markdown.urls')),
     path('code/', include('codefiles.urls')),
     path('compare/', include('compare.urls')),
+    path('workspaces/', include('workspaces.urls')),
 ]

@@ -31,21 +31,21 @@ def _apply_note_fields(note, data):
 
 @login_required
 def index(request):
-    notes = request.user.notes.all()
+    notes = request.user.notes.filter(workspace=request.workspace)
     return render(request, 'notes/index.html', {'notes': notes})
 
 
 @login_required
 def create(request):
     if request.method == 'POST':
-        note = Note.objects.create(user=request.user, title='Untitled')
+        note = Note.objects.create(user=request.user, workspace=request.workspace, title='Untitled')
         return redirect('notes:edit', pk=note.pk)
     return redirect('notes:index')
 
 
 @login_required
 def edit(request, pk):
-    note = get_object_or_404(Note, pk=pk, user=request.user)
+    note = get_object_or_404(Note, pk=pk, user=request.user, workspace=request.workspace)
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -71,7 +71,7 @@ def edit(request, pk):
 @login_required
 @require_POST
 def autosave(request, pk):
-    note = get_object_or_404(Note, pk=pk, user=request.user)
+    note = get_object_or_404(Note, pk=pk, user=request.user, workspace=request.workspace)
     data = _parse_request_data(request)
     _apply_note_fields(note, data)
     return JsonResponse({
@@ -85,7 +85,7 @@ def autosave(request, pk):
 @login_required
 @require_POST
 def update_color(request, pk):
-    note = get_object_or_404(Note, pk=pk, user=request.user)
+    note = get_object_or_404(Note, pk=pk, user=request.user, workspace=request.workspace)
     data = _parse_request_data(request)
     color = data.get('color', '')
     if color not in ALLOWED_COLORS:

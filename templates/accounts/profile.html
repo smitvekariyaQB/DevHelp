@@ -15,6 +15,9 @@
       <li>
         <button type="button" class="settings-nav-item" data-tab-target="preferences-tab">Preferences</button>
       </li>
+      <li>
+        <a href="{% url 'workspaces:list' %}" class="settings-nav-item" style="text-decoration: none;">Workspaces</a>
+      </li>
     </ul>
     <div class="settings-nav-footer">
       <button type="button" class="settings-nav-item settings-nav-signout" id="btnSignOut">
@@ -25,9 +28,11 @@
   </aside>
   
   <section class="settings-content">
-    <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0;">
-      <h1 id="settings-page-title">Profile</h1>
-      <p class="panel-sub" id="settings-page-subtitle">Manage your account details</p>
+    <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <h1 id="settings-page-title">Profile</h1>
+        <p class="panel-sub" id="settings-page-subtitle">Manage your account details</p>
+      </div>
     </div>
 
     <div class="profile-sections" style="padding-left: 0; padding-right: 0;">
@@ -118,5 +123,5 @@
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'js/settings.js' %}"></script>
+<script src="{% static 'js/settings.js' %}?v=2"></script>
 {% endblock %}

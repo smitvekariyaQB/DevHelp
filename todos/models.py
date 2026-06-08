@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.db import models
 
+from core.models import SoftDeleteModel
 
-class TodoList(models.Model):
+
+class TodoList(SoftDeleteModel):
     SMART_MY_DAY = 'my_day'
     SMART_IMPORTANT = 'important'
     SMART_CHOICES = [
@@ -12,6 +14,11 @@ class TodoList(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='todo_lists',
+    )
+    workspace = models.ForeignKey(
+        'workspaces.Workspace',
         on_delete=models.CASCADE,
         related_name='todo_lists',
     )
@@ -32,9 +39,14 @@ class TodoList(models.Model):
         return self.title
 
 
-class TodoTask(models.Model):
+class TodoTask(SoftDeleteModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='todo_tasks',
+    )
+    workspace = models.ForeignKey(
+        'workspaces.Workspace',
         on_delete=models.CASCADE,
         related_name='todo_tasks',
     )

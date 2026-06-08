@@ -24,45 +24,84 @@
       </div>
 
       <nav class="sidebar-nav">
-        <div class="nav-section">
-          <div class="nav-section-label">Workspace</div>
-          <a href="{% url 'todos:index' %}" class="nav-item {% if request.resolver_match.app_name == 'todos' %}active{% endif %}" title="To Do">
+        {% for ws in workspaces %}
+        <div class="nav-section workspace-section{% if ws.is_default %} workspace-section--personal{% endif %}" data-workspace-id="{{ ws.id }}"{% if ws.is_default %} data-always-open="true"{% endif %}>
+          {% if ws.is_default %}
+          <div class="nav-section-label workspace-label-static">
+            {{ ws.name }}
+          </div>
+          {% else %}
+          <div class="nav-section-label workspace-toggle" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleWorkspace('{{ ws.id }}')">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <svg class="workspace-chevron" id="chevron-{{ ws.id }}" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+              {{ ws.name }}
+            </div>
+          </div>
+          {% endif %}
+          <div class="workspace-tools" id="tools-{{ ws.id }}">
+          
+          {% if 'todos' in ws.enabled_tools %}
+          <a href="{% url 'todos:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'todos' and request.workspace.id == ws.id %}active{% endif %}" title="To Do">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
             </svg>
             <span>To Do</span>
           </a>
-          <a href="{% url 'notes:index' %}" class="nav-item {% if request.resolver_match.app_name == 'notes' %}active{% endif %}" title="Notes">
+          {% endif %}
+          
+          {% if 'notes' in ws.enabled_tools %}
+          <a href="{% url 'notes:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'notes' and request.workspace.id == ws.id %}active{% endif %}" title="Notes">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
             </svg>
             <span>Notes</span>
           </a>
-          <a href="{% url 'tables:index' %}" class="nav-item {% if request.resolver_match.app_name == 'tables' %}active{% endif %}" title="Tables">
+          {% endif %}
+          
+          {% if 'tables' in ws.enabled_tools %}
+          <a href="{% url 'tables:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'tables' and request.workspace.id == ws.id %}active{% endif %}" title="Tables">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
             </svg>
             <span>Tables</span>
           </a>
-          <a href="{% url 'jsondocs:index' %}" class="nav-item {% if request.resolver_match.app_name == 'jsondocs' %}active{% endif %}" title="JSON">
+          {% endif %}
+          
+          {% if 'jsondocs' in ws.enabled_tools %}
+          <a href="{% url 'jsondocs:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'jsondocs' and request.workspace.id == ws.id %}active{% endif %}" title="JSON">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2l1 3 1-6 1 6 1-3h2"/>
             </svg>
             <span>JSON</span>
           </a>
-          <a href="{% url 'markdown:index' %}" class="nav-item {% if request.resolver_match.app_name == 'markdown' %}active{% endif %}" title="Markdown">
+          {% endif %}
+          
+          {% if 'markdown' in ws.enabled_tools %}
+          <a href="{% url 'markdown:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'markdown' and request.workspace.id == ws.id %}active{% endif %}" title="Markdown">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/>
             </svg>
             <span>Markdown</span>
           </a>
-          <a href="{% url 'codefiles:index' %}" class="nav-item {% if request.resolver_match.app_name == 'codefiles' %}active{% endif %}" title="Code">
+          {% endif %}
+          
+          {% if 'codefiles' in ws.enabled_tools %}
+          <a href="{% url 'codefiles:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'codefiles' and request.workspace.id == ws.id %}active{% endif %}" title="Code">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>
             </svg>
             <span>Code</span>
           </a>
+          {% endif %}
+          </div>
         </div>
+        
+        {% if not forloop.last %}
+        <div class="nav-section-divider" style="margin: 4px 12px; opacity: 0.5;"></div>
+        {% endif %}
+        {% endfor %}
 
         <div class="nav-section-divider"></div>
 
@@ -115,4 +154,46 @@
 <div id="page-scripts">
 {% block page_js %}{% endblock %}
 </div>
+<script>
+(function() {
+  const wsStorageKey = 'arcbook_workspace_collapsed';
+  let collapsedState = {};
+  try {
+    collapsedState = JSON.parse(localStorage.getItem(wsStorageKey) || '{}');
+  } catch(e) {}
+
+  window.toggleWorkspace = function(wsId) {
+    const toolsDiv = document.getElementById('tools-' + wsId);
+    const chevron = document.getElementById('chevron-' + wsId);
+    if (!toolsDiv || !chevron) return;
+    
+    const isCollapsed = toolsDiv.classList.contains('collapsed');
+    if (isCollapsed) {
+      toolsDiv.classList.remove('collapsed');
+      chevron.classList.remove('collapsed');
+      collapsedState[wsId] = false;
+    } else {
+      toolsDiv.classList.add('collapsed');
+      chevron.classList.add('collapsed');
+      collapsedState[wsId] = true;
+    }
+    
+    try {
+      localStorage.setItem(wsStorageKey, JSON.stringify(collapsedState));
+    } catch(e) {}
+  };
+
+  // Apply initial collapsed state (skip personal workspace — always open)
+  document.querySelectorAll('.workspace-section').forEach(section => {
+    if (section.getAttribute('data-always-open') === 'true') return;
+    const wsId = section.getAttribute('data-workspace-id');
+    if (collapsedState[wsId]) {
+      const toolsDiv = document.getElementById('tools-' + wsId);
+      const chevron = document.getElementById('chevron-' + wsId);
+      if (toolsDiv) toolsDiv.classList.add('collapsed');
+      if (chevron) chevron.classList.add('collapsed');
+    }
+  });
+})();
+</script>
 {% endblock %}

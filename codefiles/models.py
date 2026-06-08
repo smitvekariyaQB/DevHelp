@@ -1,10 +1,17 @@
 from django.conf import settings
 from django.db import models
 
+from core.models import SoftDeleteModel
 
-class CodeDocument(models.Model):
+
+class CodeDocument(SoftDeleteModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='code_documents',
+    )
+    workspace = models.ForeignKey(
+        'workspaces.Workspace',
         on_delete=models.CASCADE,
         related_name='code_documents',
     )
