@@ -295,10 +295,19 @@
       // 7. Show any Django messages/toasts
       showToasts(newDoc);
 
-      // 8. Execute page-specific scripts
+      // 8. Update browser history before page scripts so hash-based inits work
+      if (pushState) {
+        history.pushState({ routerUrl: url }, '', url);
+      }
+
+      // 8b. Activate settings tab synchronously (avoids profile-tab flash on SPA nav)
+      const targetHash = new URL(url, location.origin).hash;
+      window.SettingsTabs?.activateFromHash(targetHash, main);
+
+      // 9. Execute page-specific scripts
       // First execute any scripts directly in the main content area (like inline config scripts)
       await executeScripts(main);
-      
+
       // Then execute scripts from the dedicated page scripts block
       const newPageScripts = newDoc.querySelector(PAGE_SCRIPTS_SELECTOR);
       if (newPageScripts) {
@@ -313,13 +322,8 @@
         });
       }
 
-      // 9. Scroll to top
+      // 10. Scroll to top
       main.scrollTop = 0;
-
-      // 10. Push to browser history
-      if (pushState) {
-        history.pushState({ routerUrl: url }, '', url);
-      }
 
       // 11. Restore opacity
       main.style.opacity = '';

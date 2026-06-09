@@ -16,6 +16,7 @@ from .models import Workspace, TOOL_CHOICES
 def workspace_list(request):
     return render(request, 'workspaces/list.html', {
         'workspaces': request.user.workspaces.all(),
+        'settings_active': 'workspaces',
     })
 
 @login_required
@@ -58,6 +59,7 @@ def workspace_edit(request, pk=None):
         'workspace': workspace,
         'is_edit': is_edit,
         'tool_choices': tool_choices,
+        'settings_active': 'workspaces',
     }
     return render(request, 'workspaces/edit.html', context)
 

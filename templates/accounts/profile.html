@@ -4,28 +4,7 @@
 
 {% block main %}
 <div class="settings-app">
-  <aside class="settings-sidebar">
-    <ul class="settings-nav">
-      <li>
-        <button type="button" class="settings-nav-item active" data-tab-target="profile-tab">Profile</button>
-      </li>
-      <li>
-        <button type="button" class="settings-nav-item" data-tab-target="password-tab">Change password</button>
-      </li>
-      <li>
-        <button type="button" class="settings-nav-item" data-tab-target="preferences-tab">Preferences</button>
-      </li>
-      <li>
-        <a href="{% url 'workspaces:list' %}" class="settings-nav-item" style="text-decoration: none;">Workspaces</a>
-      </li>
-    </ul>
-    <div class="settings-nav-footer">
-      <button type="button" class="settings-nav-item settings-nav-signout" id="btnSignOut">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-        Sign out
-      </button>
-    </div>
-  </aside>
+  {% include "includes/settings_sidebar.html" %}
   
   <section class="settings-content">
     <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0; display: flex; justify-content: space-between; align-items: flex-start;">
@@ -36,7 +15,7 @@
     </div>
 
     <div class="profile-sections" style="padding-left: 0; padding-right: 0;">
-      <div id="profile-tab" class="settings-tab-content">
+      <div id="profile-tab" class="settings-tab-content hidden">
         <section class="panel-card">
           <h2 class="section-title">Account</h2>
           <form method="post" class="settings-form">
@@ -119,9 +98,10 @@
       </div>
     </div>
   </section>
+  <script>window.SettingsTabs?.activateFromHash(location.hash);</script>
 </div>
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'js/settings.js' %}?v=2"></script>
+<script src="{% static 'js/settings.js' %}?v=4"></script>
 {% endblock %}

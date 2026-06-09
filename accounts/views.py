@@ -219,6 +219,7 @@ def profile(request):
         {
             'profile_form': profile_form,
             'password_form': password_form,
+            'settings_active': 'profile',
         },
     )
 

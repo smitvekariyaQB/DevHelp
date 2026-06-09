@@ -1,54 +1,42 @@
 (function () {
   'use strict';
 
-  const SETTINGS_TABS = {
-    'profile-tab': {
-      title: 'Profile',
-      subtitle: 'Manage your account details',
-    },
-    'password-tab': {
-      title: 'Change password',
-      subtitle: 'Update your security credentials',
-    },
-    'preferences-tab': {
-      title: 'Preferences',
-      subtitle: 'Customize appearance and layout defaults',
-    },
-  };
-
-  function activateSettingsTab(targetId) {
-    document.querySelectorAll('.settings-nav-item').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.tabTarget === targetId);
-    });
-    document.querySelectorAll('.settings-tab-content').forEach((panel) => {
-      panel.classList.toggle('hidden', panel.id !== targetId);
-    });
-    const meta = SETTINGS_TABS[targetId];
-    const titleEl = document.getElementById('settings-page-title');
-    const subEl = document.getElementById('settings-page-subtitle');
-    if (meta && titleEl && subEl) {
-      titleEl.textContent = meta.title;
-      subEl.textContent = meta.subtitle;
-    }
-    if (targetId === 'preferences-tab') {
-      window.AppPreferences?.initSettingsPage();
-    }
-  }
-
   const settingsApp = document.querySelector('.settings-app');
   if (!settingsApp) return;
 
+  const hasTabPanels = Boolean(document.querySelector('.settings-tab-content'));
+  if (!hasTabPanels) return;
+
+  const { activateSettingsTab, activateFromHash, TAB_TO_HASH } = window.SettingsTabs;
+
+  function initFromHash() {
+    activateFromHash(window.location.hash, document);
+  }
+
   settingsApp.addEventListener('click', (e) => {
-    const btn = e.target.closest('.settings-nav-item');
-    if (!btn || !settingsApp.contains(btn)) return;
-    activateSettingsTab(btn.dataset.tabTarget);
+    const link = e.target.closest('.settings-nav-item[data-settings-tab]');
+    if (!link || !settingsApp.contains(link)) return;
+
+    const targetId = link.dataset.settingsTab;
+    if (!targetId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    activateSettingsTab(targetId, document);
+
+    const hash = TAB_TO_HASH[targetId];
+    const profileLink = settingsApp.querySelector('[data-settings-tab="profile-tab"]');
+    const profileUrl = new URL(profileLink?.href || window.location.href, window.location.origin);
+    profileUrl.hash = hash ? `#${hash}` : '';
+    history.pushState({ routerUrl: profileUrl.href }, '', profileUrl.href);
   });
 
-  const hashTab = {
-    password: 'password-tab',
-    preferences: 'preferences-tab',
-  }[window.location.hash.replace('#', '')];
-  if (hashTab) activateSettingsTab(hashTab);
+  initFromHash();
 
-  window.AppPreferences?.initSettingsPage();
+  if (window.__settingsHashChange) {
+    window.removeEventListener('hashchange', window.__settingsHashChange);
+  }
+  window.__settingsHashChange = initFromHash;
+  window.addEventListener('hashchange', window.__settingsHashChange);
 })();

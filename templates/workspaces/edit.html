@@ -5,28 +5,7 @@
 
 {% block main %}
 <div class="settings-app">
-  <aside class="settings-sidebar">
-    <ul class="settings-nav">
-      <li>
-        <a href="{% url 'accounts:profile' %}" class="settings-nav-item" style="text-decoration: none;">Profile</a>
-      </li>
-      <li>
-        <a href="{% url 'accounts:profile' %}#password" class="settings-nav-item" style="text-decoration: none;">Change password</a>
-      </li>
-      <li>
-        <a href="{% url 'accounts:profile' %}#preferences" class="settings-nav-item" style="text-decoration: none;">Preferences</a>
-      </li>
-      <li>
-        <a href="{% url 'workspaces:list' %}" class="settings-nav-item active" style="text-decoration: none;">Workspaces</a>
-      </li>
-    </ul>
-    <div class="settings-nav-footer">
-      <button type="button" class="settings-nav-item settings-nav-signout" id="btnSignOut">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-        Sign out
-      </button>
-    </div>
-  </aside>
+  {% include "includes/settings_sidebar.html" %}
 
   <section class="settings-content">
     <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0;">

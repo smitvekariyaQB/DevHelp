@@ -761,6 +761,7 @@ body.modal-open {
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--text);
+  font-family: inherit;
   font-size: 14px;
   margin-bottom: 2px;
   transition: background 0.12s;
@@ -802,6 +803,10 @@ body.modal-open {
 
 .settings-tab-content.hidden {
   display: none;
+}
+
+.settings-app:has(.settings-tab-content):not([data-tabs-ready]) .settings-content {
+  visibility: hidden;
 }
 
 .panel-header {
