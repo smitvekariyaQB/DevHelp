@@ -139,7 +139,9 @@
 
 {% block extra_js %}
 <script>
-  document.getElementById('btnSignOut')?.addEventListener('click', async () => {
+  document.addEventListener('click', async (e) => {
+    if (!e.target.closest('#btnSignOut')) return;
+    e.preventDefault();
     if (!window.AppModal) return;
     const ok = await AppModal.confirm({
       title: 'Sign out',
