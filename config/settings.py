@@ -33,7 +33,7 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = env_bool('DEBUG', True)
 
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['localhost', '127.0.0.1', '*'])
 
 # Public site URL used in password-reset emails (include port in dev).
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000').strip()
@@ -136,7 +136,7 @@ TIME_ZONE = os.environ.get('TIME_ZONE', 'UTC')
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 LOGIN_URL = 'accounts:login'

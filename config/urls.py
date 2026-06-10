@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib import admin
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from django.views.generic import RedirectView
 
@@ -15,3 +17,6 @@ urlpatterns = [
     path('compare/', include('compare.urls')),
     path('workspaces/', include('workspaces.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += staticfiles_urlpatterns()

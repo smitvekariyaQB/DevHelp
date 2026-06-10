@@ -43,8 +43,17 @@
   let resizeObserver;
   let scrollSyncEnabled = true;
   let isScrollSyncing = false;
+  const drafts = window.createEditorDraftStore?.('markdown') || {
+    save() {},
+    load() {
+      return null;
+    },
+    clear() {},
+  };
+
   let saving = false;
   let pending = false;
+  let draftTimer;
   let fileContextMenu = null;
   let fileContextTarget = null;
 
@@ -324,9 +333,43 @@
     editor?.focus();
   }
 
+  function getDraftPayload() {
+    return {
+      title: titleInput ? titleInput.value : '',
+      content: editor ? editor.value : '',
+    };
+  }
+
+  function scheduleDraftSave() {
+    if (!cfg.currentDocId || !editor) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      drafts.save(cfg.currentDocId, getDraftPayload());
+    }, 300);
+  }
+
+  function flushDraftSave() {
+    clearTimeout(draftTimer);
+    if (!cfg.currentDocId || !editor) return;
+    drafts.save(cfg.currentDocId, getDraftPayload());
+  }
+
+  function restoreDraftIfAny() {
+    if (!cfg.currentDocId || !editor) return;
+    const draft = drafts.load(cfg.currentDocId);
+    if (!draft) return;
+    if (titleInput) titleInput.value = draft.title;
+    editor.value = draft.content;
+    syncSidebarTitle(cfg.currentDocId, draft.title || 'Untitled.md');
+    syncTextHighlight();
+    schedulePreview();
+    if (findBar && !findBar.classList.contains('hidden')) runFind();
+  }
+
   function onEditorInput() {
     syncTextHighlight();
     schedulePreview();
+    scheduleDraftSave();
     if (findBar && !findBar.classList.contains('hidden')) runFind();
   }
 
@@ -494,6 +537,7 @@
       });
       if (!res.ok) throw new Error();
       syncSidebarTitle(cfg.currentDocId, titleInput?.value || 'Untitled.md');
+      drafts.clear(cfg.currentDocId);
       if (btnSave) btnSave.textContent = 'Saved';
     } catch {
       if (btnSave) btnSave.textContent = 'Save failed';
@@ -632,6 +676,7 @@
       method: 'POST',
       headers: csrfHeaders(),
     });
+    drafts.clear(id);
 
     if (String(id) === String(cfg.currentDocId)) {
       if (window.routerNavigate) window.routerNavigate(cfg.urls.index);
@@ -684,6 +729,7 @@
   }
 
   function openDocument(docId) {
+    flushDraftSave();
     const url = `${cfg.urls.index}?doc=${docId}`;
     if (window.routerNavigate) window.routerNavigate(url);
     else window.location.href = url;
@@ -719,7 +765,13 @@
     return;
   }
 
+  titleInput?.addEventListener('input', () => {
+    syncSidebarTitle(cfg.currentDocId, titleInput.value || 'Untitled.md');
+    scheduleDraftSave();
+  });
+
   editor?.addEventListener('input', onEditorInput);
+  window.bindEditorTabKey?.(editor, onEditorInput);
   editor?.addEventListener('scroll', syncHighlightScroll);
   textWrap?.addEventListener('scroll', onEditorWrapScroll, { passive: true });
   previewWrap?.addEventListener('scroll', onPreviewWrapScroll, { passive: true });
@@ -760,13 +812,16 @@
     resizeObserver.observe(textWrap);
   }
 
+  restoreDraftIfAny();
   syncTextHighlight();
   renderPreview();
   updateResizerVisibility();
 
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
+      flushDraftSave();
       clearTimeout(previewTimer);
+      clearTimeout(draftTimer);
       stopResize();
       resizeObserver?.disconnect();
       document.removeEventListener('keydown', onGlobalKeydown);

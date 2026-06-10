@@ -6,9 +6,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "django>=5.0,<7",
+    "daphne>=4.0",
     "pillow>=10.0",
     "bleach>=6.0",
     "python-dotenv>=1.0",
+    "psycopg>=3.3.4",
 ]
 
 [tool.uv]

@@ -37,8 +37,17 @@
   const btnExpandAll = document.getElementById('btnExpandAll');
   const btnCollapseAll = document.getElementById('btnCollapseAll');
 
+  const drafts = window.createEditorDraftStore?.('json') || {
+    save() {},
+    load() {
+      return null;
+    },
+    clear() {},
+  };
+
   let saving = false;
   let pending = false;
+  let draftTimer;
   let findMatches = [];
   let viewerFindMatches = [];
   let findIndex = -1;
@@ -322,6 +331,37 @@
     highlight.style.transform = `translate(${-editor.scrollLeft}px, 0)`;
   }
 
+  function getDraftPayload() {
+    return {
+      title: titleInput ? titleInput.value : '',
+      content: editor ? editor.value : '',
+    };
+  }
+
+  function scheduleDraftSave() {
+    if (!cfg.currentDocId || !editor) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+      drafts.save(cfg.currentDocId, getDraftPayload());
+    }, 300);
+  }
+
+  function flushDraftSave() {
+    clearTimeout(draftTimer);
+    if (!cfg.currentDocId || !editor) return;
+    drafts.save(cfg.currentDocId, getDraftPayload());
+  }
+
+  function restoreDraftIfAny() {
+    if (!cfg.currentDocId || !editor) return;
+    const draft = drafts.load(cfg.currentDocId);
+    if (!draft) return;
+    if (titleInput) titleInput.value = draft.title;
+    editor.value = draft.content;
+    syncSidebarTitle(cfg.currentDocId, draft.title || 'Untitled.json');
+    onEditorInput();
+  }
+
   async function runSave() {
     if (!cfg.currentDocId || !editor) return;
     if (saving) {
@@ -345,6 +385,7 @@
       });
       if (!res.ok) throw new Error();
       syncSidebarTitle(cfg.currentDocId, titleInput?.value || 'Untitled.json');
+      drafts.clear(cfg.currentDocId);
       if (btnSave) btnSave.textContent = 'Saved';
     } catch {
       if (btnSave) btnSave.textContent = 'Save failed';
@@ -750,6 +791,7 @@
       updateValidBadge();
       syncTextHighlight();
       scheduleTreeRefresh();
+      scheduleDraftSave();
       if (findBar && !findBar.classList.contains('hidden')) runFind();
       return true;
     } catch {
@@ -916,6 +958,7 @@
       method: 'POST',
       headers: csrfHeaders(),
     });
+    drafts.clear(id);
 
     if (String(id) === String(cfg.currentDocId)) {
       if (window.routerNavigate) window.routerNavigate(cfg.urls.index);
@@ -971,6 +1014,7 @@
   }
 
   function openDocument(docId) {
+    flushDraftSave();
     if (window.routerNavigate) window.routerNavigate(`${cfg.urls.index}?doc=${docId}`);
     else window.location.href = `${cfg.urls.index}?doc=${docId}`;
   }
@@ -1037,16 +1081,20 @@
     });
   });
 
+  function onEditorInput() {
+    updateValidBadge();
+    scheduleTreeRefresh();
+    scheduleDraftSave();
+    if (findBar && !findBar.classList.contains('hidden') && findInput?.value) {
+      runFind();
+    } else {
+      syncTextHighlight();
+    }
+  }
+
   if (editor) {
-    editor.addEventListener('input', () => {
-      updateValidBadge();
-      scheduleTreeRefresh();
-      if (findBar && !findBar.classList.contains('hidden') && findInput?.value) {
-        runFind();
-      } else {
-        syncTextHighlight();
-      }
-    });
+    editor.addEventListener('input', onEditorInput);
+    window.bindEditorTabKey?.(editor, onEditorInput);
     editor.addEventListener('scroll', syncHighlightScroll);
     updateValidBadge();
     syncTextHighlight();
@@ -1066,6 +1114,7 @@
 
   titleInput?.addEventListener('input', () => {
     syncSidebarTitle(cfg.currentDocId, titleInput.value || 'Untitled.json');
+    scheduleDraftSave();
   });
 
   btnSave?.addEventListener('click', () => {
@@ -1130,15 +1179,18 @@
   }
 
   if (cfg.currentDocId) {
+    restoreDraftIfAny();
     setActiveTab('text');
   }
 
   // Register cleanup for the router so listeners/timers are removed on navigate
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
+      flushDraftSave();
       document.removeEventListener('click', onDocClick);
       document.removeEventListener('keydown', onDocKeydown);
       clearTimeout(treeRefreshTimer);
+      clearTimeout(draftTimer);
       resizeObserver?.disconnect();
     });
   }

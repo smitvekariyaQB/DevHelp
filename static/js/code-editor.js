@@ -714,6 +714,7 @@
   }
 
   editor.addEventListener('input', onEditorInput);
+  window.bindEditorTabKey?.(editor, onEditorInput);
   editor.addEventListener('scroll', syncHighlightScroll);
   titleInput?.addEventListener('input', onTitleInput);
 
