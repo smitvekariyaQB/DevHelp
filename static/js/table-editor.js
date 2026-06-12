@@ -672,6 +672,7 @@
   btnRedo?.addEventListener('click', doRedo);
   btnAddColumn?.addEventListener('click', addColumn);
   btnAddRow?.addEventListener('click', addRow);
+  container.addEventListener('paste', onCellPaste);
 
   let sheetContextMenu = null;
   let sheetContextTarget = null;
@@ -968,6 +969,131 @@
     return normalizeCellText(text).replace(/\n/g, ' ');
   }
 
+  function looksLikeMarkdownTableLine(line) {
+    const trimmed = line.trim();
+    return trimmed.startsWith('|') && trimmed.indexOf('|', 1) !== -1;
+  }
+
+  function isMarkdownSeparatorLine(line) {
+    const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+    if (!trimmed.includes('|')) return /^[\s\-:|]+$/.test(trimmed);
+    return trimmed.split('|').every((part) => /^[\s\-:|]+$/.test(part));
+  }
+
+  function parseMarkdownTableFromText(text) {
+    const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const rows = [];
+    lines.forEach((line) => {
+      if (!looksLikeMarkdownTableLine(line)) return;
+      if (isMarkdownSeparatorLine(line)) return;
+      let trimmed = line.trim();
+      if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+      if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+      rows.push(trimmed.split('|').map((cell) => cell.trim()));
+    });
+    return rows.length ? rows : null;
+  }
+
+  function parseTsvFromText(text) {
+    const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    if (!lines.some((line) => line.includes('\t'))) return null;
+    const rows = lines.map((line) => line.split('\t'));
+    while (rows.length > 1 && rows[rows.length - 1].every((cell) => cell === '')) {
+      rows.pop();
+    }
+    return rows.length ? rows : null;
+  }
+
+  function parseHtmlTableFromClipboard(html) {
+    if (!html) return null;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const table = doc.querySelector('table');
+    if (!table) return null;
+    const rows = [];
+    table.querySelectorAll('tr').forEach((tr) => {
+      const cells = [];
+      tr.querySelectorAll('th, td').forEach((cell) => {
+        cells.push((cell.textContent || '').replace(/\u00a0/g, ' '));
+      });
+      if (cells.length) rows.push(cells);
+    });
+    return rows.length ? rows : null;
+  }
+
+  function isMultiCellGrid(grid) {
+    return grid.length > 1 || (grid.length === 1 && grid[0].length > 1);
+  }
+
+  function parsePasteGrid(clipboardData) {
+    if (!clipboardData) return null;
+
+    const html = clipboardData.getData('text/html');
+    const plain = clipboardData.getData('text/plain');
+
+    const fromHtml = parseHtmlTableFromClipboard(html);
+    if (fromHtml && isMultiCellGrid(fromHtml)) return fromHtml;
+
+    const fromMarkdown = parseMarkdownTableFromText(plain);
+    if (fromMarkdown && isMultiCellGrid(fromMarkdown)) return fromMarkdown;
+
+    const fromTsv = parseTsvFromText(plain);
+    if (fromTsv && isMultiCellGrid(fromTsv)) return fromTsv;
+
+    return null;
+  }
+
+  function ensureCapacityForPaste(startRowIdx, startColIdx, gridRows, gridCols) {
+    recordHistoryNow();
+    collectData();
+
+    const rowsNeeded = startRowIdx + gridRows - sheetData.rows.length;
+    for (let i = 0; i < rowsNeeded; i += 1) {
+      const cells = {};
+      sheetData.columns.forEach((col) => { cells[col.id] = ''; });
+      sheetData.rows.push({ id: uid(), cells });
+    }
+
+    const colsNeeded = startColIdx + gridCols - sheetData.columns.length;
+    for (let i = 0; i < colsNeeded; i += 1) {
+      const n = sheetData.columns.length + 1;
+      const col = { id: uid(), width: DEFAULT_COL_WIDTH, label: `Column ${n}` };
+      sheetData.columns.push(col);
+      sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
+    }
+  }
+
+  function applyPasteGrid(startRowIdx, startColIdx, grid) {
+    grid.forEach((row, rowOffset) => {
+      const sheetRow = sheetData.rows[startRowIdx + rowOffset];
+      if (!sheetRow) return;
+      row.forEach((value, colOffset) => {
+        const col = sheetData.columns[startColIdx + colOffset];
+        if (!col) return;
+        sheetRow.cells[col.id] = String(value ?? '');
+      });
+    });
+  }
+
+  function onCellPaste(e) {
+    const ta = e.target.closest('.cell-input');
+    if (!ta || !e.clipboardData) return;
+
+    const grid = parsePasteGrid(e.clipboardData);
+    if (!grid) return;
+
+    e.preventDefault();
+
+    const startRowIdx = sheetData.rows.findIndex((row) => row.id === ta.dataset.rowId);
+    const startColIdx = sheetData.columns.findIndex((col) => col.id === ta.dataset.colId);
+    if (startRowIdx < 0 || startColIdx < 0) return;
+
+    const gridCols = Math.max(...grid.map((row) => row.length), 1);
+    ensureCapacityForPaste(startRowIdx, startColIdx, grid.length, gridCols);
+    applyPasteGrid(startRowIdx, startColIdx, grid);
+    render();
+    scheduleAutosave();
+  }
+
   function buildColumnCopyPayload(colId) {
     collectData();
     const colIndex = sheetData.columns.findIndex((c) => c.id === colId);
@@ -1255,6 +1381,7 @@
       clearDragPendingCursors();
       document.removeEventListener('click', onSheetContextMenuDismiss);
       document.removeEventListener('scroll', hideSheetContextMenu, true);
+      container.removeEventListener('paste', onCellPaste);
       hideSheetContextMenu();
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
