@@ -52,7 +52,7 @@
     const colorInput = document.querySelector('#colorOptions input[name="color"]:checked');
     const payload = {
       title: titleInput ? titleInput.value : 'Untitled',
-      content: quill ? quill.root.innerHTML : '',
+      content: quill ? (quill.getSemanticHTML?.() ?? quill.root.innerHTML) : '',
       color: colorInput ? colorInput.value : undefined,
     };
     if (findBarOpen) requestAnimationFrame(() => syncNoteFindHighlight());
@@ -72,7 +72,9 @@
   function restoreState(state) {
     isRestoring = true;
     if (titleInput) titleInput.value = state.title;
-    if (quill) quill.root.innerHTML = state.content || '';
+    if (quill) {
+      quill.setContents(quill.clipboard.convert({ html: state.content || '' }), 'silent');
+    }
     applyNoteColor(state.color);
     const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
     if (colorInput) colorInput.checked = true;
@@ -325,7 +327,9 @@
     },
   });
 
-  if (initial) quill.root.innerHTML = initial;
+  if (initial) {
+    quill.setContents(quill.clipboard.convert({ html: initial }), 'silent');
+  }
 
   function noteBodyText() {
     if (!quill) return '';
