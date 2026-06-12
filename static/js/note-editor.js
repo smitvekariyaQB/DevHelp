@@ -208,34 +208,100 @@
 
   function getNoteBodyPlainText() {
     if (!quill) return '';
-    let text = quill.getText();
-    if (text.endsWith('\n')) text = text.slice(0, -1);
-    text = text
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map((line) => line.trimEnd())
+    const lines = [];
+    if (typeof quill.getLines === 'function') {
+      quill.getLines().forEach((line) => {
+        const node = line.domNode;
+        const text = (node.textContent || '').replace(/\n$/, '');
+        const li = node.tagName === 'LI' ? node : node.closest('li');
+        if (li) {
+          const list = li.closest('ol, ul');
+          if (list?.tagName === 'OL') {
+            const items = Array.from(list.children).filter((el) => el.tagName === 'LI');
+            const idx = items.indexOf(li) + 1;
+            lines.push(`${idx}. ${text.trim()}`);
+          } else {
+            lines.push(`• ${text.trim()}`);
+          }
+        } else {
+          lines.push(text.trimEnd());
+        }
+      });
+    } else {
+      let text = quill.getText();
+      if (text.endsWith('\n')) text = text.slice(0, -1);
+      lines.push(...text.split('\n').map((line) => line.trimEnd()));
+    }
+    return lines
       .join('\n')
       .replace(/^\n+|\n+$/g, '')
       .replace(/\n{3,}/g, '\n\n');
-    return text;
+  }
+
+  function buildNoteCopyPayload() {
+    clearFindHighlights();
+    const htmlContent = quill.root.innerHTML;
+    const plain = getNoteBodyPlainText();
+    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${htmlContent}<!--EndFragment--></body></html>`;
+    if (findBarOpen) requestAnimationFrame(() => syncNoteFindHighlight());
+    return { plain, htmlDoc, htmlContent };
+  }
+
+  async function copyRichHtml(htmlContent) {
+    const div = document.createElement('div');
+    div.contentEditable = 'true';
+    div.innerHTML = htmlContent;
+    div.style.position = 'fixed';
+    div.style.left = '-9999px';
+    document.body.appendChild(div);
+    const range = document.createRange();
+    range.selectNodeContents(div);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const ok = document.execCommand('copy');
+    sel.removeAllRanges();
+    document.body.removeChild(div);
+    return ok;
   }
 
   async function copyNoteToClipboard() {
-    const plain = getNoteBodyPlainText();
+    if (!quill) return;
+    const { plain, htmlDoc, htmlContent } = buildNoteCopyPayload();
     let ok = false;
-    try {
-      await navigator.clipboard.writeText(plain);
-      ok = true;
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = plain;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      ok = document.execCommand('copy');
-      document.body.removeChild(ta);
+
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
+            'text/plain': new Blob([plain], { type: 'text/plain' }),
+          }),
+        ]);
+        ok = true;
+      } catch {
+        /* try fallbacks */
+      }
     }
+
+    if (!ok) ok = await copyRichHtml(htmlContent);
+
+    if (!ok) {
+      try {
+        await navigator.clipboard.writeText(plain);
+        ok = true;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = plain;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    }
+
     if (ok) showCopiedFeedback();
   }
 
