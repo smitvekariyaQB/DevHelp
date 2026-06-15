@@ -48,15 +48,152 @@
     if (len > 0) quill.formatText(0, len, { background: false }, 'silent');
   }
 
-  function getPayload() {
+  function unwrapNode(el) {
+    const parent = el.parentNode;
+    if (!parent) return;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
+  }
+
+  function sanitizeNoteHtmlForCopy(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    doc.body.querySelectorAll('mark').forEach(unwrapNode);
+    doc.body.querySelectorAll('*').forEach((el) => {
+      el.removeAttribute('style');
+      el.removeAttribute('class');
+      el.removeAttribute('color');
+      if (el.tagName === 'A') {
+        [...el.attributes].forEach((attr) => {
+          if (!['href', 'title', 'target', 'rel'].includes(attr.name.toLowerCase())) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      } else if (el.tagName === 'LI') {
+        [...el.attributes].forEach((attr) => {
+          if (attr.name.toLowerCase() !== 'data-list') {
+            el.removeAttribute(attr.name);
+          }
+        });
+      } else if (el.tagName !== 'A' && el.tagName !== 'LI') {
+        [...el.attributes].forEach((attr) => {
+          if (attr.name.toLowerCase().startsWith('data-')) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      }
+    });
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      doc.body.querySelectorAll('span, font').forEach((el) => {
+        if (el.attributes.length === 0) {
+          unwrapNode(el);
+          changed = true;
+        }
+      });
+    }
+
+    return doc.body.innerHTML;
+  }
+
+  function escapeHtmlForCopy(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  const NOTE_COPY_STYLE = 'background:transparent;background-color:transparent;';
+
+  function inlineHtmlFromNode(node) {
+    let html = '';
+    node.childNodes.forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        html += escapeHtmlForCopy(child.textContent);
+        return;
+      }
+      if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+      const tag = child.tagName;
+      const inner = inlineHtmlFromNode(child);
+
+      if (tag === 'BR') {
+        html += '<br>';
+        return;
+      }
+      if (tag === 'A') {
+        const href = child.getAttribute('href');
+        html += href
+          ? `<a href="${escapeHtmlForCopy(href)}" style="${NOTE_COPY_STYLE}">${inner}</a>`
+          : inner;
+        return;
+      }
+      if (['STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE'].includes(tag)) {
+        html += `<${tag.toLowerCase()} style="${NOTE_COPY_STYLE}">${inner}</${tag.toLowerCase()}>`;
+        return;
+      }
+      html += inner;
+    });
+    return html;
+  }
+
+  function buildCleanNoteHtmlForCopy() {
+    if (!quill) return '';
     clearFindHighlights();
+
+    const parts = [];
+    quill.root.childNodes.forEach((node) => {
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      const tag = node.tagName;
+
+      if (tag === 'UL' || tag === 'OL') {
+        const items = Array.from(node.children)
+          .filter((child) => child.tagName === 'LI')
+          .map((li) => {
+            const dataList = li.getAttribute('data-list');
+            const dataAttr = dataList ? ` data-list="${escapeHtmlForCopy(dataList)}"` : '';
+            return `<li${dataAttr} style="${NOTE_COPY_STYLE}">${inlineHtmlFromNode(li)}</li>`;
+          })
+          .join('');
+        parts.push(`<${tag.toLowerCase()} style="${NOTE_COPY_STYLE}">${items}</${tag.toLowerCase()}>`);
+        return;
+      }
+
+      if (['P', 'H1', 'H2', 'H3', 'BLOCKQUOTE'].includes(tag)) {
+        parts.push(
+          `<${tag.toLowerCase()} style="${NOTE_COPY_STYLE}">${inlineHtmlFromNode(node)}</${tag.toLowerCase()}>`,
+        );
+      }
+    });
+
+    return `<div style="${NOTE_COPY_STYLE}">${parts.join('')}</div>`;
+  }
+
+  function getCleanNoteHtml() {
+    if (!quill) return '';
+    clearFindHighlights();
+    const clone = quill.root.cloneNode(true);
+    clone.querySelectorAll('[style]').forEach((el) => el.removeAttribute('style'));
+    clone.querySelectorAll('[class]').forEach((el) => el.removeAttribute('class'));
+    clone.querySelectorAll('mark').forEach(unwrapNode);
+    return sanitizeNoteHtmlForCopy(clone.innerHTML);
+  }
+
+  function restoreFindHighlightsIfOpen() {
+    if (findBarOpen) syncNoteFindHighlight();
+  }
+
+  function getPayload() {
     const colorInput = document.querySelector('#colorOptions input[name="color"]:checked');
     const payload = {
       title: titleInput ? titleInput.value : 'Untitled',
-      content: quill ? (quill.getSemanticHTML?.() ?? quill.root.innerHTML) : '',
+      content: getCleanNoteHtml(),
       color: colorInput ? colorInput.value : undefined,
     };
-    if (findBarOpen) requestAnimationFrame(() => syncNoteFindHighlight());
+    restoreFindHighlightsIfOpen();
     return payload;
   }
 
@@ -241,16 +378,43 @@
       .replace(/\n{3,}/g, '\n\n');
   }
 
-  function buildNoteCopyPayload() {
-    clearFindHighlights();
-    const htmlContent = quill.root.innerHTML;
-    const plain = getNoteBodyPlainText();
-    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${htmlContent}<!--EndFragment--></body></html>`;
-    if (findBarOpen) requestAnimationFrame(() => syncNoteFindHighlight());
-    return { plain, htmlDoc, htmlContent };
+  function wrapHtmlDoc(fragment) {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${fragment}<!--EndFragment--></body></html>`;
   }
 
-  async function copyRichHtml(htmlContent) {
+  async function copyPlainTextToClipboard(plain) {
+    try {
+      await navigator.clipboard.writeText(plain);
+      return true;
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = plain;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }
+  }
+
+  async function copyRichContentToClipboard(plain, htmlContent) {
+    const htmlDoc = wrapHtmlDoc(htmlContent);
+    if (navigator.clipboard?.write && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([plain], { type: 'text/plain' }),
+            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
+          }),
+        ]);
+        return true;
+      } catch {
+        /* try fallbacks */
+      }
+    }
+
     const div = document.createElement('div');
     div.contentEditable = 'true';
     div.innerHTML = htmlContent;
@@ -265,47 +429,24 @@
     const ok = document.execCommand('copy');
     sel.removeAllRanges();
     document.body.removeChild(div);
-    return ok;
+    if (ok) return true;
+    return copyPlainTextToClipboard(plain);
   }
 
   async function copyNoteToClipboard() {
     if (!quill) return;
-    const { plain, htmlDoc, htmlContent } = buildNoteCopyPayload();
-    let ok = false;
-
-    if (navigator.clipboard && window.ClipboardItem) {
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
-            'text/plain': new Blob([plain], { type: 'text/plain' }),
-          }),
-        ]);
-        ok = true;
-      } catch {
-        /* try fallbacks */
-      }
+    const restoreFind = findBarOpen;
+    clearFindHighlights();
+    window.getSelection()?.removeAllRanges();
+    quill.blur();
+    const plain = getNoteBodyPlainText();
+    const htmlContent = buildCleanNoteHtmlForCopy();
+    try {
+      const ok = await copyRichContentToClipboard(plain, htmlContent);
+      if (ok) showCopiedFeedback();
+    } finally {
+      if (restoreFind) syncNoteFindHighlight();
     }
-
-    if (!ok) ok = await copyRichHtml(htmlContent);
-
-    if (!ok) {
-      try {
-        await navigator.clipboard.writeText(plain);
-        ok = true;
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = plain;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-    }
-
-    if (ok) showCopiedFeedback();
   }
 
   if (!editorEl || typeof Quill === 'undefined') return;
@@ -329,7 +470,8 @@
   });
 
   if (initial) {
-    quill.setContents(quill.clipboard.convert({ html: initial }), 'silent');
+    const cleanInitial = sanitizeNoteHtmlForCopy(initial);
+    quill.setContents(quill.clipboard.convert({ html: cleanInitial }), 'silent');
   }
 
   if (!canEdit) {
@@ -533,7 +675,10 @@
   history.reset(getFullState());
   setStatus('saved');
 
-  document.getElementById('btnCopyNote')?.addEventListener('click', copyNoteToClipboard);
+  document.getElementById('btnCopyNote')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    copyNoteToClipboard();
+  });
 
   const btnDeleteNote = document.getElementById('btnDeleteNote');
   const deleteForm = document.getElementById('deleteNoteForm');

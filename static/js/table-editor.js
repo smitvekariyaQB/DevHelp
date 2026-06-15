@@ -773,6 +773,13 @@
     });
   }
 
+  function prepareTableCopy() {
+    clearFindHighlight();
+    window.getSelection()?.removeAllRanges();
+    const active = document.activeElement;
+    if (active?.closest?.('#spreadsheetContainer')) active.blur();
+  }
+
   function getSearchableText(el) {
     if (el.matches?.('.col-header-label')) return el.textContent || '';
     return el.value || '';
@@ -1099,24 +1106,116 @@
     scheduleAutosave();
   }
 
+  function cellValueForExport(text) {
+    return String(text || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim();
+  }
+
+  function cellForTsvExport(text) {
+    const value = cellValueForExport(text);
+    if (/[\t\r\n"]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
+
+  function cellForHtmlExport(text) {
+    return escapeHtml(cellValueForExport(text)).replace(/\n/g, '<br>');
+  }
+
+  function wrapHtmlDoc(fragment) {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${fragment}<!--EndFragment--></body></html>`;
+  }
+
+  const TABLE_CELL_STYLE = 'border:1px solid #ccc;background:transparent;background-color:transparent;';
+  const TABLE_HEAD_STYLE = `${TABLE_CELL_STYLE}font-weight:600;`;
+
+  function buildCleanTableHtml(headers, rows, options = {}) {
+    const includeHeader = options.includeHeader !== false && headers.length > 0;
+    const bodyRows = rows
+      .map((row) => {
+        const tds = row
+          .map((cell) => `<td style="${TABLE_CELL_STYLE}">${cellForHtmlExport(cell)}</td>`)
+          .join('');
+        return `<tr>${tds}</tr>`;
+      })
+      .join('');
+    const thead = includeHeader
+      ? `<thead><tr>${headers
+          .map((h) => `<th style="${TABLE_HEAD_STYLE}">${cellForHtmlExport(h)}</th>`)
+          .join('')}</tr></thead>`
+      : '';
+    return `<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;background:transparent;">`
+      + `${thead}<tbody>${bodyRows}</tbody></table>`;
+  }
+
+  async function copyPlainTextToClipboard(plain) {
+    try {
+      await navigator.clipboard.writeText(plain);
+      return true;
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = plain;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }
+  }
+
+  async function copyRichContentToClipboard(plain, tableHtml) {
+    const htmlDoc = wrapHtmlDoc(tableHtml);
+    if (navigator.clipboard?.write && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([plain], { type: 'text/plain' }),
+            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
+          }),
+        ]);
+        return true;
+      } catch {
+        /* try fallbacks */
+      }
+    }
+
+    const div = document.createElement('div');
+    div.contentEditable = 'true';
+    div.innerHTML = tableHtml;
+    div.style.position = 'fixed';
+    div.style.left = '-9999px';
+    document.body.appendChild(div);
+    const range = document.createRange();
+    range.selectNodeContents(div);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const ok = document.execCommand('copy');
+    sel.removeAllRanges();
+    document.body.removeChild(div);
+    if (ok) return true;
+    return copyPlainTextToClipboard(plain);
+  }
+
   function buildColumnCopyPayload(colId) {
     collectData();
     const colIndex = sheetData.columns.findIndex((c) => c.id === colId);
     const col = sheetData.columns[colIndex];
     if (!col) return null;
 
-    const header = cellForClipboard(col.label || defaultColumnLabel(colIndex));
-    const values = sheetData.rows.map((row) => cellForClipboard(row.cells[col.id]));
+    const header = cellValueForExport(col.label || defaultColumnLabel(colIndex));
+    const values = sheetData.rows.map((row) => cellValueForExport(row.cells[col.id]));
     const plain = [header, ...values].join('\n');
-
-    const th = `<th style="border:1px solid #333;background:#f5f5f5;padding:8px 12px;font-weight:600;">${cellForHtmlExport(header)}</th>`;
-    const bodyRows = values
-      .map((value) => `<tr><td style="border:1px solid #333;padding:8px 12px;">${cellForHtmlExport(value)}</td></tr>`)
-      .join('');
-    const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #333;font-family:Arial,sans-serif;font-size:14px;"><thead><tr>${th}</tr></thead><tbody>${bodyRows}</tbody></table>`;
-    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${tableHtml}<!--EndFragment--></body></html>`;
-
-    return { plain, htmlDoc, tableHtml };
+    const tableHtml = buildCleanTableHtml(
+      [header],
+      values.map((value) => [value]),
+    );
+    return { plain, tableHtml };
   }
 
   function buildRowCopyPayload(rowId) {
@@ -1125,56 +1224,17 @@
     if (!row) return null;
 
     const values = sheetData.columns.map((col, i) =>
-      cellForClipboard(row.cells[col.id] ?? ''),
+      cellValueForExport(row.cells[col.id] ?? ''),
     );
-    const plain = values.join('\t');
-
-    const tds = values
-      .map((value) => `<td style="border:1px solid #333;padding:8px 12px;">${cellForHtmlExport(value)}</td>`)
-      .join('');
-    const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #333;font-family:Arial,sans-serif;font-size:14px;"><tbody><tr>${tds}</tr></tbody></table>`;
-    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${tableHtml}<!--EndFragment--></body></html>`;
-
-    return { plain, htmlDoc, tableHtml };
+    const plain = values.map(cellForTsvExport).join('\t');
+    const tableHtml = buildCleanTableHtml([], [values], { includeHeader: false });
+    return { plain, tableHtml };
   }
 
   async function copySheetFragment(payload) {
     if (!payload) return;
-    const { plain, htmlDoc, tableHtml } = payload;
-    let ok = false;
-
-    if (navigator.clipboard && window.ClipboardItem) {
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
-            'text/plain': new Blob([plain], { type: 'text/plain' }),
-          }),
-        ]);
-        ok = true;
-      } catch {
-        /* try fallbacks */
-      }
-    }
-
-    if (!ok) ok = await copyRichHtml(tableHtml);
-
-    if (!ok) {
-      try {
-        await navigator.clipboard.writeText(plain);
-        ok = true;
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = plain;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-    }
-
+    prepareTableCopy();
+    const ok = await copyRichContentToClipboard(payload.plain, payload.tableHtml);
     if (ok) showCopiedFeedback();
   }
 
@@ -1196,10 +1256,6 @@
     return normalizeCellText(text).replace(/\n/g, '<br>');
   }
 
-  function cellForHtmlExport(text) {
-    return escapeHtml(normalizeCellText(text)).replace(/\n/g, '<br>');
-  }
-
   function escapeHtml(text) {
     return String(text)
       .replace(/&/g, '&amp;')
@@ -1209,53 +1265,22 @@
   }
 
   function buildTableExportData() {
+    prepareTableCopy();
     collectData();
     const title = titleInput?.value?.trim() || 'Untitled table';
     const headers = sheetData.columns.map((col, i) =>
-      cellForMarkdownExport(col.label || `Column ${i + 1}`),
+      cellValueForExport(col.label || `Column ${i + 1}`),
     );
     const rows = sheetData.rows.map((row) =>
-      sheetData.columns.map((col) => cellForMarkdownExport(row.cells[col.id])),
+      sheetData.columns.map((col) => cellValueForExport(row.cells[col.id])),
     );
 
-    const widths = sheetData.columns.map((col, i) => {
-      const headerWidth = cellLineWidth(col.label || `Column ${i + 1}`);
-      const colMax = sheetData.rows.reduce(
-        (max, row) => Math.max(max, cellLineWidth(row.cells[col.id])),
-        0,
-      );
-      return Math.max(headerWidth, colMax, 3);
-    });
+    const tsvHeader = headers.map(cellForTsvExport).join('\t');
+    const tsvRows = rows.map((row) => row.map(cellForTsvExport).join('\t'));
+    const plain = [title, '', tsvHeader, ...tsvRows].join('\n');
+    const tableHtml = buildCleanTableHtml(headers, rows);
 
-    const padCell = (text, width) => String(text).padEnd(width, ' ');
-
-    const mdHeader = `| ${headers.map((h, i) => padCell(h, widths[i])).join(' | ')} |`;
-    const mdDivider = `| ${widths.map((w) => '-'.repeat(w)).join(' | ')} |`;
-    const mdRows = rows.map((r) => `| ${r.map((c, i) => padCell(c, widths[i])).join(' | ')} |`);
-    const plain = [title, '', mdHeader, mdDivider, ...mdRows].join('\n');
-
-    const thCells = sheetData.columns
-      .map((col, i) => {
-        const label = col.label || `Column ${i + 1}`;
-        return `<th style="border:1px solid #333;background:#f5f5f5;padding:8px 12px;font-weight:600;">${cellForHtmlExport(label)}</th>`;
-      })
-      .join('');
-    const bodyRows = sheetData.rows
-      .map((row) => {
-        const tds = sheetData.columns
-          .map((col) => {
-            const value = row.cells[col.id] || '';
-            return `<td style="border:1px solid #333;padding:8px 12px;">${cellForHtmlExport(value)}</td>`;
-          })
-          .join('');
-        return `<tr>${tds}</tr>`;
-      })
-      .join('');
-
-    const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #333;font-family:Arial,sans-serif;font-size:14px;"><thead><tr>${thCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
-    const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${tableHtml}<!--EndFragment--></body></html>`;
-
-    return { plain, htmlDoc, tableHtml };
+    return { plain, tableHtml };
   }
 
   function showCopiedFeedback() {
@@ -1270,62 +1295,10 @@
     }, 1500);
   }
 
-  async function copyRichHtml(tableHtml) {
-    const div = document.createElement('div');
-    div.contentEditable = 'true';
-    div.innerHTML = tableHtml;
-    div.style.position = 'fixed';
-    div.style.left = '-9999px';
-    document.body.appendChild(div);
-    const range = document.createRange();
-    range.selectNodeContents(div);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    const ok = document.execCommand('copy');
-    sel.removeAllRanges();
-    document.body.removeChild(div);
-    return ok;
-  }
-
   async function copyToClipboard() {
-    const { plain, htmlDoc, tableHtml } = buildTableExportData();
-    let ok = false;
-
-    if (navigator.clipboard && window.ClipboardItem) {
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/html': new Blob([htmlDoc], { type: 'text/html' }),
-            'text/plain': new Blob([plain], { type: 'text/plain' }),
-          }),
-        ]);
-        ok = true;
-      } catch {
-        /* try fallbacks */
-      }
-    }
-
-    if (!ok) {
-      ok = await copyRichHtml(tableHtml);
-    }
-
-    if (!ok) {
-      try {
-        await navigator.clipboard.writeText(plain);
-        ok = true;
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = plain;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-    }
-
+    prepareTableCopy();
+    const { plain, tableHtml } = buildTableExportData();
+    const ok = await copyRichContentToClipboard(plain, tableHtml);
     if (ok) showCopiedFeedback();
   }
 
