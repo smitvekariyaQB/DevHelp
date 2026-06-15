@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+from workspaces.activity import log_create, log_delete, log_update
 from workspaces.permissions import viewer_forbidden_json
 
 from .models import TodoList, TodoTask
@@ -102,6 +103,7 @@ def list_create(request):
         color=color,
         order=max_order,
     )
+    log_create(request, 'todos', todo_list.title, f'Created list "{todo_list.title}"', todo_list.pk)
     return JsonResponse({'list': _list_payload(todo_list, 0)})
 
 
@@ -125,6 +127,7 @@ def list_update(request, list_id):
         if color:
             todo_list.color = color[:7]
     todo_list.save()
+    log_update(request, 'todos', todo_list.title, f'Updated list "{todo_list.title}"', todo_list.pk)
     count = get_active_tasks(todo_list).count()
     return JsonResponse({'list': _list_payload(todo_list, count)})
 
@@ -138,8 +141,10 @@ def list_delete(request, list_id):
     todo_list = get_object_or_404(TodoList, pk=list_id, workspace=request.workspace)
     if todo_list.is_smart:
         return JsonResponse({'error': 'Cannot delete built-in lists'}, status=400)
+    title = todo_list.title
     TodoTask.all_objects.filter(todo_list=todo_list).update(is_deleted=True)
     todo_list.delete()
+    log_delete(request, 'todos', title, f'Deleted list "{title}"', list_id)
     return JsonResponse({'ok': True})
 
 
@@ -183,6 +188,7 @@ def task_create(request):
         task_kwargs['completed_at'] = timezone.now()
 
     task = TodoTask.objects.create(**task_kwargs)
+    log_create(request, 'todos', task.title, f'Created task "{task.title}"', task.pk)
     return JsonResponse({'task': _task_payload(task)})
 
 
@@ -196,6 +202,8 @@ def task_toggle(request, task_id):
     task.is_completed = not task.is_completed
     task.completed_at = timezone.now() if task.is_completed else None
     task.save(update_fields=['is_completed', 'completed_at'])
+    state = 'completed' if task.is_completed else 'incomplete'
+    log_update(request, 'todos', task.title, f'Marked task "{task.title}" as {state}', task.pk)
     return JsonResponse({'task': _task_payload(task)})
 
 
@@ -220,6 +228,7 @@ def task_update(request, task_id):
         task.in_my_day = bool(data['in_my_day'])
 
     task.save()
+    log_update(request, 'todos', task.title, f'Updated task "{task.title}"', task.pk)
     return JsonResponse({'task': _task_payload(task)})
 
 
@@ -230,5 +239,7 @@ def task_delete(request, task_id):
     if forbidden:
         return forbidden
     task = get_object_or_404(TodoTask, pk=task_id, workspace=request.workspace)
+    title = task.title
     task.delete()
+    log_delete(request, 'todos', title, f'Deleted task "{title}"', task_id)
     return JsonResponse({'ok': True})

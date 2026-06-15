@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -12,6 +14,11 @@ from notes.models import Note
 from tables.models import TableSheet
 from todos.models import TodoList, TodoTask
 
+from .activity import (
+    get_workspace_activity_queryset,
+    serialize_activity,
+    workspace_has_collaborators,
+)
 from .models import MEMBER_ROLE_CHOICES, Workspace, WorkspaceMember, TOOL_CHOICES
 from .permissions import require_workspace_owner_for, resolve_workspace
 from .services import accept_workspace_invite, create_workspace_invite, normalize_email
@@ -197,3 +204,32 @@ def accept_invite(request, token):
 
     messages.success(request, f'You now have access to "{member.workspace.name}".')
     return redirect(f'{reverse("todos:index")}?w={member.workspace_id}')
+
+
+@login_required
+def activity_list(request):
+    workspace = getattr(request, 'workspace', None)
+    if not workspace or workspace.get_role_for(request.user) is None:
+        return JsonResponse({'items': [], 'has_more': False, 'page': 1})
+
+    if not workspace_has_collaborators(workspace):
+        return JsonResponse({'items': [], 'has_more': False, 'page': 1})
+
+    tool = request.GET.get('tool', '').strip() or None
+    object_id = request.GET.get('object_id', '').strip() or None
+    try:
+        page_num = max(1, int(request.GET.get('page', 1)))
+    except (TypeError, ValueError):
+        page_num = 1
+
+    paginator = Paginator(
+        get_workspace_activity_queryset(workspace, tool=tool, object_id=object_id),
+        30,
+    )
+    page = paginator.get_page(page_num)
+
+    return JsonResponse({
+        'items': [serialize_activity(item) for item in page.object_list],
+        'has_more': page.has_next(),
+        'page': page_num,
+    })

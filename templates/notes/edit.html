@@ -31,7 +31,7 @@
       <div class="editor-title-field">
         <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
       </div>
-      {% include "includes/editor_toolbar.html" with search_button_id="btnNoteSearch" search_button_title="Search in note (Ctrl+F)" copy_button_id="btnCopyNote" colors=colors current_color=note.color %}
+      {% include "includes/editor_toolbar.html" with search_button_id="btnNoteSearch" search_button_title="Search in note (Ctrl+F)" copy_button_id="btnCopyNote" colors=colors current_color=note.color history_object_id=note.pk %}
     </div>
 
     <div class="table-find-bar hidden" id="noteFindBar">

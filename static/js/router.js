@@ -293,6 +293,19 @@
       // 6. Update sidebar active states
       updateSidebarActive(newDoc);
 
+      const newShell = newDoc.querySelector('.app-shell-inner');
+      const currentShell = document.querySelector('.app-shell-inner');
+      if (newShell && currentShell) {
+        if (newShell.dataset.currentTool) {
+          currentShell.dataset.currentTool = newShell.dataset.currentTool;
+        } else {
+          delete currentShell.dataset.currentTool;
+        }
+        if (newShell.dataset.workspaceId) {
+          currentShell.dataset.workspaceId = newShell.dataset.workspaceId;
+        }
+      }
+
       // 7. Show any Django messages/toasts
       showToasts(newDoc);
 

@@ -39,5 +39,8 @@
       Delete list
     </button>
     {% endif %}
+    {% if history_object_id %}
+    {% include "includes/workspace_history_button.html" with history_object_id=history_object_id %}
+    {% endif %}
   </div>
 </div>

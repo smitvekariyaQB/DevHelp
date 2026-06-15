@@ -33,7 +33,9 @@
       </div>
       <div class="tasks-header-actions">
         {% if not current_list.is_smart and can_edit_content %}
-        {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" show_delete_list=True delete_list_id=current_list.id delete_list_title=current_list.title %}
+        {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" show_delete_list=True delete_list_id=current_list.id delete_list_title=current_list.title history_object_id=current_list.id %}
+        {% elif not current_list.is_smart %}
+        {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" history_object_id=current_list.id %}
         {% else %}
         {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" %}
         {% endif %}

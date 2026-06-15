@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from workspaces.activity import log_create, log_delete, log_update
 from workspaces.permissions import require_content_edit, viewer_forbidden_json
 
 from .models import Note
@@ -44,6 +45,7 @@ def create(request):
         return forbidden
     if request.method == 'POST':
         note = Note.objects.create(user=request.user, workspace=request.workspace, title='Untitled')
+        log_create(request, 'notes', note.title, f'Created note "{note.title}"', note.pk)
         return redirect('notes:edit', pk=note.pk)
     return redirect('notes:index')
 
@@ -58,11 +60,14 @@ def edit(request, pk):
             return forbidden
         action = request.POST.get('action')
         if action == 'delete':
+            title = note.title
             note.delete()
+            log_delete(request, 'notes', title, f'Deleted note "{title}"', pk)
             messages.success(request, 'Note deleted.')
             return redirect('notes:index')
 
         _apply_note_fields(note, request.POST)
+        log_update(request, 'notes', note.title, f'Updated note "{note.title}"', note.pk)
         messages.success(request, 'Note saved.')
         return redirect('notes:edit', pk=note.pk)
 
@@ -85,6 +90,7 @@ def autosave(request, pk):
     note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
     data = _parse_request_data(request)
     _apply_note_fields(note, data)
+    log_update(request, 'notes', note.title, f'Updated note "{note.title}"', note.pk)
     return JsonResponse({
         'ok': True,
         'title': note.title,
@@ -106,4 +112,5 @@ def update_color(request, pk):
         return JsonResponse({'error': 'Invalid color'}, status=400)
     note.color = color
     note.save(update_fields=['color', 'updated_at'])
+    log_update(request, 'notes', note.title, f'Changed color of note "{note.title}"', note.pk)
     return JsonResponse({'ok': True, 'color': note.color})

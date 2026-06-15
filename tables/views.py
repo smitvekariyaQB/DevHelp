@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from workspaces.activity import log_create, log_delete, log_update
 from workspaces.permissions import require_content_edit, viewer_forbidden_json
 
 from .models import TableSheet, default_sheet_data
@@ -78,6 +79,7 @@ def duplicate_sheet(request, pk):
         color=sheet.color,
         data=copy.deepcopy(sheet.data),
     )
+    log_create(request, 'tables', new_sheet.title, f'Duplicated table as "{new_sheet.title}"', new_sheet.pk)
     messages.success(request, 'Table duplicated.')
     return redirect('tables:edit', pk=new_sheet.pk)
 
@@ -89,6 +91,7 @@ def create(request):
         return forbidden
     if request.method == 'POST':
         sheet = TableSheet.objects.create(user=request.user, workspace=request.workspace, title='Untitled table')
+        log_create(request, 'tables', sheet.title, f'Created table "{sheet.title}"', sheet.pk)
         return redirect('tables:edit', pk=sheet.pk)
     return redirect('tables:index')
 
@@ -102,7 +105,9 @@ def edit(request, pk):
         if forbidden:
             return forbidden
         if request.POST.get('action') == 'delete':
+            title = sheet.title
             sheet.delete()
+            log_delete(request, 'tables', title, f'Deleted table "{title}"', pk)
             messages.success(request, 'Table deleted.')
             return redirect('tables:index')
 
@@ -111,6 +116,7 @@ def edit(request, pk):
         if color in ALLOWED_COLORS:
             sheet.color = color
         sheet.save()
+        log_update(request, 'tables', sheet.title, f'Updated table "{sheet.title}"', sheet.pk)
         messages.success(request, 'Table saved.')
         return redirect('tables:edit', pk=sheet.pk)
 
@@ -141,6 +147,7 @@ def autosave(request, pk):
         sheet.color = color
     sheet.save()
 
+    log_update(request, 'tables', sheet.title, f'Updated table "{sheet.title}"', sheet.pk)
     return JsonResponse({
         'ok': True,
         'title': sheet.title,

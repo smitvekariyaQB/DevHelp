@@ -1,0 +1,21 @@
+{% if show_workspace_history %}
+<aside id="workspaceHistoryPanel"
+       class="workspace-history-panel"
+       aria-hidden="true"
+       hidden>
+  <div class="workspace-history-head">
+    <h2 class="workspace-history-title">History</h2>
+    <button type="button"
+            class="workspace-history-close"
+            id="btnCloseWorkspaceHistory"
+            aria-label="Close history">&times;</button>
+  </div>
+  <div class="workspace-history-body" id="workspaceHistoryBody">
+    <p class="workspace-history-empty">No activity yet.</p>
+  </div>
+  <div class="workspace-history-footer hidden" id="workspaceHistoryFooter">
+    <button type="button" class="btn btn-secondary btn-sm" id="btnWorkspaceHistoryMore">Load more</button>
+  </div>
+</aside>
+<div id="workspaceHistoryBackdrop" class="workspace-history-backdrop" hidden aria-hidden="true"></div>
+{% endif %}

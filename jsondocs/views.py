@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from workspaces.activity import log_create, log_delete, log_update
 from workspaces.permissions import can_edit_content, viewer_forbidden_json
 
 from .models import JsonDocument
@@ -39,6 +40,7 @@ def index(request):
             title='Untitled.json',
             content='',
         )
+        log_create(request, 'jsondocs', current_doc.title, f'Created JSON file "{current_doc.title}"', current_doc.pk)
         documents = JsonDocument.objects.filter(workspace=request.workspace)
     elif selected_id:
         current_doc = get_object_or_404(JsonDocument, pk=selected_id, workspace=request.workspace)
@@ -80,6 +82,7 @@ def doc_create(request):
         title=title,
         content=content[:500000],
     )
+    log_create(request, 'jsondocs', doc.title, f'Created JSON file "{doc.title}"', doc.pk)
     return JsonResponse({'document': _doc_payload(doc)})
 
 
@@ -100,6 +103,7 @@ def doc_autosave(request, pk):
             doc.content = content[:500000]
 
     doc.save()
+    log_update(request, 'jsondocs', doc.title, f'Updated JSON file "{doc.title}"', doc.pk)
     return JsonResponse({
         'ok': True,
         'document': _doc_payload(doc),
@@ -113,5 +117,7 @@ def doc_delete(request, pk):
     if forbidden:
         return forbidden
     doc = get_object_or_404(JsonDocument, pk=pk, workspace=request.workspace)
+    title = doc.title
     doc.delete()
+    log_delete(request, 'jsondocs', title, f'Deleted JSON file "{title}"', pk)
     return JsonResponse({'ok': True})

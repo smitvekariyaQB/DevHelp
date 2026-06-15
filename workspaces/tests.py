@@ -218,3 +218,90 @@ class WorkspaceSharingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         member.refresh_from_db()
         self.assertEqual(member.status, 'accepted')
+
+    def test_activity_logged_for_shared_workspace(self):
+        WorkspaceMember.objects.create(
+            workspace=self.workspace,
+            user=self.editor,
+            email='editor@example.com',
+            role='editor',
+            status='accepted',
+            invited_by=self.owner,
+        )
+        from workspaces.activity import log_activity
+
+        log_activity(
+            self.workspace,
+            self.editor,
+            'notes',
+            'create',
+            'Test note',
+            'Created note "Test note"',
+            object_id=1,
+        )
+        client = Client()
+        client.force_login(self.owner)
+        response = client.get(
+            reverse('workspaces:activity_list') + f'?w={self.workspace.id}&tool=notes',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['items']), 1)
+        self.assertIn('editor@example.com', data['items'][0]['display_name'])
+        self.assertIn('Created note', data['items'][0]['details'])
+
+    def test_activity_filtered_by_object_id(self):
+        WorkspaceMember.objects.create(
+            workspace=self.workspace,
+            user=self.editor,
+            email='editor@example.com',
+            role='editor',
+            status='accepted',
+            invited_by=self.owner,
+        )
+        from workspaces.activity import log_activity
+
+        log_activity(
+            self.workspace,
+            self.editor,
+            'notes',
+            'create',
+            'Note A',
+            'Created note "Note A"',
+            object_id=1,
+        )
+        log_activity(
+            self.workspace,
+            self.editor,
+            'notes',
+            'create',
+            'Note B',
+            'Created note "Note B"',
+            object_id=2,
+        )
+        client = Client()
+        client.force_login(self.owner)
+        response = client.get(
+            reverse('workspaces:activity_list')
+            + f'?w={self.workspace.id}&tool=notes&object_id=1',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['items']), 1)
+        self.assertIn('Note A', data['items'][0]['details'])
+
+    def test_activity_not_logged_without_collaborators(self):
+        from workspaces.activity import log_activity
+        from workspaces.models import WorkspaceActivity
+
+        result = log_activity(
+            self.workspace,
+            self.owner,
+            'notes',
+            'create',
+            'Solo note',
+            'Created note "Solo note"',
+            object_id=1,
+        )
+        self.assertIsNone(result)
+        self.assertEqual(WorkspaceActivity.objects.count(), 0)

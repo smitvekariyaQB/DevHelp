@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from workspaces.activity import log_create, log_delete, log_update
 from workspaces.permissions import viewer_forbidden_json
 
 from .defaults import (
@@ -88,6 +89,7 @@ def doc_create(request):
         title=title,
         content=content[:500000],
     )
+    log_create(request, 'codefiles', doc.title, f'Created code file "{doc.title}"', doc.pk)
     return JsonResponse({'document': _doc_payload(doc)})
 
 
@@ -110,6 +112,7 @@ def doc_autosave(request, pk):
             doc.content = content[:500000]
 
     doc.save()
+    log_update(request, 'codefiles', doc.title, f'Updated code file "{doc.title}"', doc.pk)
     return JsonResponse({
         'ok': True,
         'document': _doc_payload(doc),
@@ -123,5 +126,7 @@ def doc_delete(request, pk):
     if forbidden:
         return forbidden
     doc = get_object_or_404(CodeDocument, pk=pk, workspace=request.workspace)
+    title = doc.title
     doc.delete()
+    log_delete(request, 'codefiles', title, f'Deleted code file "{title}"', pk)
     return JsonResponse({'ok': True})
