@@ -2,6 +2,7 @@
   const cfg = window.TODO_CONFIG;
   if (!cfg) return;
 
+  const canEdit = cfg.canEditContent !== false;
   const csrf = cfg.csrfToken;
   const undoStack = [];
   const redoStack = [];
@@ -10,6 +11,7 @@
   let findIndex = -1;
 
   function post(url, body) {
+    if (!canEdit) return Promise.resolve({ error: 'View only' });
     return fetch(url, {
       method: 'POST',
       headers: {
@@ -44,13 +46,13 @@
     if (task.list_id != null) li.dataset.listId = task.list_id;
     if (task.in_my_day) li.dataset.inMyDay = '1';
     li.innerHTML = `
-      <button type="button" class="task-check${task.is_completed ? ' checked' : ''}" data-action="toggle" aria-label="Toggle"></button>
+      ${canEdit ? `<button type="button" class="task-check${task.is_completed ? ' checked' : ''}" data-action="toggle" aria-label="Toggle"></button>` : '<button type="button" class="task-check-placeholder" disabled aria-hidden="true"></button>'}
       <div class="task-body">
         <span class="task-title">${escapeHtml(task.title)}</span>
         ${task.due_date ? `<span class="task-due">${task.due_date}</span>` : ''}
       </div>
-      <button type="button" class="task-star${task.is_important ? ' starred' : ''}" data-action="star" aria-label="Important">★</button>
-      <button type="button" class="task-delete" data-action="delete" aria-label="Delete">×</button>
+      ${canEdit ? `<button type="button" class="task-star${task.is_important ? ' starred' : ''}" data-action="star" aria-label="Important">★</button>
+      <button type="button" class="task-delete" data-action="delete" aria-label="Delete">×</button>` : ''}
     `;
     return li;
   }

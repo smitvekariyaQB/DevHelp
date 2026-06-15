@@ -37,6 +37,9 @@
                 <path d="M6 9l6 6 6-6"/>
               </svg>
               {{ ws.name }}
+              {% if ws.is_shared %}
+              <span style="font-size: 10px; font-weight: 600; color: var(--text-secondary); background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em;">Shared</span>
+              {% endif %}
             </div>
           </div>
           {% endif %}

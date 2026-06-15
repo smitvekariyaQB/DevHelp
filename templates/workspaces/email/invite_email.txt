@@ -1,0 +1,10 @@
+Hello,
+
+{{ inviter_name }} ({{ inviter_email }}) has invited you to collaborate on the workspace "{{ workspace_name }}" on {{ site_name }} as {{ role_label }}.
+
+Accept the invitation:
+{{ accept_url }}
+
+If you don't have an account yet, sign up with this email address, then open the link again to accept.
+
+If you did not expect this invitation, you can ignore this email.

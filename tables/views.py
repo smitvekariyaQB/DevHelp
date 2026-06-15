@@ -8,6 +8,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from workspaces.permissions import require_content_edit, viewer_forbidden_json
+
 from .models import TableSheet, default_sheet_data
 
 ALLOWED_COLORS = {hex for hex, _ in TableSheet.COLORS}
@@ -59,13 +61,16 @@ def _validate_data(data):
 
 @login_required
 def index(request):
-    sheets = request.user.table_sheets.filter(workspace=request.workspace)
+    sheets = TableSheet.objects.filter(workspace=request.workspace)
     return render(request, 'tables/index.html', {'sheets': sheets})
 
 
 @login_required
 def duplicate_sheet(request, pk):
-    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user, workspace=request.workspace)
+    forbidden = require_content_edit(request)
+    if forbidden:
+        return forbidden
+    sheet = get_object_or_404(TableSheet, pk=pk, workspace=request.workspace)
     new_sheet = TableSheet.objects.create(
         user=request.user,
         workspace=request.workspace,
@@ -79,6 +84,9 @@ def duplicate_sheet(request, pk):
 
 @login_required
 def create(request):
+    forbidden = require_content_edit(request)
+    if forbidden:
+        return forbidden
     if request.method == 'POST':
         sheet = TableSheet.objects.create(user=request.user, workspace=request.workspace, title='Untitled table')
         return redirect('tables:edit', pk=sheet.pk)
@@ -87,9 +95,12 @@ def create(request):
 
 @login_required
 def edit(request, pk):
-    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user, workspace=request.workspace)
+    sheet = get_object_or_404(TableSheet, pk=pk, workspace=request.workspace)
 
     if request.method == 'POST':
+        forbidden = require_content_edit(request)
+        if forbidden:
+            return forbidden
         if request.POST.get('action') == 'delete':
             sheet.delete()
             messages.success(request, 'Table deleted.')
@@ -116,7 +127,10 @@ def edit(request, pk):
 @login_required
 @require_POST
 def autosave(request, pk):
-    sheet = get_object_or_404(TableSheet, pk=pk, user=request.user, workspace=request.workspace)
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    sheet = get_object_or_404(TableSheet, pk=pk, workspace=request.workspace)
     data = _parse_body(request)
 
     sheet.title = (data.get('title') or sheet.title).strip()[:200] or 'Untitled table'

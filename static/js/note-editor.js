@@ -8,6 +8,7 @@
   const btnUndo = document.getElementById('btnUndo');
   const btnRedo = document.getElementById('btnRedo');
   const cfg = window.NOTE_EDITOR_CONFIG || {};
+  const canEdit = cfg.canEditContent !== false;
 
   const AUTOSAVE_DELAY = 800;
   const HISTORY_DELAY = 900;
@@ -131,7 +132,7 @@
   }
 
   function scheduleAutosave(immediate) {
-    if (!ready) return;
+    if (!ready || !canEdit) return;
     setStatus('unsaved');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(runAutosave, immediate ? 0 : AUTOSAVE_DELAY);
@@ -329,6 +330,11 @@
 
   if (initial) {
     quill.setContents(quill.clipboard.convert({ html: initial }), 'silent');
+  }
+
+  if (!canEdit) {
+    quill.enable(false);
+    if (titleInput) titleInput.readOnly = true;
   }
 
   function noteBodyText() {

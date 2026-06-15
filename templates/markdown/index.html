@@ -18,7 +18,7 @@
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
-        <button type="button" class="btn-new-md" id="btnNewMarkdown" title="New markdown file">+</button>
+        <button type="button" class="btn-new-md" id="btnNewMarkdown" title="New markdown file"{% if not can_edit_content %} hidden{% endif %}>+</button>
       </div>
     </div>
     <div class="files-panel-body">
@@ -76,8 +76,10 @@
         </label>
         <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownSearch" title="Search in markdown (Ctrl+F)">Search</button>
         <button type="button" class="btn btn-default btn-markdown-tool" id="btnMarkdownCopy" title="Copy markdown">Copy</button>
+        {% if can_edit_content %}
         <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteMarkdown">Delete</button>
         <button type="button" class="btn btn-primary btn-inline" id="btnMarkdownSave">Save</button>
+        {% endif %}
       </div>
     </header>
 
@@ -121,7 +123,8 @@
                           class="markdown-editor"
                           spellcheck="false"
                           aria-label="Markdown content"
-                          placeholder="Write markdown here…">{{ current_doc.content }}</textarea>
+                          placeholder="Write markdown here…"
+                          {% if not can_edit_content %}readonly{% endif %}>{{ current_doc.content }}</textarea>
               </div>
             </div>
           </div>
@@ -156,7 +159,7 @@
       <div class="markdown-welcome-icon">M↓</div>
       <h1>Markdown Editor</h1>
       <p>Create a markdown file to write, preview, and save your documents.</p>
-      <button type="button" class="btn btn-primary" id="btnNewMarkdownWelcome">+ New markdown file</button>
+      <button type="button" class="btn btn-primary" id="btnNewMarkdownWelcome"{% if not can_edit_content %} hidden{% endif %}>+ New markdown file</button>
     </div>
     {% endif %}
   </section>
@@ -167,6 +170,7 @@
 <script>
   window.MARKDOWN_EDITOR_CONFIG = {
     csrfToken: '{{ csrf_token }}',
+    canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
     currentDocId: {% if current_doc %}{{ current_doc.id }}{% else %}null{% endif %},
     urls: {
       index: '{% url "markdown:index" %}',

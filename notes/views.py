@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from workspaces.permissions import require_content_edit, viewer_forbidden_json
+
 from .models import Note
 from .utils import sanitize_note_html
 
@@ -31,12 +33,15 @@ def _apply_note_fields(note, data):
 
 @login_required
 def index(request):
-    notes = request.user.notes.filter(workspace=request.workspace)
+    notes = Note.objects.filter(workspace=request.workspace)
     return render(request, 'notes/index.html', {'notes': notes})
 
 
 @login_required
 def create(request):
+    forbidden = require_content_edit(request)
+    if forbidden:
+        return forbidden
     if request.method == 'POST':
         note = Note.objects.create(user=request.user, workspace=request.workspace, title='Untitled')
         return redirect('notes:edit', pk=note.pk)
@@ -45,9 +50,12 @@ def create(request):
 
 @login_required
 def edit(request, pk):
-    note = get_object_or_404(Note, pk=pk, user=request.user, workspace=request.workspace)
+    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
 
     if request.method == 'POST':
+        forbidden = require_content_edit(request)
+        if forbidden:
+            return forbidden
         action = request.POST.get('action')
         if action == 'delete':
             note.delete()
@@ -71,7 +79,10 @@ def edit(request, pk):
 @login_required
 @require_POST
 def autosave(request, pk):
-    note = get_object_or_404(Note, pk=pk, user=request.user, workspace=request.workspace)
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
     data = _parse_request_data(request)
     _apply_note_fields(note, data)
     return JsonResponse({
@@ -85,7 +96,10 @@ def autosave(request, pk):
 @login_required
 @require_POST
 def update_color(request, pk):
-    note = get_object_or_404(Note, pk=pk, user=request.user, workspace=request.workspace)
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
     data = _parse_request_data(request)
     color = data.get('color', '')
     if color not in ALLOWED_COLORS:

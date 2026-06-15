@@ -8,10 +8,12 @@
       <h1>Notes</h1>
       <p class="panel-sub">Add and edit your notes · {{ notes|length }} total</p>
     </div>
+    {% if can_edit_content %}
     <form method="post" action="{% url 'notes:create' %}">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary btn-inline">+ New note</button>
     </form>
+    {% endif %}
   </header>
 
   {% if notes %}
@@ -27,10 +29,12 @@
   {% else %}
   <div class="notes-empty">
     <p>No notes yet.</p>
+    {% if can_edit_content %}
     <form method="post" action="{% url 'notes:create' %}">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary btn-inline">Create your first note</button>
     </form>
+    {% endif %}
   </div>
   {% endif %}
 </div>

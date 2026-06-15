@@ -5,7 +5,9 @@
 {% block main %}
 <div class="todo-app" data-current-list="{{ current_list.id }}">
   <aside class="todo-lists-panel">
+    {% if can_edit_content %}
     <button type="button" class="btn-new-list" id="btnNewList">+ New list</button>
+    {% endif %}
     <ul class="todo-lists" id="todoLists">
       {% for lst in lists %}
       <li>
@@ -30,7 +32,7 @@
         <p class="tasks-date" id="tasksDate"></p>
       </div>
       <div class="tasks-header-actions">
-        {% if not current_list.is_smart %}
+        {% if not current_list.is_smart and can_edit_content %}
         {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" show_delete_list=True delete_list_id=current_list.id delete_list_title=current_list.title %}
         {% else %}
         {% include "includes/editor_toolbar.html" with search_button_id="btnTodoSearch" %}
@@ -56,21 +58,28 @@
       <input type="text"
              id="newTaskInput"
              class="add-task-input"
-             placeholder="Add a task"
+             placeholder="{% if can_edit_content %}Add a task{% else %}View only{% endif %}"
              autocomplete="off"
-             data-list-id="{{ current_list.id }}">
+             data-list-id="{{ current_list.id }}"
+             {% if not can_edit_content %}readonly disabled{% endif %}>
     </div>
 
     <ul class="task-list active-tasks" id="activeTasks">
       {% for task in active_tasks %}
       <li class="task-item" data-task-id="{{ task.id }}"{% if task.todo_list_id %} data-list-id="{{ task.todo_list_id }}"{% endif %}{% if task.in_my_day %} data-in-my-day="1"{% endif %}>
+        {% if can_edit_content %}
         <button type="button" class="task-check" data-action="toggle" aria-label="Complete task"></button>
+        {% else %}
+        <button type="button" class="task-check-placeholder" disabled aria-hidden="true"></button>
+        {% endif %}
         <div class="task-body">
           <span class="task-title">{{ task.title }}</span>
           {% if task.due_date %}<span class="task-due">{{ task.due_date }}</span>{% endif %}
         </div>
+        {% if can_edit_content %}
         <button type="button" class="task-star {% if task.is_important %}starred{% endif %}" data-action="star" aria-label="Important">★</button>
         <button type="button" class="task-delete" data-action="delete" aria-label="Delete">×</button>
+        {% endif %}
       </li>
       {% empty %}
       <li class="task-empty">No tasks yet. Add one above.</li>
@@ -84,11 +93,17 @@
       <ul class="task-list completed-tasks" id="completedTasks">
         {% for task in completed_tasks %}
         <li class="task-item completed" data-task-id="{{ task.id }}">
+          {% if can_edit_content %}
           <button type="button" class="task-check checked" data-action="toggle" aria-label="Mark incomplete"></button>
+          {% else %}
+          <button type="button" class="task-check checked" disabled aria-hidden="true"></button>
+          {% endif %}
           <div class="task-body">
             <span class="task-title">{{ task.title }}</span>
           </div>
+          {% if can_edit_content %}
           <button type="button" class="task-delete" data-action="delete" aria-label="Delete">×</button>
+          {% endif %}
         </li>
         {% endfor %}
       </ul>
@@ -101,6 +116,7 @@
 <script>
   window.TODO_CONFIG = {
     csrfToken: '{{ csrf_token }}',
+    canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
     listId: {{ current_list.id }},
     smartListType: '{{ current_list.smart_type|escapejs }}',
     importantListId: {% if sidebar_list_ids.important %}{{ sidebar_list_ids.important }}{% else %}null{% endif %},

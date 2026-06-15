@@ -14,14 +14,15 @@ DEFAULT_LISTS = [
 
 
 def ensure_default_lists(user, workspace):
-    if user.todo_lists.filter(workspace=workspace).exists():
+    if TodoList.objects.filter(workspace=workspace).exists():
         return
+    owner = workspace.user
     for item in DEFAULT_LISTS:
-        TodoList.objects.create(user=user, workspace=workspace, **item)
+        TodoList.objects.create(user=owner, workspace=workspace, **item)
 
 
-def get_tasks_for_list(user, todo_list):
-    base = TodoTask.objects.filter(user=user, workspace=todo_list.workspace)
+def get_tasks_for_list(todo_list):
+    base = TodoTask.objects.filter(workspace=todo_list.workspace)
     if todo_list.smart_type == TodoList.SMART_MY_DAY:
         return base.filter(in_my_day=True)
     if todo_list.smart_type == TodoList.SMART_IMPORTANT:
@@ -29,9 +30,9 @@ def get_tasks_for_list(user, todo_list):
     return base.filter(todo_list=todo_list)
 
 
-def get_active_tasks(user, todo_list):
-    return get_tasks_for_list(user, todo_list).filter(is_completed=False)
+def get_active_tasks(todo_list):
+    return get_tasks_for_list(todo_list).filter(is_completed=False)
 
 
-def get_completed_tasks(user, todo_list):
-    return get_tasks_for_list(user, todo_list).filter(is_completed=True)
+def get_completed_tasks(todo_list):
+    return get_tasks_for_list(todo_list).filter(is_completed=True)

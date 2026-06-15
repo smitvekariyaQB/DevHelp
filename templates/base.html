@@ -35,7 +35,10 @@
   {% if messages %}
   <div class="toast-stack">
     {% for message in messages %}
-    <div class="toast toast-{{ message.tags }}">{{ message }}</div>
+    <div class="toast toast-{{ message.tags }}">
+      <span class="toast-message">{{ message }}</span>
+      <button type="button" class="toast-close" aria-label="Dismiss notification">&times;</button>
+    </div>
     {% endfor %}
   </div>
   {% endif %}
@@ -43,6 +46,7 @@
   {% block content %}{% endblock %}
   {% include "includes/modal.html" %}
   <script src="{% static 'js/modals.js' %}"></script>
+  <script src="{% static 'js/toasts.js' %}"></script>
   <script src="{% static 'js/preferences.js' %}"></script>
   <script src="{% static 'js/settings-tabs.js' %}"></script>
   <script src="{% static 'js/router.js' %}"></script>

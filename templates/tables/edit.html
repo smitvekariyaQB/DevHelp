@@ -7,6 +7,7 @@
   <header class="note-edit-header">
     <a href="{% url 'tables:index' %}" class="back-link">← All tables</a>
     <div class="note-edit-actions">
+      {% if can_edit_content %}
       <button type="button" class="btn btn-default" id="btnDuplicateTable" title="Create a duplicate table">Duplicate</button>
       <form method="post" class="inline-form" id="deleteTableForm">
         {% csrf_token %}
@@ -14,6 +15,9 @@
         <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteTable">Delete</button>
       </form>
       {% include "includes/save_controls.html" with autosave_id="tableAutosaveStatus" %}
+      {% else %}
+      <span class="preference-desc">View only</span>
+      {% endif %}
     </div>
   </header>
 
@@ -53,6 +57,7 @@
     csrfToken: '{{ csrf_token }}',
     initialData: {{ sheet_data_json|safe }},
     initialColor: '{{ sheet.color }}',
+    canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
   };
 </script>
 {% endblock %}

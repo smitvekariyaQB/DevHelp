@@ -1,0 +1,68 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block title %}{{ workspace.name }} — Workspaces — ArcBook{% endblock %}
+
+{% block main %}
+<div class="settings-app">
+  {% include "includes/settings_sidebar.html" %}
+
+  <section class="settings-content">
+    <div class="panel-header" style="padding-top: 0; padding-left: 0; padding-right: 0;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+        <a href="{% url 'workspaces:list' %}" style="display: inline-flex; align-items: center; color: var(--text-secondary); text-decoration: none;" title="Back to Workspaces">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <h1>{{ workspace.name }}</h1>
+      </div>
+      <p class="panel-sub">Shared workspace · {{ access_role|title }} access</p>
+    </div>
+
+    <div class="profile-sections" style="padding-left: 0; padding-right: 0;">
+      <section class="panel-card" style="max-width: 100%; width: 100%;">
+        <h2 class="section-title">Workspace details</h2>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 8px;">Workspace Name</label>
+          <p style="margin: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);">{{ workspace.name }}</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 12px;">Enabled Tools</label>
+          <p class="preference-desc" style="margin: 0;">{{ workspace.enabled_tools_display }}</p>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 8px;">Your access</label>
+          <p style="margin: 0; color: var(--text-secondary);">{{ access_role|title }}</p>
+        </div>
+      </section>
+
+      <section class="panel-card" style="max-width: 100%; width: 100%; margin-top: 24px;">
+        <h2 class="section-title">People</h2>
+        <div class="workspace-list">
+          <div class="preference-row workspace-list-item" style="align-items: center; padding: 12px 0;">
+            <div class="preference-info">
+              <span class="preference-label">{{ workspace.user.email }}</span>
+              <span class="preference-desc">Owner · Active</span>
+            </div>
+          </div>
+          {% for member in members %}
+          <div class="preference-row workspace-list-item" style="align-items: center; padding: 12px 0;">
+            <div class="preference-info">
+              <span class="preference-label">{{ member.email }}</span>
+              <span class="preference-desc">
+                {{ member.get_role_display }}
+                {% if member.status == 'pending' %} · Pending{% elif member.status == 'accepted' %} · Active{% else %} · {{ member.get_status_display }}{% endif %}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </section>
+</div>
+{% endblock %}

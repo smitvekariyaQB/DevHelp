@@ -49,7 +49,140 @@
           </div>
         </form>
       </section>
+
+      {% if can_share %}
+      <section class="panel-card" id="share" style="max-width: 100%; width: 100%; margin-top: 24px;">
+        <h2 class="section-title">Share workspace</h2>
+        <p class="preference-desc" style="margin-bottom: 20px;">Invite others by email. Editors can change content; viewers can only read.</p>
+
+        <form method="post" action="{% url 'workspaces:share_invite' workspace.id %}" style="margin-bottom: 28px;">
+          {% csrf_token %}
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+              <label for="shareEmail" style="display: block; font-weight: 600; margin-bottom: 8px;">Email address</label>
+              <input type="email" id="shareEmail" name="email" required placeholder="colleague@example.com"
+                     style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; background: var(--bg-primary); color: var(--text-primary);">
+            </div>
+            <div>
+              <label for="shareRole" style="display: block; font-weight: 600; margin-bottom: 8px;">Permission</label>
+              <select id="shareRole" name="role" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; background: var(--bg-primary); color: var(--text-primary);">
+                {% for role_key, role_label in member_role_choices %}
+                <option value="{{ role_key }}">{{ role_label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 8px 20px;">Send invitation</button>
+          </div>
+        </form>
+
+        {% if can_share %}
+        <div class="workspace-list">
+          <div class="preference-row workspace-list-item" style="align-items: center; padding: 12px 0;">
+            <div class="preference-info">
+              <span class="preference-label">{{ workspace.user.email }}</span>
+              <span class="preference-desc">Owner · Active</span>
+            </div>
+          </div>
+          {% for member in members %}
+          <div class="preference-row workspace-list-item" style="align-items: center; padding: 12px 0;">
+            <div class="preference-info">
+              <span class="preference-label">{{ member.email }}</span>
+              <span class="preference-desc">
+                {{ member.get_role_display }}
+                {% if member.status == 'pending' %} · Pending{% elif member.status == 'accepted' %} · Active{% else %} · {{ member.get_status_display }}{% endif %}
+              </span>
+            </div>
+            {% if member.status != 'revoked' %}
+            <div style="display: flex; gap: 8px; margin-left: 16px; align-items: center;">
+              {% if member.status == 'accepted' %}
+              <form method="post"
+                    action="{% url 'workspaces:share_manage' workspace.id member.id %}"
+                    class="share-role-form"
+                    data-member-email="{{ member.email }}"
+                    style="display: flex; gap: 8px; align-items: center;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_role">
+                <select name="role" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: var(--bg-primary); color: var(--text-primary);">
+                  {% for role_key, role_label in member_role_choices %}
+                  <option value="{{ role_key }}" {% if member.role == role_key %}selected{% endif %}>{{ role_label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Update</button>
+              </form>
+              {% endif %}
+              <form method="post"
+                    action="{% url 'workspaces:share_manage' workspace.id member.id %}"
+                    class="share-revoke-form"
+                    data-member-email="{{ member.email }}"
+                    data-pending="{% if member.status == 'pending' %}true{% else %}false{% endif %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="revoke">
+                <button type="submit" class="btn btn-danger btn-sm">{% if member.status == 'pending' %}Cancel{% else %}Revoke{% endif %}</button>
+              </form>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% if not members %}
+        <p class="preference-desc">No collaborators yet.</p>
+        {% endif %}
+        {% endif %}
+      </section>
+      {% endif %}
     </div>
   </section>
 </div>
+{% endblock %}
+
+{% block page_js %}
+{% if can_share %}
+<script>
+(function () {
+  function confirmThenSubmit(form, getOptions) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const submitForm = () => form.submit();
+      if (!window.AppModal) {
+        submitForm();
+        return;
+      }
+      AppModal.confirm(getOptions(form)).then(function (ok) {
+        if (ok) submitForm();
+      });
+    });
+  }
+
+  document.querySelectorAll('.share-role-form').forEach(function (form) {
+    confirmThenSubmit(form, function (form) {
+      const email = form.dataset.memberEmail;
+      const roleSelect = form.querySelector('[name="role"]');
+      const role = roleSelect.options[roleSelect.selectedIndex].text;
+      return {
+        title: 'Update permission',
+        message: 'Change access for ' + email + ' to ' + role + '?',
+        confirmText: 'Update',
+        cancelText: 'Cancel',
+      };
+    });
+  });
+
+  document.querySelectorAll('.share-revoke-form').forEach(function (form) {
+    confirmThenSubmit(form, function (form) {
+      const email = form.dataset.memberEmail;
+      const isPending = form.dataset.pending === 'true';
+      return {
+        title: isPending ? 'Cancel invitation' : 'Revoke access',
+        message: isPending
+          ? 'Cancel the invitation for ' + email + '?'
+          : 'Revoke access for ' + email + '? They will no longer be able to use this workspace.',
+        confirmText: isPending ? 'Cancel invitation' : 'Revoke',
+        cancelText: 'Cancel',
+        danger: true,
+      };
+    });
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

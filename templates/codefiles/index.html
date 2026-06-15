@@ -18,7 +18,7 @@
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
-        <button type="button" class="btn-new-code" id="btnNewCode" title="New code file">+</button>
+        <button type="button" class="btn-new-code" id="btnNewCode" title="New code file"{% if not can_edit_content %} hidden{% endif %}>+</button>
       </div>
     </div>
     <div class="files-panel-body">
@@ -73,8 +73,10 @@
       <div class="code-actions">
         <button type="button" class="btn btn-default btn-code-tool" id="btnCodeSearch" title="Search in code (Ctrl+F)">Search</button>
         <button type="button" class="btn btn-default btn-code-tool" id="btnCodeCopy" title="Copy code">Copy</button>
+        {% if can_edit_content %}
         <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteCode">Delete</button>
         <button type="button" class="btn btn-primary btn-inline" id="btnCodeSave">Save</button>
+        {% endif %}
       </div>
     </header>
 
@@ -101,7 +103,8 @@
           <textarea id="codeEditor"
                     class="code-editor"
                     spellcheck="false"
-                    aria-label="Code content">{{ current_doc.content }}</textarea>
+                    aria-label="Code content"
+                    {% if not can_edit_content %}readonly{% endif %}>{{ current_doc.content }}</textarea>
         </div>
       </div>
     </div>
@@ -110,7 +113,7 @@
       <div class="code-welcome-icon">&lt;/&gt;</div>
       <h1>Code Editor</h1>
       <p>Create a file using the name box above the file list. Supported extensions get syntax highlighting; others open as plain text.</p>
-      <button type="button" class="btn btn-primary" id="btnNewCodeWelcome">Create first file</button>
+      <button type="button" class="btn btn-primary" id="btnNewCodeWelcome"{% if not can_edit_content %} hidden{% endif %}>Create first file</button>
     </div>
     {% endif %}
   </section>
@@ -121,6 +124,7 @@
 <script>
   window.CODE_EDITOR_CONFIG = {
     csrfToken: '{{ csrf_token }}',
+    canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
     currentDocId: {% if current_doc %}{{ current_doc.id }}{% else %}null{% endif %},
     extensionLanguages: {{ extension_languages_json|safe }},
     urls: {

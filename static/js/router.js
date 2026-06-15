@@ -223,6 +223,7 @@
     const newToasts = newDoc.querySelector('.toast-stack');
     if (newToasts) {
       document.body.insertAdjacentElement('afterbegin', newToasts);
+      window.initToastAutoDismiss?.(document);
     }
   }
 

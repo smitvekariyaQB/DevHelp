@@ -11,6 +11,7 @@
   const btnAddRow = document.getElementById('btnAddRow');
   if (!cfg || !container) return;
 
+  const canEdit = cfg.canEditContent !== false;
   const ROW_HEADER_WIDTH = 48;
   const AUTOSAVE_DELAY = 800;
   const HISTORY_DELAY = 900;
@@ -189,6 +190,7 @@
   }
 
   function scheduleAutosave(immediate) {
+    if (!canEdit) return;
     setStatus('unsaved');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(runAutosave, immediate ? 0 : AUTOSAVE_DELAY);
@@ -224,6 +226,7 @@
   }
 
   function addColumn() {
+    if (!canEdit) return;
     const col = insertColumnAt(sheetData.columns.length);
     requestAnimationFrame(() => {
       const scrollEl = container.closest('.spreadsheet-scroll');
@@ -252,6 +255,7 @@
   }
 
   function addRow() {
+    if (!canEdit) return;
     insertRowAt(sheetData.rows.length);
   }
 
@@ -629,6 +633,7 @@
         ta.dataset.colId = col.id;
         ta.value = row.cells[col.id] || '';
         ta.rows = 1;
+        if (!canEdit) ta.readOnly = true;
         ta.addEventListener('input', () => {
           autoResizeTextarea(ta);
           scheduleHistoryCapture();
@@ -1353,6 +1358,8 @@
 
   render();
   requestAnimationFrame(updateTableLayout);
+
+  if (!canEdit && titleInput) titleInput.readOnly = true;
 
   history.reset(getFullState());
   setStatus('saved');

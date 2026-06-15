@@ -18,7 +18,7 @@
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
-        <button type="button" class="btn-new-json" id="btnNewJson" title="New JSON file">+</button>
+        <button type="button" class="btn-new-json" id="btnNewJson" title="New JSON file"{% if not can_edit_content %} hidden{% endif %}>+</button>
       </div>
     </div>
     <div class="files-panel-body">
@@ -70,8 +70,10 @@
         <button type="button" class="btn btn-default btn-json-tool" id="btnJsonFormat" title="Format JSON">Format</button>
         <button type="button" class="btn btn-default btn-json-tool" id="btnJsonMinify" title="Minify JSON">Minify</button>
         <button type="button" class="btn btn-default btn-json-tool" id="btnJsonCopy" title="Copy JSON">Copy</button>
+        {% if can_edit_content %}
         <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteJson">Delete</button>
         <button type="button" class="btn btn-primary btn-inline" id="btnManualSave">Save</button>
+        {% endif %}
       </div>
     </header>
 
@@ -118,7 +120,8 @@
             <textarea id="jsonEditor"
                       class="json-editor"
                       spellcheck="false"
-                      aria-label="JSON content">{{ current_doc.content }}</textarea>
+                      aria-label="JSON content"
+                      {% if not can_edit_content %}readonly{% endif %}>{{ current_doc.content }}</textarea>
           </div>
         </div>
       </div>
@@ -128,7 +131,7 @@
       <div class="json-welcome-icon">{ }</div>
       <h1>JSON Formatter</h1>
       <p>Create a JSON file to format, search, and copy your data.</p>
-      <button type="button" class="btn btn-primary" id="btnNewJsonWelcome">+ New JSON file</button>
+      <button type="button" class="btn btn-primary" id="btnNewJsonWelcome"{% if not can_edit_content %} hidden{% endif %}>+ New JSON file</button>
     </div>
     {% endif %}
   </section>
@@ -139,6 +142,7 @@
 <script>
   window.JSON_EDITOR_CONFIG = {
     csrfToken: '{{ csrf_token }}',
+    canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
     currentDocId: {% if current_doc %}{{ current_doc.id }}{% else %}null{% endif %},
     urls: {
       index: '{% url "jsondocs:index" %}',

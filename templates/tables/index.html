@@ -8,10 +8,12 @@
       <h1>Tables</h1>
       <p class="panel-sub">Add and edit spreadsheets · {{ sheets|length }} total</p>
     </div>
+    {% if can_edit_content %}
     <form method="post" action="{% url 'tables:create' %}">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary btn-inline">+ New table</button>
     </form>
+    {% endif %}
   </header>
 
   {% if sheets %}
@@ -27,10 +29,12 @@
   {% else %}
   <div class="notes-empty">
     <p>No tables yet.</p>
+    {% if can_edit_content %}
     <form method="post" action="{% url 'tables:create' %}">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary btn-inline">Create your first table</button>
     </form>
+    {% endif %}
   </div>
   {% endif %}
 </div>

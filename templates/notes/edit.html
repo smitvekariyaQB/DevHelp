@@ -11,12 +11,16 @@
   <header class="note-edit-header">
     <a href="{% url 'notes:index' %}" class="back-link">← All notes</a>
     <div class="note-edit-actions">
+      {% if can_edit_content %}
       <form method="post" class="inline-form" id="deleteNoteForm">
         {% csrf_token %}
         <input type="hidden" name="action" value="delete">
         <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteNote">Delete</button>
       </form>
       {% include "includes/save_controls.html" with autosave_id="autosaveStatus" %}
+      {% else %}
+      <span class="preference-desc">View only</span>
+      {% endif %}
     </div>
   </header>
 
@@ -55,6 +59,7 @@
     noteId: {{ note.pk }},
     autosaveUrl: '{% url "notes:autosave" note.pk %}',
     csrfToken: '{{ csrf_token }}',
+    canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
   };
 </script>
 {% endblock %}
