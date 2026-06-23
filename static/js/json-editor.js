@@ -54,6 +54,8 @@
   let activeTab = 'text';
   let treeRefreshTimer;
   let lastParseError = null;
+  let errorBoxExpanded = false;
+  let lastErrorKey = '';
 
   function csrfHeaders() {
     return {
@@ -158,16 +160,85 @@
     return `${before}<mark class="json-error-mark">${escapeHtml(badChar || '?')}</mark>${after}`;
   }
 
-  function formatErrorDetails(error) {
-    if (!error || error.empty) return '';
-    const loc = error.line != null
-      ? `Line ${error.line}, column ${error.column}`
-      : (error.position != null ? `Position ${error.position}` : 'Syntax error');
-    let html = `<strong>${loc}:</strong> ${escapeHtml(error.message)}`;
-    if (error.snippetLine) {
-      html += `<pre class="json-error-snippet">${buildErrorSnippet(error.snippetLine, error.column)}</pre>`;
+  function getErrorLocation(error) {
+    if (error.line != null) return `Line ${error.line}, column ${error.column}`;
+    if (error.position != null) return `Position ${error.position}`;
+    return 'Syntax error';
+  }
+
+  function getErrorKey(error) {
+    if (!error) return '';
+    return `${error.line}:${error.column}:${error.message}`;
+  }
+
+  function isExpandableError(error) {
+    if (!error || error.valid || error.empty) return false;
+    if (error.snippetLine || error.line != null) return true;
+    const msg = error.message || '';
+    const full = error.fullMessage || '';
+    return /\n/.test(msg) || /\n/.test(full);
+  }
+
+  function buildErrorSummary(error) {
+    const loc = getErrorLocation(error);
+    const message = String(error.message || 'Invalid JSON').replace(/\s+/g, ' ').trim();
+    return `<strong>${loc}:</strong> ${escapeHtml(message)}`;
+  }
+
+  function buildErrorContextSnippet(error, sourceText) {
+    if (error.line != null && sourceText) {
+      const lines = sourceText.split('\n');
+      const idx = error.line - 1;
+      if (idx >= 0 && idx < lines.length) {
+        const start = Math.max(0, idx - 1);
+        const end = Math.min(lines.length, idx + 2);
+        let html = '<pre class="json-error-snippet">';
+        for (let i = start; i < end; i += 1) {
+          const lineNo = i + 1;
+          const content = i === idx
+            ? buildErrorSnippet(lines[i], error.column)
+            : escapeHtml(lines[i]);
+          html += `<span class="json-error-context-line${i === idx ? ' is-error-line' : ''}">`;
+          html += `<span class="json-error-context-gutter">${lineNo}</span>${content}\n`;
+          html += '</span>';
+        }
+        html += '</pre>';
+        return html;
+      }
     }
+    if (error.snippetLine) {
+      return `<pre class="json-error-snippet">${buildErrorSnippet(error.snippetLine, error.column)}</pre>`;
+    }
+    return '';
+  }
+
+  function buildErrorFull(error, sourceText) {
+    const loc = getErrorLocation(error);
+    let html = `<strong>${loc}:</strong> ${escapeHtml(error.message)}`;
+    const snippet = buildErrorContextSnippet(error, sourceText);
+    if (snippet) html += snippet;
     return html;
+  }
+
+  function renderErrorBoxHtml(error, expanded, sourceText) {
+    if (!error || error.valid || error.empty) return '';
+
+    if (!isExpandableError(error)) {
+      return `<div class="json-error-body json-error-body-jump">${buildErrorSummary(error)}</div>`;
+    }
+
+    const toggleLabel = expanded ? 'Collapse' : 'Show full';
+    const toggleAction = expanded ? 'collapse' : 'expand';
+
+    return `
+      <div class="json-error-box${expanded ? ' is-expanded' : ' is-collapsed'}">
+        <div class="json-error-body json-error-body-jump">
+          <div class="json-error-summary${expanded ? ' json-error-pane-hidden' : ''}">${buildErrorSummary(error)}</div>
+          <div class="json-error-full${expanded ? '' : ' json-error-pane-hidden'}">${buildErrorFull(error, sourceText)}</div>
+        </div>
+        <button type="button" class="json-error-toggle" data-action="${toggleAction}">${toggleLabel}</button>
+      </div>
+    `;
   }
 
   function applySyntaxHighlight(escaped) {
@@ -289,10 +360,45 @@
     if (!error || error.valid || error.empty) {
       parseErrorEl.classList.add('hidden');
       parseErrorEl.innerHTML = '';
+      errorBoxExpanded = false;
+      lastErrorKey = '';
       return;
     }
-    parseErrorEl.innerHTML = formatErrorDetails(error);
+
+    const errorKey = getErrorKey(error);
+    if (errorKey !== lastErrorKey) {
+      errorBoxExpanded = false;
+      lastErrorKey = errorKey;
+    }
+
+    parseErrorEl.innerHTML = renderErrorBoxHtml(error, errorBoxExpanded, editor?.value ?? '');
     parseErrorEl.classList.remove('hidden');
+  }
+
+  function syncErrorBoxes() {
+    if (!lastParseError) return;
+    const html = renderErrorBoxHtml(lastParseError, errorBoxExpanded, editor?.value ?? '');
+    if (parseErrorEl && !parseErrorEl.classList.contains('hidden')) {
+      parseErrorEl.innerHTML = html;
+    }
+    if (treeError && !treeError.classList.contains('hidden')) {
+      treeError.innerHTML = html;
+    }
+  }
+
+  function handleErrorBoxInteraction(e) {
+    const toggle = e.target.closest('.json-error-toggle');
+    if (toggle) {
+      e.preventDefault();
+      e.stopPropagation();
+      errorBoxExpanded = toggle.dataset.action === 'expand';
+      syncErrorBoxes();
+      return;
+    }
+
+    if (!e.target.closest('.json-error-body-jump') || !lastParseError) return;
+    setActiveTab('text');
+    scrollToParseError(lastParseError);
   }
 
   function scrollToParseError(error) {
@@ -654,7 +760,7 @@
       return;
     }
 
-    treeError.innerHTML = formatErrorDetails(result);
+    treeError.innerHTML = renderErrorBoxHtml(result, errorBoxExpanded, text);
     treeError.classList.remove('hidden');
   }
 
@@ -1162,17 +1268,9 @@
     syncTextHighlight();
   }
 
-  parseErrorEl?.addEventListener('click', () => {
-    if (!lastParseError) return;
-    setActiveTab('text');
-    scrollToParseError(lastParseError);
-  });
+  parseErrorEl?.addEventListener('click', handleErrorBoxInteraction);
 
-  treeError?.addEventListener('click', () => {
-    if (!lastParseError) return;
-    setActiveTab('text');
-    scrollToParseError(lastParseError);
-  });
+  treeError?.addEventListener('click', handleErrorBoxInteraction);
 
   titleInput?.addEventListener('input', () => {
     syncSidebarTitle(cfg.currentDocId, titleInput.value || 'Untitled.json');

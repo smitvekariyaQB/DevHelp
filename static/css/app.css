@@ -2706,7 +2706,6 @@ body.workspace-history-open {
   color: #c0392b;
   font-size: 13px;
   line-height: 1.5;
-  cursor: pointer;
 }
 
 .json-parse-error.hidden {
@@ -2715,6 +2714,50 @@ body.workspace-history-open {
 
 .json-parse-error:hover {
   background: rgba(255, 59, 48, 0.1);
+}
+
+.json-error-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.json-error-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.json-error-body-jump {
+  cursor: pointer;
+}
+
+.json-error-summary {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.json-error-pane-hidden {
+  display: none;
+}
+
+.json-error-toggle {
+  flex-shrink: 0;
+  margin-top: 1px;
+  padding: 2px 10px;
+  border: 1px solid rgba(255, 59, 48, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.json-error-toggle:hover {
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .json-error-snippet {
@@ -2728,6 +2771,23 @@ body.workspace-history-open {
   white-space: pre-wrap;
   word-break: break-word;
   color: #1e1e1e;
+}
+
+.json-error-context-line {
+  display: block;
+}
+
+.json-error-context-line.is-error-line {
+  background: rgba(255, 59, 48, 0.08);
+  border-radius: 4px;
+}
+
+.json-error-context-gutter {
+  display: inline-block;
+  min-width: 2.5em;
+  margin-right: 0.5em;
+  color: rgba(192, 57, 43, 0.65);
+  user-select: none;
 }
 
 .json-error-mark {
@@ -3097,7 +3157,6 @@ body.workspace-history-open {
   font-size: 13px;
   color: #c0392b;
   line-height: 1.5;
-  cursor: pointer;
 }
 
 .json-tree-error:hover {
@@ -6034,6 +6093,19 @@ html.dark-mode body.markdown-resizing .markdown-resizer::before {
 html.dark-mode .json-error-snippet {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
+}
+
+html.dark-mode .json-error-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 120, 110, 0.35);
+}
+
+html.dark-mode .json-error-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+html.dark-mode .json-error-context-line.is-error-line {
+  background: rgba(255, 59, 48, 0.14);
 }
 
 html.dark-mode .btn-new-json:hover,
