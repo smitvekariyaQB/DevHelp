@@ -48,7 +48,7 @@ class TableSheet(SoftDeleteModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-is_pinned', '-updated_at']
+        ordering = ['-is_pinned', '-created_at']
 
     def __str__(self):
         return self.title

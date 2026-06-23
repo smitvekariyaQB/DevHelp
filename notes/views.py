@@ -34,7 +34,7 @@ def _apply_note_fields(note, data):
 
 @login_required
 def index(request):
-    notes = Note.objects.filter(workspace=request.workspace).order_by('-is_pinned', '-updated_at')
+    notes = Note.objects.filter(workspace=request.workspace).order_by('-is_pinned', '-created_at')
     return render(request, 'notes/index.html', {'notes': notes})
 
 
@@ -124,7 +124,7 @@ def toggle_pin(request, pk):
         return forbidden
     note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
     note.is_pinned = not note.is_pinned
-    note.save(update_fields=['is_pinned', 'updated_at'])
+    note.save(update_fields=['is_pinned'])
     action = 'Pinned' if note.is_pinned else 'Unpinned'
     log_update(request, 'notes', note.title, f'{action} note "{note.title}"', note.pk)
     return JsonResponse({'ok': True, 'is_pinned': note.is_pinned})
