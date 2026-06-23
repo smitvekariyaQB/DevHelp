@@ -34,7 +34,7 @@ def _apply_note_fields(note, data):
 
 @login_required
 def index(request):
-    notes = Note.objects.filter(workspace=request.workspace)
+    notes = Note.objects.filter(workspace=request.workspace).order_by('-is_pinned', '-updated_at')
     return render(request, 'notes/index.html', {'notes': notes})
 
 
@@ -114,3 +114,30 @@ def update_color(request, pk):
     note.save(update_fields=['color', 'updated_at'])
     log_update(request, 'notes', note.title, f'Changed color of note "{note.title}"', note.pk)
     return JsonResponse({'ok': True, 'color': note.color})
+
+
+@login_required
+@require_POST
+def toggle_pin(request, pk):
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
+    note.is_pinned = not note.is_pinned
+    note.save(update_fields=['is_pinned', 'updated_at'])
+    action = 'Pinned' if note.is_pinned else 'Unpinned'
+    log_update(request, 'notes', note.title, f'{action} note "{note.title}"', note.pk)
+    return JsonResponse({'ok': True, 'is_pinned': note.is_pinned})
+
+
+@login_required
+@require_POST
+def delete_item(request, pk):
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
+    title = note.title
+    note.delete()
+    log_delete(request, 'notes', title, f'Deleted note "{title}"', pk)
+    return JsonResponse({'ok': True})

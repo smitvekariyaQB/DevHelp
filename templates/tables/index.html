@@ -1,4 +1,5 @@
 {% extends "base_app.html" %}
+{% load static %}
 {% block title %}Tables — ArcBook{% endblock %}
 
 {% block main %}
@@ -19,11 +20,8 @@
   {% if sheets %}
   <div class="notes-grid">
     {% for sheet in sheets %}
-    <a href="{% url 'tables:edit' sheet.pk %}" class="note-card table-card" style="--note-color: {{ sheet.color }}">
-      <h3 class="note-card-title">{{ sheet.title }}</h3>
-      <p class="note-card-preview">{{ sheet.preview }}</p>
-      <time class="note-card-date">{{ sheet.updated_at|date:"M j, Y" }}</time>
-    </a>
+    {% url 'tables:edit' sheet.pk as sheet_edit_url %}
+    {% include "includes/grid_card.html" with item=sheet edit_url=sheet_edit_url pin_url="tables:toggle_pin" delete_url="tables:delete" card_class="table-card" %}
     {% endfor %}
   </div>
   {% else %}
@@ -38,4 +36,15 @@
   </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  window.GRID_CARDS_CONFIG = {
+    csrfToken: '{{ csrf_token }}',
+    itemLabel: 'table',
+    urls: { index: '{% url "tables:index" %}' },
+  };
+</script>
+<script src="{% static 'js/grid-cards.js' %}"></script>
 {% endblock %}

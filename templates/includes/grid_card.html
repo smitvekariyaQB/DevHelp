@@ -1,0 +1,34 @@
+<div class="note-card-wrap{% if item.is_pinned %} is-pinned{% endif %}"
+     data-card-id="{{ item.pk }}"
+     data-card-title="{{ item.title|escape }}"
+     data-pin-url="{% url pin_url item.pk %}"
+     data-delete-url="{% url delete_url item.pk %}"
+     style="--note-color: {{ item.color }}">
+  <a href="{{ edit_url }}" class="note-card{% if card_class %} {{ card_class }}{% endif %}">
+    {% if item.is_pinned %}
+    <span class="note-card-pin" title="Pinned" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+        <path d="M9.5 1.5a2.5 2.5 0 0 0-3.54 3.54L3.1 8l-1.6 1.6 2.3 2.3 1.6-1.6 2.96-2.96a2.5 2.5 0 0 0 3.54-3.54L9.5 1.5z"/>
+      </svg>
+    </span>
+    {% endif %}
+    <h3 class="note-card-title">{{ item.title }}</h3>
+    <p class="note-card-preview">{{ item.preview }}</p>
+    <time class="note-card-date">{{ item.updated_at|date:"M j, Y" }}</time>
+  </a>
+  {% if can_edit_content %}
+  <button type="button" class="note-card-menu-btn" aria-label="More options" aria-haspopup="true">
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+      <circle cx="8" cy="3" r="1.5"/>
+      <circle cx="8" cy="8" r="1.5"/>
+      <circle cx="8" cy="13" r="1.5"/>
+    </svg>
+  </button>
+  <div class="note-card-menu hidden" role="menu">
+    <button type="button" data-action="pin" role="menuitem">
+      {% if item.is_pinned %}Unpin{% else %}Pin{% endif %}
+    </button>
+    <button type="button" data-action="delete" class="danger" role="menuitem">Delete</button>
+  </div>
+  {% endif %}
+</div>

@@ -6,7 +6,7 @@ window.createEditorHistory = function (maxSize, options) {
   let lastSerialized = '';
   const undoButtonId = opts.undoButtonId !== undefined ? opts.undoButtonId : 'btnUndo';
   const redoButtonId = opts.redoButtonId !== undefined ? opts.redoButtonId : 'btnRedo';
-  const manageButtons = opts.manageButtons !== false;
+  const manageButtons = opts.manageButtons === true;
 
   function snapshot(state) {
     return JSON.parse(JSON.stringify(state));

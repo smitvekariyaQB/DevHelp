@@ -30,11 +30,12 @@ class Note(SoftDeleteModel):
     title = models.CharField(max_length=200, default='Untitled')
     content = models.TextField(blank=True)
     color = models.CharField(max_length=7, default='#FFFFFF')
+    is_pinned = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-updated_at']
+        ordering = ['-is_pinned', '-updated_at']
 
     def __str__(self):
         return self.title

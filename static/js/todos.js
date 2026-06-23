@@ -248,14 +248,6 @@
     undoStack.push(entry);
     if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
     redoStack.length = 0;
-    updateUndoRedoButtons();
-  }
-
-  function updateUndoRedoButtons() {
-    const undoBtn = document.getElementById('btnUndo');
-    const redoBtn = document.getElementById('btnRedo');
-    if (undoBtn) undoBtn.disabled = undoStack.length === 0;
-    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
   }
 
   function applyToggle(item, task, recordHistory) {
@@ -559,7 +551,6 @@
     const entry = undoStack.pop();
     if (!entry) return;
     redoStack.push(entry);
-    updateUndoRedoButtons();
     entry.undo();
   }
 
@@ -567,7 +558,6 @@
     const entry = redoStack.pop();
     if (!entry) return;
     undoStack.push(entry);
-    updateUndoRedoButtons();
     entry.redo();
   }
 
@@ -706,9 +696,6 @@
       });
     });
   }
-
-  document.getElementById('btnUndo')?.addEventListener('click', runUndo);
-  document.getElementById('btnRedo')?.addEventListener('click', runRedo);
 
   const btnDeleteList = document.getElementById('btnDeleteList');
   if (btnDeleteList) {
@@ -878,6 +865,5 @@
   initListInlineEdit();
   initSearch();
   updateCompletedCount();
-  updateUndoRedoButtons();
   formatDate();
 })();

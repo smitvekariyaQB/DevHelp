@@ -5,8 +5,6 @@
   const statusEl = document.getElementById('tableAutosaveStatus');
   const statusTextEl = statusEl?.querySelector('.autosave-badge-text');
   const btnSave = document.getElementById('btnManualSave');
-  const btnUndo = document.getElementById('btnUndo');
-  const btnRedo = document.getElementById('btnRedo');
   const btnAddColumn = document.getElementById('btnAddColumn');
   const btnAddRow = document.getElementById('btnAddRow');
   if (!cfg || !container) return;
@@ -673,8 +671,6 @@
     if (next) restoreState(next);
   }
 
-  btnUndo?.addEventListener('click', doUndo);
-  btnRedo?.addEventListener('click', doRedo);
   btnAddColumn?.addEventListener('click', addColumn);
   btnAddRow?.addEventListener('click', addRow);
   container.addEventListener('paste', onCellPaste);

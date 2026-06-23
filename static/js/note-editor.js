@@ -5,8 +5,6 @@
   const statusEl = document.getElementById('autosaveStatus');
   const statusTextEl = statusEl?.querySelector('.autosave-badge-text');
   const btnSave = document.getElementById('btnManualSave');
-  const btnUndo = document.getElementById('btnUndo');
-  const btnRedo = document.getElementById('btnRedo');
   const cfg = window.NOTE_EDITOR_CONFIG || {};
   const canEdit = cfg.canEditContent !== false;
 
@@ -358,9 +356,6 @@
     clearTimeout(saveTimer);
     runAutosave();
   });
-
-  btnUndo?.addEventListener('click', doUndo);
-  btnRedo?.addEventListener('click', doRedo);
 
   function showCopiedFeedback() {
     if (!statusTextEl) return;

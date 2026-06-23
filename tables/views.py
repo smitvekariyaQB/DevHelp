@@ -62,7 +62,7 @@ def _validate_data(data):
 
 @login_required
 def index(request):
-    sheets = TableSheet.objects.filter(workspace=request.workspace)
+    sheets = TableSheet.objects.filter(workspace=request.workspace).order_by('-is_pinned', '-updated_at')
     return render(request, 'tables/index.html', {'sheets': sheets})
 
 
@@ -153,3 +153,30 @@ def autosave(request, pk):
         'title': sheet.title,
         'updated_at': sheet.updated_at.isoformat(),
     })
+
+
+@login_required
+@require_POST
+def toggle_pin(request, pk):
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    sheet = get_object_or_404(TableSheet, pk=pk, workspace=request.workspace)
+    sheet.is_pinned = not sheet.is_pinned
+    sheet.save(update_fields=['is_pinned', 'updated_at'])
+    action = 'Pinned' if sheet.is_pinned else 'Unpinned'
+    log_update(request, 'tables', sheet.title, f'{action} table "{sheet.title}"', sheet.pk)
+    return JsonResponse({'ok': True, 'is_pinned': sheet.is_pinned})
+
+
+@login_required
+@require_POST
+def delete_item(request, pk):
+    forbidden = viewer_forbidden_json(request)
+    if forbidden:
+        return forbidden
+    sheet = get_object_or_404(TableSheet, pk=pk, workspace=request.workspace)
+    title = sheet.title
+    sheet.delete()
+    log_delete(request, 'tables', title, f'Deleted table "{title}"', pk)
+    return JsonResponse({'ok': True})

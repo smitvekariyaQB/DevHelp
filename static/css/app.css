@@ -1343,6 +1343,7 @@ body.modal-open {
 .note-card {
   display: flex;
   flex-direction: column;
+  position: relative;
   min-height: 160px;
   padding: 16px;
   border-radius: var(--radius);
@@ -1385,6 +1386,111 @@ body.modal-open {
   font-size: 11px;
   color: rgba(0, 0, 0, 0.4);
   margin-top: 12px;
+}
+
+.note-card-wrap {
+  position: relative;
+}
+
+.note-card-wrap .note-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.note-card-wrap:hover .note-card {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.note-card-pin {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.note-card-menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.note-card-wrap:hover .note-card-menu-btn,
+.note-card-wrap:focus-within .note-card-menu-btn,
+.note-card-wrap:has(.note-card-menu:not(.hidden)) .note-card-menu-btn {
+  opacity: 1;
+}
+
+.note-card-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.note-card-menu {
+  position: absolute;
+  top: 36px;
+  right: 8px;
+  z-index: 3;
+  min-width: 132px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.note-card-menu.hidden {
+  display: none;
+}
+
+.note-card-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.note-card-menu button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.note-card-menu button.danger {
+  color: #ff3b30;
+}
+
+.note-card-menu button.danger:hover {
+  background: rgba(255, 59, 48, 0.08);
+}
+
+.note-card-wrap.is-pinned .note-card {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.note-card-wrap:has(.note-card-menu-btn) .note-card-title {
+  padding-right: 24px;
 }
 
 .notes-empty {
@@ -5704,6 +5810,33 @@ html.dark-mode .note-card-preview {
 
 html.dark-mode .note-card-date {
   color: rgba(255, 255, 255, 0.42);
+}
+
+html.dark-mode .note-card-pin {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+html.dark-mode .note-card-menu-btn {
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+html.dark-mode .note-card-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+html.dark-mode .note-card-menu {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .note-card-menu button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark-mode .note-card-menu button.danger:hover {
+  background: rgba(255, 59, 48, 0.14);
 }
 
 html.dark-mode .spreadsheet-scroll-wrap {
