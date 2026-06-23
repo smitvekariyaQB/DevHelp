@@ -75,6 +75,16 @@
             el.removeAttribute(attr.name);
           }
         });
+      } else if (['TABLE', 'TH', 'TD'].includes(el.tagName)) {
+        [...el.attributes].forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          if (!['colspan', 'rowspan', 'class'].includes(name)) {
+            el.removeAttribute(attr.name);
+          }
+        });
+        if (el.tagName === 'TABLE') {
+          el.classList.add('note-pasted-table');
+        }
       } else if (el.tagName !== 'A' && el.tagName !== 'LI') {
         [...el.attributes].forEach((attr) => {
           if (attr.name.toLowerCase().startsWith('data-')) {
@@ -149,6 +159,17 @@
       if (node.nodeType !== Node.ELEMENT_NODE) return;
       const tag = node.tagName;
 
+      if (node.classList?.contains('note-table-embed')) {
+        const table = node.querySelector('table');
+        if (table) parts.push(table.outerHTML);
+        return;
+      }
+
+      if (tag === 'TABLE') {
+        parts.push(node.outerHTML);
+        return;
+      }
+
       if (tag === 'UL' || tag === 'OL') {
         const items = Array.from(node.children)
           .filter((child) => child.tagName === 'LI')
@@ -176,8 +197,15 @@
     if (!quill) return '';
     clearFindHighlights();
     const clone = quill.root.cloneNode(true);
+    clone.querySelectorAll('.note-table-embed').forEach((embed) => {
+      const table = embed.querySelector('table');
+      if (table) embed.replaceWith(table.cloneNode(true));
+      else embed.remove();
+    });
     clone.querySelectorAll('[style]').forEach((el) => el.removeAttribute('style'));
-    clone.querySelectorAll('[class]').forEach((el) => el.removeAttribute('class'));
+    clone.querySelectorAll('[class]').forEach((el) => {
+      if (!el.classList.contains('note-pasted-table')) el.removeAttribute('class');
+    });
     clone.querySelectorAll('mark').forEach(unwrapNode);
     return sanitizeNoteHtmlForCopy(clone.innerHTML);
   }
@@ -211,7 +239,7 @@
     isRestoring = true;
     if (titleInput) titleInput.value = state.title;
     if (quill) {
-      quill.setContents(quill.clipboard.convert({ html: state.content || '' }), 'silent');
+      loadNoteContent(state.content || '');
     }
     applyNoteColor(state.color);
     const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
@@ -451,6 +479,171 @@
 
   if (!editorEl || typeof Quill === 'undefined') return;
 
+  const BlockEmbed = Quill.import('blots/block/embed');
+
+  class NoteTableBlot extends BlockEmbed {
+    static create(value) {
+      const node = super.create();
+      if (typeof value === 'string' && value) {
+        const doc = new DOMParser().parseFromString(value, 'text/html');
+        const table = doc.querySelector('table');
+        if (table) node.appendChild(table);
+      }
+      node.setAttribute('contenteditable', 'false');
+      return node;
+    }
+
+    static value(domNode) {
+      const table = domNode.querySelector('table');
+      return table ? table.outerHTML : '';
+    }
+  }
+  NoteTableBlot.blotName = 'note-table';
+  NoteTableBlot.tagName = 'div';
+  NoteTableBlot.className = 'note-table-embed';
+  Quill.register(NoteTableBlot);
+
+  function parseHtmlTableFromClipboard(html) {
+    if (!html) return null;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const table = doc.querySelector('table');
+    if (!table) return null;
+    const rows = [];
+    table.querySelectorAll('tr').forEach((tr) => {
+      const cells = [];
+      tr.querySelectorAll('th, td').forEach((cell) => {
+        cells.push((cell.textContent || '').replace(/\u00a0/g, ' '));
+      });
+      if (cells.length) rows.push(cells);
+    });
+    return rows.length ? rows : null;
+  }
+
+  function parseTsvFromText(text) {
+    const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    if (!lines.some((line) => line.includes('\t'))) return null;
+    const rows = lines.map((line) => line.split('\t'));
+    while (rows.length > 1 && rows[rows.length - 1].every((cell) => cell === '')) {
+      rows.pop();
+    }
+    return rows.length ? rows : null;
+  }
+
+  function isMultiCellGrid(grid) {
+    return grid.length > 1 || (grid.length === 1 && grid[0].length > 1);
+  }
+
+  function parsePasteGrid(clipboardData) {
+    if (!clipboardData) return null;
+    const html = clipboardData.getData('text/html');
+    const plain = clipboardData.getData('text/plain');
+    const fromHtml = parseHtmlTableFromClipboard(html);
+    if (fromHtml && isMultiCellGrid(fromHtml)) return fromHtml;
+    const fromTsv = parseTsvFromText(plain);
+    if (fromTsv && isMultiCellGrid(fromTsv)) return fromTsv;
+    return null;
+  }
+
+  function normalizeTableHtmlForNote(tableHtml) {
+    const doc = new DOMParser().parseFromString(tableHtml, 'text/html');
+    const table = doc.querySelector('table');
+    if (!table) return '';
+    table.classList.add('note-pasted-table');
+    table.removeAttribute('style');
+    table.removeAttribute('border');
+    table.removeAttribute('cellpadding');
+    table.removeAttribute('cellspacing');
+    table.querySelectorAll('*').forEach((el) => {
+      el.removeAttribute('style');
+      el.removeAttribute('class');
+    });
+    table.classList.add('note-pasted-table');
+    return table.outerHTML;
+  }
+
+  function getTableHtmlFromClipboard(clipboardData) {
+    const html = clipboardData.getData('text/html');
+    if (!html) return null;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const table = doc.querySelector('table');
+    if (!table) return null;
+    return normalizeTableHtmlForNote(table.outerHTML);
+  }
+
+  function buildNoteTableHtml(grid) {
+    const bodyRows = grid
+      .map((row) => {
+        const tds = row
+          .map((cell) => `<td>${escapeHtmlForCopy(cell)}</td>`)
+          .join('');
+        return `<tr>${tds}</tr>`;
+      })
+      .join('');
+    return `<table class="note-pasted-table"><tbody>${bodyRows}</tbody></table>`;
+  }
+
+  function loadNoteContent(html) {
+    if (!html) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const hasTable = doc.body.querySelector('table');
+    if (!hasTable) {
+      quill.setContents(quill.clipboard.convert({ html: sanitizeNoteHtmlForCopy(html) }), 'silent');
+      return;
+    }
+
+    const ops = [];
+    doc.body.childNodes.forEach((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'TABLE') {
+        ops.push({ insert: { 'note-table': normalizeTableHtmlForNote(node.outerHTML) } });
+        ops.push({ insert: '\n' });
+        return;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const part = quill.clipboard.convert({ html: node.outerHTML });
+        if (part.ops?.length) ops.push(...part.ops);
+        return;
+      }
+      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+        ops.push({ insert: node.textContent });
+        ops.push({ insert: '\n' });
+      }
+    });
+
+    if (ops.length) {
+      quill.setContents({ ops }, 'silent');
+    } else {
+      quill.setContents(quill.clipboard.convert({ html: sanitizeNoteHtmlForCopy(html) }), 'silent');
+    }
+  }
+
+  function insertNoteTable(tableHtml) {
+    const range = quill.getSelection(true);
+    let index = range ? range.index : quill.getLength();
+    if (index > 0) {
+      const prevChar = quill.getText(index - 1, 1);
+      if (prevChar && prevChar !== '\n') {
+        quill.insertText(index, '\n', 'user');
+        index += 1;
+      }
+    }
+    quill.insertEmbed(index, 'note-table', tableHtml, 'user');
+    quill.insertText(index + 1, '\n', 'user');
+    quill.setSelection(index + 2, 0, 'silent');
+  }
+
+  function onNotePaste(e) {
+    if (!canEdit || !e.clipboardData) return;
+    const tableHtml = getTableHtmlFromClipboard(e.clipboardData);
+    const grid = tableHtml ? null : parsePasteGrid(e.clipboardData);
+    if (!tableHtml && !grid) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    recordHistoryNow();
+    insertNoteTable(tableHtml || buildNoteTableHtml(grid));
+    scheduleAutosave();
+  }
+
   const initialEl = document.getElementById('note-initial-content');
   const initial = initialEl ? JSON.parse(initialEl.textContent) : '';
 
@@ -470,8 +663,11 @@
   });
 
   if (initial) {
-    const cleanInitial = sanitizeNoteHtmlForCopy(initial);
-    quill.setContents(quill.clipboard.convert({ html: cleanInitial }), 'silent');
+    loadNoteContent(initial);
+  }
+
+  if (canEdit) {
+    quill.root.addEventListener('paste', onNotePaste, true);
   }
 
   if (!canEdit) {
@@ -706,6 +902,7 @@
       clearFindHighlights();
       clearTimeout(saveTimer);
       clearTimeout(historyTimer);
+      quill?.root?.removeEventListener('paste', onNotePaste, true);
       ready = false;
       noteSearch = null;
     });

@@ -1533,6 +1533,30 @@ body.modal-open {
   font-style: normal;
 }
 
+.editor-wrap .ql-editor .note-table-embed {
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.editor-wrap .ql-editor .note-pasted-table {
+  border-collapse: collapse;
+  width: auto;
+  max-width: 100%;
+}
+
+.editor-wrap .ql-editor .note-pasted-table th,
+.editor-wrap .ql-editor .note-pasted-table td {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 6px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.editor-wrap .ql-editor .note-pasted-table th {
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .note-color-picker {
   display: flex;
   align-items: center;
@@ -5592,6 +5616,15 @@ html.dark-mode .editor-wrap .ql-editor {
 
 html.dark-mode .editor-wrap .ql-editor.ql-blank::before {
   color: #636366;
+}
+
+html.dark-mode .editor-wrap .ql-editor .note-pasted-table th,
+html.dark-mode .editor-wrap .ql-editor .note-pasted-table td {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .editor-wrap .ql-editor .note-pasted-table th {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 html.dark-mode .color-picker-popover {
