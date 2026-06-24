@@ -8,10 +8,15 @@
 
 {% block main %}
 <div class="note-edit-page">
-  <header class="note-edit-header">
-    <a href="{% url 'notes:index' %}" class="back-link">← All notes</a>
+  <header class="note-edit-header editor-page-header">
+    <div class="editor-page-header-main">
+      {% url 'notes:index' as notes_back_url %}
+      {% include "includes/back_button.html" with back_url=notes_back_url back_title="All notes" %}
+      <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
+    </div>
     <div class="note-edit-actions">
       {% if can_edit_content %}
+      {% include "includes/editor_toolbar.html" with search_button_id="btnNoteSearch" search_button_title="Search in note (Ctrl+F)" copy_button_id="btnCopyNote" colors=colors current_color=note.color history_object_id=note.pk %}
       <form method="post" class="inline-form" id="deleteNoteForm">
         {% csrf_token %}
         <input type="hidden" name="action" value="delete">
@@ -27,12 +32,6 @@
   <div id="noteForm" class="note-edit-form" style="--note-color: {{ note.color }}">
     {% csrf_token %}
     <input type="hidden" name="content" id="noteContentInput">
-    <div class="editor-title-row">
-      <div class="editor-title-field">
-        <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
-      </div>
-      {% include "includes/editor_toolbar.html" with search_button_id="btnNoteSearch" search_button_title="Search in note (Ctrl+F)" copy_button_id="btnCopyNote" colors=colors current_color=note.color history_object_id=note.pk %}
-    </div>
 
     <div class="table-find-bar hidden" id="noteFindBar">
       <input type="text"

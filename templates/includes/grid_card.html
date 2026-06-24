@@ -13,7 +13,9 @@
     </span>
     {% endif %}
     <h3 class="note-card-title">{{ item.title }}</h3>
+    {% if not hide_preview %}
     <p class="note-card-preview">{{ item.preview }}</p>
+    {% endif %}
     <time class="note-card-date">{{ item.updated_at|date:"M j, Y" }}</time>
   </a>
   {% if can_edit_content %}

@@ -21,7 +21,7 @@
   <div class="notes-grid">
     {% for sheet in sheets %}
     {% url 'tables:edit' sheet.pk as sheet_edit_url %}
-    {% include "includes/grid_card.html" with item=sheet edit_url=sheet_edit_url pin_url="tables:toggle_pin" delete_url="tables:delete" card_class="table-card" %}
+    {% include "includes/grid_card.html" with item=sheet edit_url=sheet_edit_url pin_url="tables:toggle_pin" delete_url="tables:delete" card_class="table-card" hide_preview=True %}
     {% endfor %}
   </div>
   {% else %}

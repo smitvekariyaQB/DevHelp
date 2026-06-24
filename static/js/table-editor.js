@@ -16,6 +16,8 @@
 
   const MIN_COL_WIDTH = 80;
   const DEFAULT_COL_WIDTH = 160;
+  const CELL_MIN_HEIGHT = 44;
+  const CELL_MAX_ROWS = 4;
 
   let sheetData = JSON.parse(JSON.stringify(cfg.initialData || { columns: [], rows: [] }));
   let saveTimer;
@@ -195,8 +197,16 @@
   }
 
   function autoResizeTextarea(ta) {
+    const style = getComputedStyle(ta);
+    const lineHeight = parseFloat(style.lineHeight) || 19.5;
+    const paddingTop = parseFloat(style.paddingTop) || 11;
+    const paddingBottom = parseFloat(style.paddingBottom) || 11;
+    const maxHeight = lineHeight * CELL_MAX_ROWS + paddingTop + paddingBottom;
     ta.style.height = 'auto';
-    ta.style.height = `${Math.max(44, ta.scrollHeight)}px`;
+    const contentHeight = ta.scrollHeight;
+    const height = Math.min(Math.max(CELL_MIN_HEIGHT, contentHeight), maxHeight);
+    ta.style.height = `${height}px`;
+    ta.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
   }
 
   async function confirmDelete(message) {

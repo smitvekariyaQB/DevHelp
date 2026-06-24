@@ -4,10 +4,15 @@
 
 {% block main %}
 <div class="table-edit-page">
-  <header class="note-edit-header">
-    <a href="{% url 'tables:index' %}" class="back-link">← All tables</a>
+  <header class="note-edit-header editor-page-header">
+    <div class="editor-page-header-main">
+      {% url 'tables:index' as tables_back_url %}
+      {% include "includes/back_button.html" with back_url=tables_back_url back_title="All tables" %}
+      <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
+    </div>
     <div class="note-edit-actions">
       {% if can_edit_content %}
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True history_object_id=sheet.pk %}
       <button type="button" class="btn btn-default" id="btnDuplicateTable" title="Create a duplicate table">Duplicate</button>
       <form method="post" class="inline-form" id="deleteTableForm">
         {% csrf_token %}
@@ -22,13 +27,6 @@
   </header>
 
   <div class="table-editor-panel" id="tableEditorPanel">
-    <div class="editor-title-row">
-      <div class="editor-title-field">
-        <input type="text" class="note-title-input table-title-input" id="tableTitle" value="{{ sheet.title }}" placeholder="Enter table name" autocomplete="off">
-      </div>
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True history_object_id=sheet.pk %}
-    </div>
-
     <div class="table-find-bar hidden" id="tableFindBar">
       <input type="text"
              id="tableFindInput"
