@@ -1607,6 +1607,11 @@ body.modal-open {
   min-height: 0;
 }
 
+.note-edit-form:has(.table-sheet-tabs) .editor-wrap {
+  border-radius: 10px 10px 0 0;
+  border-bottom: none;
+}
+
 .note-title-input {
   border: none;
   font-size: 24px;
@@ -1968,6 +1973,114 @@ html.dark-mode .spreadsheet-cell.table-find-active {
 .table-editor-panel .spreadsheet-scroll-wrap {
   position: relative;
   z-index: 0;
+  border-radius: 10px 10px 0 0;
+  border-bottom: none;
+}
+
+.table-sheet-tabs {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  min-height: 36px;
+  border: 1px solid #d1d1d6;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: #e5e5ea;
+  overflow: hidden;
+}
+
+.table-sheet-tabs-scroll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  padding: 0;
+  border: none;
+  border-right: 1px solid #d1d1d6;
+  background: #e5e5ea;
+  color: #8e8e93;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.table-sheet-tabs-scroll-right {
+  border-right: none;
+  border-left: 1px solid #d1d1d6;
+}
+
+.table-sheet-tabs-scroll svg {
+  width: 16px;
+  height: 16px;
+}
+
+.table-sheet-tabs-scroll:hover:not(:disabled) {
+  background: #d8d8dd;
+  color: #636366;
+}
+
+.table-sheet-tabs-scroll:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.table-sheet-tabs-track {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: #e5e5ea;
+}
+
+.table-sheet-tabs-track::-webkit-scrollbar {
+  display: none;
+}
+
+.table-sheet-tabs-list {
+  display: flex;
+  align-items: stretch;
+  min-width: min-content;
+  height: 100%;
+}
+
+.table-sheet-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 1 140px;
+  min-width: 0;
+  max-width: 140px;
+  padding: 0 12px;
+  border: none;
+  border-right: 1px solid #d1d1d6;
+  background: #e5e5ea;
+  color: #8e8e93;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.table-sheet-tab-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-sheet-tab:hover {
+  background: #d8d8dd;
+  color: #636366;
+  text-decoration: none;
+}
+
+.table-sheet-tab.is-active {
+  background: #d1d1d6;
+  color: #48484a;
+  font-weight: 600;
 }
 
 .spreadsheet-scroll-wrap {
@@ -5899,6 +6012,42 @@ html.dark-mode .spreadsheet-scroll-wrap {
   background: #0a0a0a;
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: none;
+}
+
+html.dark-mode .table-sheet-tabs {
+  background: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .table-sheet-tabs-scroll {
+  background: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+html.dark-mode .table-sheet-tabs-scroll:hover:not(:disabled) {
+  background: #3a3a3c;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html.dark-mode .table-sheet-tabs-track {
+  background: #2c2c2e;
+}
+
+html.dark-mode .table-sheet-tab {
+  background: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+html.dark-mode .table-sheet-tab:hover {
+  background: #3a3a3c;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html.dark-mode .table-sheet-tab.is-active {
+  background: #48484a;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 html.dark-mode .spreadsheet-container table,

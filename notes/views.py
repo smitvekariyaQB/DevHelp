@@ -15,6 +15,10 @@ from .utils import sanitize_note_html
 ALLOWED_COLORS = {hex for hex, _ in Note.COLORS}
 
 
+def workspace_notes(workspace):
+    return Note.objects.filter(workspace=workspace).order_by('-is_pinned', 'created_at')
+
+
 def _parse_request_data(request):
     try:
         return json.loads(request.body)
@@ -83,6 +87,7 @@ def edit(request, pk):
         {
             'note': note,
             'colors': Note.COLORS,
+            'workspace_notes': workspace_notes(request.workspace),
         },
     )
 

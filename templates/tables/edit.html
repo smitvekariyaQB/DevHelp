@@ -45,11 +45,14 @@
         <div class="spreadsheet-container" id="spreadsheetContainer"></div>
       </div>
     </div>
+
+    {% include "includes/editor_sheet_tabs.html" with items=workspace_sheets active_id=sheet.pk edit_url_name="tables:edit" %}
   </div>
 </div>
 
 <script>
   window.TABLE_EDITOR_CONFIG = {
+    sheetId: {{ sheet.pk }},
     autosaveUrl: '{% url "tables:autosave" sheet.pk %}',
     duplicateUrl: '{% url "tables:duplicate" sheet.pk %}',
     csrfToken: '{{ csrf_token }}',
@@ -62,5 +65,6 @@
 
 {% block page_js %}
 <script src="{% static 'js/history.js' %}"></script>
+<script src="{% static 'js/editor-sheet-tabs.js' %}"></script>
 <script src="{% static 'js/table-editor.js' %}"></script>
 {% endblock %}

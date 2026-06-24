@@ -49,6 +49,8 @@
     <div class="editor-wrap">
       <div id="noteEditor"></div>
     </div>
+
+    {% include "includes/editor_sheet_tabs.html" with items=workspace_notes active_id=note.pk edit_url_name="notes:edit" %}
   </div>
 </div>
 
@@ -66,5 +68,6 @@
 {% block page_js %}
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <script src="{% static 'js/history.js' %}"></script>
+<script src="{% static 'js/editor-sheet-tabs.js' %}"></script>
 <script src="{% static 'js/note-editor.js' %}"></script>
 {% endblock %}

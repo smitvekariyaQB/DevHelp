@@ -301,6 +301,20 @@
     saveTimer = setTimeout(runAutosave, immediate ? 0 : AUTOSAVE_DELAY);
   }
 
+  function flushSave() {
+    clearTimeout(saveTimer);
+    if (!cfg.autosaveUrl || !ready) return;
+    fetch(cfg.autosaveUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': cfg.csrfToken,
+      },
+      body: JSON.stringify(getPayload()),
+      keepalive: true,
+    }).catch(() => {});
+  }
+
   function doUndo() {
     const prev = history.undo(getFullState());
     if (prev) restoreState(prev);
@@ -887,9 +901,18 @@
     });
   }
 
+  const destroySheetTabs = window.initEditorSheetTabs?.({
+    onBeforeNavigate: async () => {
+      clearTimeout(saveTimer);
+      await runAutosave();
+    },
+  });
+
   // Register cleanup for the router so listeners/timers are removed on navigate
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
+      flushSave();
+      destroySheetTabs?.();
       document.removeEventListener('keydown', onKeydown);
       document.removeEventListener('click', onDocumentColorClick);
       closeColorPopover();

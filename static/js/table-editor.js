@@ -1357,10 +1357,18 @@
     }).catch(() => {});
   }
 
+  const destroySheetTabs = window.initEditorSheetTabs?.({
+    onBeforeNavigate: async () => {
+      clearTimeout(saveTimer);
+      await runAutosave();
+    },
+  });
+
   // Register cleanup for the router so listeners/timers are removed on navigate
   if (window.__routerCleanup) {
     window.__routerCleanup.push(() => {
       flushSave();
+      destroySheetTabs?.();
       document.removeEventListener('keydown', onDocKeydown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onDocumentMouseUp);

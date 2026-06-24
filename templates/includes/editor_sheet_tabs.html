@@ -1,0 +1,24 @@
+{% if items %}
+<div class="table-sheet-tabs" id="tableSheetTabs">
+  <button type="button" class="table-sheet-tabs-scroll table-sheet-tabs-scroll-left" id="btnSheetTabsLeft" aria-label="Scroll tabs left" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+  <div class="table-sheet-tabs-track" id="tableSheetTabsTrack">
+    <div class="table-sheet-tabs-list" id="tableSheetTabsList">
+      {% for item in items %}
+      <a href="{% url edit_url_name item.pk %}"
+         class="table-sheet-tab{% if item.pk == active_id %} is-active{% endif %}"
+         data-item-id="{{ item.pk }}"
+         title="{{ item.title }}"><span class="table-sheet-tab-label">{{ item.title }}</span></a>
+      {% endfor %}
+    </div>
+  </div>
+  <button type="button" class="table-sheet-tabs-scroll table-sheet-tabs-scroll-right" id="btnSheetTabsRight" aria-label="Scroll tabs right">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M9 18l6-6-6-6"/>
+    </svg>
+  </button>
+</div>
+{% endif %}

@@ -16,6 +16,10 @@ from .models import TableSheet, default_sheet_data
 ALLOWED_COLORS = {hex for hex, _ in TableSheet.COLORS}
 
 
+def workspace_sheets(workspace):
+    return TableSheet.objects.filter(workspace=workspace).order_by('-is_pinned', 'created_at')
+
+
 def _parse_body(request):
     try:
         return json.loads(request.body)
@@ -132,6 +136,7 @@ def edit(request, pk):
         {
             'sheet': sheet,
             'sheet_data_json': json.dumps(sheet.data),
+            'workspace_sheets': workspace_sheets(request.workspace),
         },
     )
 
