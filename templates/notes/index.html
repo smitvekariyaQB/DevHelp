@@ -18,11 +18,23 @@
   </header>
 
   {% if notes %}
-  <div class="notes-grid">
-    {% for note in notes %}
-    {% url 'notes:edit' note.pk as note_edit_url %}
-    {% include "includes/grid_card.html" with item=note edit_url=note_edit_url pin_url="notes:toggle_pin" delete_url="notes:delete" %}
-    {% endfor %}
+  <div class="grid-listing">
+    {% if pinned_notes %}
+    <div class="notes-grid">
+      {% for note in pinned_notes %}
+      {% url 'notes:edit' note.pk as note_edit_url %}
+      {% include "includes/grid_card.html" with item=note edit_url=note_edit_url pin_url="notes:toggle_pin" delete_url="notes:delete" %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if unpinned_notes %}
+    <div class="notes-grid notes-grid-unpinned">
+      {% for note in unpinned_notes %}
+      {% url 'notes:edit' note.pk as note_edit_url %}
+      {% include "includes/grid_card.html" with item=note edit_url=note_edit_url pin_url="notes:toggle_pin" delete_url="notes:delete" %}
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
   {% else %}
   <div class="notes-empty">

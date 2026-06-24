@@ -62,8 +62,14 @@ def _validate_data(data):
 
 @login_required
 def index(request):
-    sheets = TableSheet.objects.filter(workspace=request.workspace).order_by('-is_pinned', '-created_at')
-    return render(request, 'tables/index.html', {'sheets': sheets})
+    base = TableSheet.objects.filter(workspace=request.workspace)
+    pinned_sheets = base.filter(is_pinned=True).order_by('-created_at')
+    unpinned_sheets = base.filter(is_pinned=False).order_by('-created_at')
+    return render(request, 'tables/index.html', {
+        'pinned_sheets': pinned_sheets,
+        'unpinned_sheets': unpinned_sheets,
+        'sheets': base,
+    })
 
 
 @login_required

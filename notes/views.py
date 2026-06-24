@@ -34,8 +34,14 @@ def _apply_note_fields(note, data):
 
 @login_required
 def index(request):
-    notes = Note.objects.filter(workspace=request.workspace).order_by('-is_pinned', '-created_at')
-    return render(request, 'notes/index.html', {'notes': notes})
+    base = Note.objects.filter(workspace=request.workspace)
+    pinned_notes = base.filter(is_pinned=True).order_by('-created_at')
+    unpinned_notes = base.filter(is_pinned=False).order_by('-created_at')
+    return render(request, 'notes/index.html', {
+        'pinned_notes': pinned_notes,
+        'unpinned_notes': unpinned_notes,
+        'notes': base,
+    })
 
 
 @login_required

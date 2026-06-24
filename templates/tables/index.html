@@ -18,11 +18,23 @@
   </header>
 
   {% if sheets %}
-  <div class="notes-grid">
-    {% for sheet in sheets %}
-    {% url 'tables:edit' sheet.pk as sheet_edit_url %}
-    {% include "includes/grid_card.html" with item=sheet edit_url=sheet_edit_url pin_url="tables:toggle_pin" delete_url="tables:delete" card_class="table-card" hide_preview=True %}
-    {% endfor %}
+  <div class="grid-listing">
+    {% if pinned_sheets %}
+    <div class="notes-grid">
+      {% for sheet in pinned_sheets %}
+      {% url 'tables:edit' sheet.pk as sheet_edit_url %}
+      {% include "includes/grid_card.html" with item=sheet edit_url=sheet_edit_url pin_url="tables:toggle_pin" delete_url="tables:delete" card_class="table-card" hide_preview=True %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if unpinned_sheets %}
+    <div class="notes-grid notes-grid-unpinned">
+      {% for sheet in unpinned_sheets %}
+      {% url 'tables:edit' sheet.pk as sheet_edit_url %}
+      {% include "includes/grid_card.html" with item=sheet edit_url=sheet_edit_url pin_url="tables:toggle_pin" delete_url="tables:delete" card_class="table-card" hide_preview=True %}
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
   {% else %}
   <div class="notes-empty">

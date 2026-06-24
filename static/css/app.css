@@ -1340,6 +1340,12 @@ body.modal-open {
   gap: 16px;
 }
 
+.grid-listing {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .note-card {
   display: flex;
   flex-direction: column;
