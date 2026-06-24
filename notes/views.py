@@ -2,6 +2,7 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -34,6 +35,26 @@ def _apply_note_fields(note, data):
     if color and color in ALLOWED_COLORS:
         note.color = color
     note.save()
+
+
+def _merge_note_fields(base, current, note):
+    """Three-way merge so concurrent edits to different fields don't clobber."""
+    base = base if isinstance(base, dict) else {}
+    current = current if isinstance(current, dict) else {}
+
+    def pick(field, server_value, default=''):
+        base_val = base.get(field, default)
+        cur_val = current.get(field, default)
+        if cur_val != base_val:
+            return cur_val
+        return server_value
+
+    title = (pick('title', note.title, 'Untitled') or 'Untitled').strip()[:200] or 'Untitled'
+    content = sanitize_note_html(pick('content', note.content, ''))
+    color = pick('color', note.color, note.color)
+    if color not in ALLOWED_COLORS:
+        color = note.color
+    return title, content, color
 
 
 @login_required
@@ -93,19 +114,47 @@ def edit(request, pk):
 
 
 @login_required
+def note_data(request, pk):
+    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
+    return JsonResponse({
+        'ok': True,
+        'title': note.title,
+        'color': note.color,
+        'content': note.content,
+        'updated_at': note.updated_at.isoformat(),
+    })
+
+
+@login_required
 @require_POST
 def autosave(request, pk):
     forbidden = viewer_forbidden_json(request)
     if forbidden:
         return forbidden
-    note = get_object_or_404(Note, pk=pk, workspace=request.workspace)
     data = _parse_request_data(request)
-    _apply_note_fields(note, data)
+
+    with transaction.atomic():
+        note = get_object_or_404(
+            Note.objects.select_for_update(),
+            pk=pk,
+            workspace=request.workspace,
+        )
+        base = data.get('base')
+        if base is not None:
+            title, content, color = _merge_note_fields(base, data, note)
+            note.title = title
+            note.content = content
+            note.color = color
+            note.save()
+        else:
+            _apply_note_fields(note, data)
+
     log_update(request, 'notes', note.title, f'Updated note "{note.title}"', note.pk)
     return JsonResponse({
         'ok': True,
         'title': note.title,
         'color': note.color,
+        'content': note.content,
         'updated_at': note.updated_at.isoformat(),
     })
 

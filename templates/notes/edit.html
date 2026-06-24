@@ -15,6 +15,7 @@
       <input type="text" id="noteTitleInput" class="note-title-input" value="{{ note.title }}" placeholder="Enter note title" autocomplete="off">
     </div>
     <div class="note-edit-actions">
+      <button type="button" class="btn btn-default" id="btnRefreshNote" title="Reload latest changes from server">Refresh</button>
       {% if can_edit_content %}
       {% include "includes/editor_toolbar.html" with search_button_id="btnNoteSearch" search_button_title="Search in note (Ctrl+F)" copy_button_id="btnCopyNote" colors=colors current_color=note.color history_object_id=note.pk %}
       <form method="post" class="inline-form" id="deleteNoteForm">
@@ -59,7 +60,9 @@
   window.NOTE_EDITOR_CONFIG = {
     noteId: {{ note.pk }},
     autosaveUrl: '{% url "notes:autosave" note.pk %}',
+    dataUrl: '{% url "notes:data" note.pk %}',
     csrfToken: '{{ csrf_token }}',
+    initialColor: '{{ note.color }}',
     canEditContent: {% if can_edit_content %}true{% else %}false{% endif %},
   };
 </script>

@@ -20,16 +20,25 @@
   const CELL_MAX_ROWS = 4;
 
   let sheetData = JSON.parse(JSON.stringify(cfg.initialData || { columns: [], rows: [] }));
+  // Last state we know the server has; used as the common ancestor for merges.
+  let baseData = JSON.parse(JSON.stringify(cfg.initialData || { columns: [], rows: [] }));
+  // Cells edited locally but not yet confirmed saved; protected from remote overwrites.
+  const dirtyCells = new Set();
   let saveTimer;
   let historyTimer;
   let historyCapture = null;
   let saving = false;
   let pending = false;
+  let refreshing = false;
   let resizing = null;
   let colgroupEl = null;
   let isRestoring = false;
   let dragColId = null;
   let dragRowId = null;
+
+  function cellKey(rowId, colId) {
+    return `${rowId}\u0000${colId}`;
+  }
 
   const history = window.createEditorHistory(60);
 
@@ -55,6 +64,12 @@
       color: cfg.initialColor,
       data: JSON.parse(JSON.stringify(collectData())),
     };
+  }
+
+  function getSavePayload() {
+    const state = getFullState();
+    state.base = baseData;
+    return state;
   }
 
   function restoreState(state) {
@@ -170,13 +185,30 @@
     }
     saving = true;
     setStatus('saving');
+    const savingSnapshot = new Set(dirtyCells);
     try {
       const res = await fetch(cfg.autosaveUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': cfg.csrfToken },
-        body: JSON.stringify(getFullState()),
+        body: JSON.stringify(getSavePayload()),
       });
       if (!res.ok) throw new Error();
+      let json = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      // Cells edited while this save was in flight stay dirty for the next save.
+      savingSnapshot.forEach((key) => dirtyCells.delete(key));
+      if (json && json.data) {
+        baseData = JSON.parse(JSON.stringify(json.data));
+        if (typeof json.color === 'string') cfg.initialColor = json.color;
+        applyRemoteData(json.data);
+        if (titleInput && document.activeElement !== titleInput && typeof json.title === 'string') {
+          titleInput.value = json.title;
+        }
+      }
       setStatus('saved');
     } catch {
       setStatus('error');
@@ -194,6 +226,150 @@
     setStatus('unsaved');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(runAutosave, immediate ? 0 : AUTOSAVE_DELAY);
+  }
+
+  function structureSignature(data) {
+    const cols = (data.columns || []).map((c) => c.id).join(',');
+    const rows = (data.rows || []).map((r) => r.id).join(',');
+    return `${cols}|${rows}`;
+  }
+
+  function applyInPlace(remote) {
+    const active = document.activeElement;
+    const focusRow = active?.dataset?.rowId;
+    const focusCol = active?.dataset?.colId;
+
+    let widthsChanged = false;
+    remote.columns.forEach((rc) => {
+      const col = sheetData.columns.find((c) => c.id === rc.id);
+      if (!col) return;
+      const editingHeader = container.querySelector(
+        `.spreadsheet-col-head[data-col-id="${rc.id}"] .col-head-inner.col-head-editing`,
+      );
+      if (!editingHeader && typeof rc.label === 'string' && col.label !== rc.label) {
+        col.label = rc.label;
+        const span = container.querySelector(`.col-header-label[data-col-id="${rc.id}"]`);
+        if (span) {
+          span.textContent = rc.label;
+          span.title = rc.label;
+        }
+      }
+      if (!resizing && Number.isFinite(rc.width) && col.width !== rc.width) {
+        col.width = rc.width;
+        widthsChanged = true;
+      }
+    });
+    if (widthsChanged) applyColumnWidths();
+
+    remote.rows.forEach((rr) => {
+      const row = sheetData.rows.find((r) => r.id === rr.id);
+      if (!row) return;
+      Object.entries(rr.cells || {}).forEach(([colId, value]) => {
+        if (dirtyCells.has(cellKey(rr.id, colId))) return;
+        if (rr.id === focusRow && colId === focusCol) return;
+        if (row.cells[colId] === value) return;
+        row.cells[colId] = value;
+        const ta = container.querySelector(
+          `.cell-input[data-row-id="${rr.id}"][data-col-id="${colId}"]`,
+        );
+        if (ta) {
+          ta.value = value;
+          autoResizeTextarea(ta);
+        }
+      });
+    });
+  }
+
+  function applyStructural(remote) {
+    const active = document.activeElement;
+    const focusRow = active?.dataset?.rowId;
+    const focusCol = active?.dataset?.colId;
+    const selStart = active?.selectionStart;
+    const selEnd = active?.selectionEnd;
+
+    // Preserve locally unsaved (dirty) and currently focused cell values.
+    const preserved = new Map();
+    sheetData.rows.forEach((r) => {
+      Object.entries(r.cells || {}).forEach(([colId, value]) => {
+        const key = cellKey(r.id, colId);
+        if (dirtyCells.has(key) || (r.id === focusRow && colId === focusCol)) {
+          preserved.set(key, value);
+        }
+      });
+    });
+
+    sheetData = JSON.parse(JSON.stringify(remote));
+    ensureStructure();
+    sheetData.rows.forEach((r) => {
+      sheetData.columns.forEach((c) => {
+        const key = cellKey(r.id, c.id);
+        if (preserved.has(key)) r.cells[c.id] = preserved.get(key);
+      });
+    });
+
+    render();
+
+    if (focusRow && focusCol) {
+      const ta = container.querySelector(
+        `.cell-input[data-row-id="${focusRow}"][data-col-id="${focusCol}"]`,
+      );
+      if (ta) {
+        ta.focus({ preventScroll: true });
+        if (typeof selStart === 'number' && typeof ta.setSelectionRange === 'function') {
+          try {
+            ta.setSelectionRange(selStart, selEnd);
+          } catch {
+            /* selection range not applicable */
+          }
+        }
+      }
+    }
+  }
+
+  function applyRemoteData(remote) {
+    if (!remote || !Array.isArray(remote.columns) || !Array.isArray(remote.rows)) return;
+    collectData();
+    if (structureSignature(remote) === structureSignature(sheetData)) {
+      applyInPlace(remote);
+    } else {
+      applyStructural(remote);
+    }
+  }
+
+  async function refreshFromServer() {
+    if (!cfg.dataUrl || refreshing || saving) return;
+    refreshing = true;
+    clearTimeout(saveTimer);
+    const btnRefresh = document.getElementById('btnRefreshTable');
+    btnRefresh?.setAttribute('disabled', 'disabled');
+    try {
+      if (canEdit && statusEl?.dataset.state === 'unsaved') {
+        await runAutosave();
+        if (statusEl?.dataset.state === 'error') return;
+      }
+      setStatus('saving', 'Refreshing…');
+      const res = await fetch(cfg.dataUrl, { headers: { 'X-Requested-With': 'fetch' } });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!json?.data) throw new Error();
+      baseData = JSON.parse(JSON.stringify(json.data));
+      if (typeof json.color === 'string') cfg.initialColor = json.color;
+      applyRemoteData(json.data);
+      if (titleInput && document.activeElement !== titleInput && typeof json.title === 'string') {
+        titleInput.value = json.title;
+      }
+      if (findBar && !findBar.classList.contains('hidden') && findInput?.value) runFind();
+      setStatus('saved', 'Refreshed');
+      setTimeout(() => {
+        if (dirtyCells.size > 0 || statusEl?.dataset.state === 'unsaved') setStatus('unsaved');
+        else setStatus('saved');
+      }, 1500);
+    } catch {
+      setStatus('error', 'Refresh failed');
+    } finally {
+      refreshing = false;
+      btnRefresh?.removeAttribute('disabled');
+    }
   }
 
   function autoResizeTextarea(ta) {
@@ -643,6 +819,7 @@
         ta.rows = 1;
         if (!canEdit) ta.readOnly = true;
         ta.addEventListener('input', () => {
+          dirtyCells.add(cellKey(ta.dataset.rowId, ta.dataset.colId));
           autoResizeTextarea(ta);
           scheduleHistoryCapture();
           scheduleAutosave();
@@ -975,6 +1152,8 @@
     runAutosave();
   });
 
+  document.getElementById('btnRefreshTable')?.addEventListener('click', refreshFromServer);
+
   function normalizeCellText(text) {
     return String(text || '')
       .replace(/\t/g, ' ')
@@ -1088,6 +1267,7 @@
         const col = sheetData.columns[startColIdx + colOffset];
         if (!col) return;
         sheetRow.cells[col.id] = String(value ?? '');
+        dirtyCells.add(cellKey(sheetRow.id, col.id));
       });
     });
   }
@@ -1352,7 +1532,7 @@
         'Content-Type': 'application/json',
         'X-CSRFToken': cfg.csrfToken,
       },
-      body: JSON.stringify(getFullState()),
+      body: JSON.stringify(getSavePayload()),
       keepalive: true,
     }).catch(() => {});
   }

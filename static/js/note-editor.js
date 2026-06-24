@@ -17,6 +17,11 @@
   let historyCapture = null;
   let saving = false;
   let pending = false;
+  let refreshing = false;
+  let titleDirty = false;
+  let contentDirty = false;
+  let colorDirty = false;
+  let baseState = { title: '', content: '', color: cfg.initialColor || '#FFFFFF' };
   let ready = false;
   let isRestoring = false;
   let findMatches = [];
@@ -227,6 +232,30 @@
     return getPayload();
   }
 
+  function getSavePayload() {
+    const payload = getPayload();
+    payload.base = baseState;
+    return payload;
+  }
+
+  function applyRemoteNote(remote, skip = {}) {
+    if (!remote) return;
+    if (!skip.title && titleInput && document.activeElement !== titleInput && typeof remote.title === 'string') {
+      titleInput.value = remote.title;
+    }
+    if (!skip.color && typeof remote.color === 'string') {
+      applyNoteColor(remote.color);
+      const colorInput = document.querySelector(`#colorOptions input[value="${remote.color}"]`);
+      if (colorInput) colorInput.checked = true;
+    }
+    if (!skip.content && !contentDirty && typeof remote.content === 'string' && quill && !quill.hasFocus()) {
+      isRestoring = true;
+      loadNoteContent(remote.content);
+      isRestoring = false;
+      if (findBarOpen) runFind();
+    }
+  }
+
   function applyNoteColor(hex) {
     if (form && hex) form.style.setProperty('--note-color', hex);
     const dot = document.querySelector('.color-picker-dot');
@@ -242,6 +271,9 @@
     applyNoteColor(state.color);
     const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
     if (colorInput) colorInput.checked = true;
+    titleDirty = true;
+    contentDirty = true;
+    colorDirty = true;
     isRestoring = false;
     if (findBarOpen) runFind();
     scheduleAutosave(true);
@@ -272,6 +304,9 @@
     }
     saving = true;
     setStatus('saving');
+    const savingTitleDirty = titleDirty;
+    const savingContentDirty = contentDirty;
+    const savingColorDirty = colorDirty;
     try {
       const res = await fetch(cfg.autosaveUrl, {
         method: 'POST',
@@ -279,9 +314,30 @@
           'Content-Type': 'application/json',
           'X-CSRFToken': cfg.csrfToken,
         },
-        body: JSON.stringify(getPayload()),
+        body: JSON.stringify(getSavePayload()),
       });
       if (!res.ok) throw new Error('save failed');
+      let json = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      if (savingTitleDirty) titleDirty = false;
+      if (savingContentDirty) contentDirty = false;
+      if (savingColorDirty) colorDirty = false;
+      if (json) {
+        baseState = {
+          title: json.title,
+          content: json.content,
+          color: json.color,
+        };
+        applyRemoteNote(json, {
+          skipTitle: titleDirty,
+          skipContent: contentDirty,
+          skipColor: colorDirty,
+        });
+      }
       setStatus('saved');
     } catch {
       setStatus('error');
@@ -291,6 +347,48 @@
         pending = false;
         runAutosave();
       }
+    }
+  }
+
+  async function refreshFromServer() {
+    if (!cfg.dataUrl || !ready || refreshing || saving) return;
+    refreshing = true;
+    clearTimeout(saveTimer);
+    const btnRefresh = document.getElementById('btnRefreshNote');
+    btnRefresh?.setAttribute('disabled', 'disabled');
+    try {
+      if (canEdit && statusEl?.dataset.state === 'unsaved') {
+        await runAutosave();
+        if (statusEl?.dataset.state === 'error') return;
+      }
+      setStatus('saving', 'Refreshing…');
+      const res = await fetch(cfg.dataUrl, { headers: { 'X-Requested-With': 'fetch' } });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!json) throw new Error();
+      baseState = {
+        title: json.title,
+        content: json.content,
+        color: json.color,
+      };
+      applyRemoteNote(json, {
+        skipTitle: titleDirty,
+        skipContent: contentDirty,
+        skipColor: colorDirty,
+      });
+      setStatus('saved', 'Refreshed');
+      setTimeout(() => {
+        if (titleDirty || contentDirty || colorDirty || statusEl?.dataset.state === 'unsaved') {
+          setStatus('unsaved');
+        } else {
+          setStatus('saved');
+        }
+      }, 1500);
+    } catch {
+      setStatus('error', 'Refresh failed');
+    } finally {
+      refreshing = false;
+      btnRefresh?.removeAttribute('disabled');
     }
   }
 
@@ -310,7 +408,7 @@
         'Content-Type': 'application/json',
         'X-CSRFToken': cfg.csrfToken,
       },
-      body: JSON.stringify(getPayload()),
+      body: JSON.stringify(getSavePayload()),
       keepalive: true,
     }).catch(() => {});
   }
@@ -349,6 +447,7 @@
     document.querySelectorAll('#colorOptions input[name="color"]').forEach((input) => {
       const pick = () => {
         recordHistoryNow();
+        colorDirty = true;
         applyNoteColor(input.value);
         scheduleAutosave(true);
         closeColorPopover();
@@ -370,6 +469,8 @@
     clearTimeout(saveTimer);
     runAutosave();
   });
+
+  document.getElementById('btnRefreshNote')?.addEventListener('click', refreshFromServer);
 
   function showCopiedFeedback() {
     if (!statusTextEl) return;
@@ -837,6 +938,7 @@
 
   if (titleInput) {
     titleInput.addEventListener('input', () => {
+      titleDirty = true;
       scheduleHistoryCapture();
       scheduleAutosave();
     });
@@ -844,6 +946,7 @@
 
   quill.on('text-change', (_delta, _old, source) => {
     if (source === 'silent') return;
+    contentDirty = true;
     scheduleHistoryCapture();
     scheduleAutosave();
     if (findBarOpen) runFind();
@@ -877,6 +980,13 @@
   noteSearch = initNoteSearch();
 
   ready = true;
+  baseState = {
+    title: titleInput ? titleInput.value : 'Untitled',
+    content: getCleanNoteHtml(),
+    color: document.querySelector('#colorOptions input[name="color"]:checked')?.value
+      || cfg.initialColor
+      || '#FFFFFF',
+  };
   history.reset(getFullState());
   setStatus('saved');
 
