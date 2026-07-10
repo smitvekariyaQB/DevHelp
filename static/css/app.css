@@ -2514,6 +2514,50 @@ body.row-dragging .spreadsheet-row-label {
   box-shadow: inset 0 0 0 2px rgba(0, 122, 255, 0.35);
 }
 
+/* ── Excel-like cell selection ─────────────────────────────────── */
+.spreadsheet-cell.sel-selected {
+  background: rgba(0, 122, 255, 0.07) !important;
+  position: relative;
+}
+
+.spreadsheet-cell.sel-selected .cell-input {
+  background: transparent;
+  pointer-events: none;
+}
+
+.spreadsheet-cell.sel-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  border: 0 solid rgba(0, 122, 255, 0.65);
+}
+
+.spreadsheet-cell.sel-selected.sel-top::after {
+  border-top-width: 2px;
+}
+
+.spreadsheet-cell.sel-selected.sel-bottom::after {
+  border-bottom-width: 2px;
+}
+
+.spreadsheet-cell.sel-selected.sel-left::after {
+  border-left-width: 2px;
+}
+
+.spreadsheet-cell.sel-selected.sel-right::after {
+  border-right-width: 2px;
+}
+
+.spreadsheet-col-head.sel-col-active {
+  background: #dde9f8 !important;
+}
+
+.spreadsheet-row-label.sel-row-active {
+  background: #dde9f8 !important;
+}
+
 .col-resize-handle {
   position: absolute;
   top: 0;
@@ -6088,6 +6132,22 @@ html.dark-mode .sheet-add-col-rail-icon {
 html.dark-mode .cell-input:focus {
   background: rgba(255, 255, 255, 0.04);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+html.dark-mode .spreadsheet-cell.sel-selected {
+  background: rgba(56, 132, 255, 0.12) !important;
+}
+
+html.dark-mode .spreadsheet-cell.sel-selected::after {
+  border-color: rgba(56, 132, 255, 0.70);
+}
+
+html.dark-mode .spreadsheet-col-head.sel-col-active {
+  background: #192537 !important;
+}
+
+html.dark-mode .spreadsheet-row-label.sel-row-active {
+  background: #192537 !important;
 }
 
 html.dark-mode .toast {

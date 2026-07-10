@@ -36,6 +36,12 @@
   let dragColId = null;
   let dragRowId = null;
 
+  // ── Excel-like cell selection ──────────────────────────────────
+  let selAnchor = null;   // { row: index, col: index }
+  let selFocus = null;    // { row: index, col: index }
+  let selDragging = false;
+  let hasSelection = false;
+
   function cellKey(rowId, colId) {
     return `${rowId}\u0000${colId}`;
   }
@@ -806,15 +812,19 @@
         showSheetContextMenu(e.clientX, e.clientY, 'row', row.id);
       });
 
-      sheetData.columns.forEach((col) => {
+      sheetData.columns.forEach((col, colIndex) => {
         const td = document.createElement('td');
         td.className = 'spreadsheet-cell';
         td.dataset.colId = col.id;
+        td.dataset.rowIdx = String(rowIndex);
+        td.dataset.colIdx = String(colIndex);
 
         const ta = document.createElement('textarea');
         ta.className = 'cell-input';
         ta.dataset.rowId = row.id;
         ta.dataset.colId = col.id;
+        ta.dataset.rowIdx = String(rowIndex);
+        ta.dataset.colIdx = String(colIndex);
         ta.value = row.cells[col.id] || '';
         ta.rows = 1;
         if (!canEdit) ta.readOnly = true;
@@ -846,6 +856,7 @@
 
     applyColumnWidths();
     refreshFindAfterRender();
+    paintSelection();
   }
 
   function doUndo() {
@@ -861,6 +872,170 @@
   btnAddColumn?.addEventListener('click', addColumn);
   btnAddRow?.addEventListener('click', addRow);
   container.addEventListener('paste', onCellPaste);
+
+  // ── Selection helpers ──────────────────────────────────────────
+  function getSelectionRect() {
+    if (!selAnchor || !selFocus) return null;
+    return {
+      r1: Math.min(selAnchor.row, selFocus.row),
+      r2: Math.max(selAnchor.row, selFocus.row),
+      c1: Math.min(selAnchor.col, selFocus.col),
+      c2: Math.max(selAnchor.col, selFocus.col),
+    };
+  }
+
+  function clearSelection() {
+    selAnchor = null;
+    selFocus = null;
+    hasSelection = false;
+    container.querySelectorAll('.spreadsheet-cell.sel-selected').forEach((el) => {
+      el.classList.remove('sel-selected', 'sel-top', 'sel-bottom', 'sel-left', 'sel-right');
+    });
+    container.querySelectorAll('.spreadsheet-col-head.sel-col-active').forEach((el) => {
+      el.classList.remove('sel-col-active');
+    });
+    container.querySelectorAll('.spreadsheet-row-label.sel-row-active').forEach((el) => {
+      el.classList.remove('sel-row-active');
+    });
+  }
+
+  function paintSelection() {
+    // Clear old paint
+    container.querySelectorAll('.spreadsheet-cell.sel-selected').forEach((el) => {
+      el.classList.remove('sel-selected', 'sel-top', 'sel-bottom', 'sel-left', 'sel-right');
+    });
+    container.querySelectorAll('.spreadsheet-col-head.sel-col-active').forEach((el) => {
+      el.classList.remove('sel-col-active');
+    });
+    container.querySelectorAll('.spreadsheet-row-label.sel-row-active').forEach((el) => {
+      el.classList.remove('sel-row-active');
+    });
+
+    const rect = getSelectionRect();
+    if (!rect) return;
+
+    const isSingleCell = rect.r1 === rect.r2 && rect.c1 === rect.c2;
+    if (isSingleCell) {
+      hasSelection = false;
+      return;
+    }
+    hasSelection = true;
+
+    // Paint cells
+    container.querySelectorAll('.spreadsheet-cell').forEach((td) => {
+      const r = parseInt(td.dataset.rowIdx, 10);
+      const c = parseInt(td.dataset.colIdx, 10);
+      if (r >= rect.r1 && r <= rect.r2 && c >= rect.c1 && c <= rect.c2) {
+        td.classList.add('sel-selected');
+        if (r === rect.r1) td.classList.add('sel-top');
+        if (r === rect.r2) td.classList.add('sel-bottom');
+        if (c === rect.c1) td.classList.add('sel-left');
+        if (c === rect.c2) td.classList.add('sel-right');
+      }
+    });
+
+    // Highlight column headers
+    const colHeads = container.querySelectorAll('.spreadsheet-col-head');
+    colHeads.forEach((th, i) => {
+      if (i >= rect.c1 && i <= rect.c2) th.classList.add('sel-col-active');
+    });
+
+    // Highlight row labels
+    const rowLabels = container.querySelectorAll('.spreadsheet-row-label');
+    rowLabels.forEach((td, i) => {
+      if (i >= rect.r1 && i <= rect.r2) td.classList.add('sel-row-active');
+    });
+  }
+
+  function cellIdxFromEvent(e) {
+    const td = e.target.closest('.spreadsheet-cell');
+    if (!td) return null;
+    return {
+      row: parseInt(td.dataset.rowIdx, 10),
+      col: parseInt(td.dataset.colIdx, 10),
+    };
+  }
+
+  // Mouse-based drag selection
+  container.addEventListener('mousedown', (e) => {
+    // Don't interfere with resize handles, context menus, or header edits
+    if (e.target.closest('.col-resize-handle')) return;
+    if (e.target.closest('.col-head-inner')) return;
+    if (e.target.closest('.spreadsheet-row-label')) return;
+    if (e.target.closest('.spreadsheet-corner')) return;
+    if (e.button !== 0) return;
+
+    const idx = cellIdxFromEvent(e);
+    if (!idx) return;
+
+    if (e.shiftKey && selAnchor) {
+      // Extend selection
+      e.preventDefault();
+      selFocus = idx;
+      selDragging = true;
+      paintSelection();
+    } else {
+      // New selection
+      selAnchor = idx;
+      selFocus = idx;
+      selDragging = true;
+      paintSelection();
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!selDragging) return;
+    const idx = cellIdxFromEvent(e);
+    if (!idx) return;
+    if (selFocus && idx.row === selFocus.row && idx.col === selFocus.col) return;
+    selFocus = idx;
+    paintSelection();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (selDragging) {
+      selDragging = false;
+    }
+  });
+
+  // Clear selection when user starts typing in a cell
+  container.addEventListener('focus', (e) => {
+    if (e.target.classList.contains('cell-input') && hasSelection) {
+      clearSelection();
+    }
+  }, true);
+
+  // Build copy payload from selection
+  function buildSelectionCopyPayload() {
+    const rect = getSelectionRect();
+    if (!rect) return null;
+    collectData();
+
+    const selectedCols = sheetData.columns.slice(rect.c1, rect.c2 + 1);
+    const selectedRows = sheetData.rows.slice(rect.r1, rect.r2 + 1);
+
+    const headers = selectedCols.map((col, i) =>
+      cellValueForExport(col.label || defaultColumnLabel(rect.c1 + i)),
+    );
+    const rows = selectedRows.map((row) =>
+      selectedCols.map((col) => cellValueForExport(row.cells[col.id])),
+    );
+
+    const tsvHeader = headers.map(cellForTsvExport).join('\t');
+    const tsvRows = rows.map((r) => r.map(cellForTsvExport).join('\t'));
+    const plain = [tsvHeader, ...tsvRows].join('\n');
+    const tableHtml = buildCleanTableHtml(headers, rows);
+    return { plain, tableHtml };
+  }
+
+  async function copySelection() {
+    const payload = buildSelectionCopyPayload();
+    if (!payload) return false;
+    prepareTableCopy();
+    const ok = await copyRichContentToClipboard(payload.plain, payload.tableHtml);
+    if (ok) showCopiedFeedback();
+    return ok;
+  }
 
   let sheetContextMenu = null;
   let sheetContextTarget = null;
@@ -1108,6 +1283,17 @@
     if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
       e.preventDefault();
       openFindBar();
+      return;
+    }
+    // Ctrl+C / Cmd+C — copy selected cells if a multi-cell selection exists
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && hasSelection) {
+      e.preventDefault();
+      copySelection();
+      return;
+    }
+    // Escape clears selection
+    if (e.key === 'Escape' && hasSelection) {
+      clearSelection();
       return;
     }
     if (!e.ctrlKey && !e.metaKey) return;
@@ -1561,6 +1747,7 @@
       clearTimeout(historyTimer);
       clearColDragState();
       clearRowDragState();
+      clearSelection();
     });
   }
 })();
