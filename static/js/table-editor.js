@@ -1676,6 +1676,186 @@
 
   document.getElementById('btnCopyTable')?.addEventListener('click', copyToClipboard);
 
+  // ── Excel Export ────────────────────────────────────────────────
+  function exportToExcel() {
+    if (typeof XLSX === 'undefined') {
+      AppModal?.alert({ title: 'Error', message: 'Excel library not loaded. Please refresh and try again.' });
+      return;
+    }
+    collectData();
+    const title = (titleInput?.value?.trim() || 'Untitled table').replace(/[\\/*?[\]:]/g, '_').slice(0, 31);
+
+    const headers = sheetData.columns.map((col, i) =>
+      col.label || `Column ${i + 1}`,
+    );
+    const rows = sheetData.rows.map((row) =>
+      sheetData.columns.map((col) => row.cells[col.id] ?? ''),
+    );
+
+    const aoaData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(aoaData);
+
+    // Apply column widths (wch = width in characters)
+    ws['!cols'] = sheetData.columns.map((col) => ({
+      wch: Math.max(10, Math.round(col.width / 8)),
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, title);
+    XLSX.writeFile(wb, `${title}.xlsx`);
+
+    showCopiedFeedback();
+    if (statusTextEl) statusTextEl.textContent = 'Exported!';
+  }
+
+  document.getElementById('btnExportExcel')?.addEventListener('click', exportToExcel);
+
+  // ── Excel Import ────────────────────────────────────────────────
+  const excelFileInput = document.getElementById('excelFileInput');
+
+  document.getElementById('btnImportExcel')?.addEventListener('click', () => {
+    if (!excelFileInput) return;
+    excelFileInput.value = '';
+    excelFileInput.click();
+  });
+
+  async function processImportedFile(file) {
+    if (typeof XLSX === 'undefined') {
+      AppModal?.alert({ title: 'Error', message: 'Excel library not loaded. Please refresh and try again.' });
+      return;
+    }
+
+    try {
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheetName = wb.SheetNames[0];
+      if (!sheetName) {
+        AppModal?.alert({ title: 'Import error', message: 'No sheets found in the file.' });
+        return;
+      }
+      const ws = wb.Sheets[sheetName];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      if (!aoa.length) {
+        AppModal?.alert({ title: 'Import error', message: 'The file appears to be empty.' });
+        return;
+      }
+
+      // Ask user whether to replace or append
+      const hasExistingData = sheetData.rows.some((row) =>
+        sheetData.columns.some((col) => (row.cells[col.id] || '').trim() !== ''),
+      );
+
+      let mode = 'replace';
+      if (hasExistingData && window.AppModal) {
+        const action = await new Promise((resolve) => {
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop';
+          const modal = document.createElement('div');
+          modal.className = 'modal-container';
+          modal.innerHTML = `
+            <div class="modal-content" style="max-width: 420px;">
+              <h2 class="modal-title">Import Excel</h2>
+              <p class="modal-message">
+                <strong>${file.name}</strong> contains ${aoa.length} rows.
+                <br>How would you like to import?
+              </p>
+              <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+                <button type="button" class="btn btn-default" data-action="cancel">Cancel</button>
+                <button type="button" class="btn btn-default" data-action="append">Append rows</button>
+                <button type="button" class="btn btn-primary" data-action="replace">Replace all</button>
+              </div>
+            </div>
+          `;
+          backdrop.appendChild(modal);
+          document.body.appendChild(backdrop);
+
+          backdrop.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn && e.target !== backdrop) return;
+            const act = btn ? btn.dataset.action : 'cancel';
+            backdrop.remove();
+            resolve(act);
+          });
+        });
+
+        if (action === 'cancel') return;
+        mode = action;
+      }
+
+      recordHistoryNow();
+      collectData();
+
+      if (mode === 'replace') {
+        // First row as headers, rest as data
+        const headerRow = aoa[0] || [];
+        const dataRows = aoa.slice(1);
+
+        sheetData.columns = headerRow.map((label, i) => ({
+          id: uid(),
+          width: DEFAULT_COL_WIDTH,
+          label: String(label || `Column ${i + 1}`),
+        }));
+
+        sheetData.rows = dataRows.length
+          ? dataRows.map((row) => {
+              const cells = {};
+              sheetData.columns.forEach((col, colIdx) => {
+                cells[col.id] = String(row[colIdx] ?? '');
+              });
+              return { id: uid(), cells };
+            })
+          : [(() => {
+              const cells = {};
+              sheetData.columns.forEach((col) => { cells[col.id] = ''; });
+              return { id: uid(), cells };
+            })()];
+      } else {
+        // Append mode: add rows, grow columns if needed
+        const maxCols = Math.max(...aoa.map((r) => r.length), 0);
+        const colsNeeded = maxCols - sheetData.columns.length;
+        for (let i = 0; i < colsNeeded; i++) {
+          const n = sheetData.columns.length + 1;
+          const col = { id: uid(), width: DEFAULT_COL_WIDTH, label: `Column ${n}` };
+          sheetData.columns.push(col);
+          sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
+        }
+
+        aoa.forEach((row) => {
+          const cells = {};
+          sheetData.columns.forEach((col, colIdx) => {
+            cells[col.id] = String(row[colIdx] ?? '');
+          });
+          sheetData.rows.push({ id: uid(), cells });
+        });
+      }
+
+      ensureStructure();
+      render();
+      scheduleAutosave(true);
+
+      if (statusTextEl) {
+        const prev = statusTextEl.textContent;
+        const prevState = statusEl?.dataset.state;
+        statusTextEl.textContent = 'Imported!';
+        if (statusEl) statusEl.dataset.state = 'saved';
+        setTimeout(() => {
+          statusTextEl.textContent = prev;
+          if (statusEl) statusEl.dataset.state = prevState;
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Excel import error:', err);
+      AppModal?.alert({ title: 'Import error', message: 'Could not read the file. Make sure it is a valid Excel or CSV file.' });
+    }
+  }
+
+  excelFileInput?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (file) processImportedFile(file);
+  });
+
+
   document.getElementById('btnDuplicateTable')?.addEventListener('click', async () => {
     if (!cfg.duplicateUrl) return;
     clearTimeout(saveTimer);
@@ -1748,6 +1928,20 @@
       clearColDragState();
       clearRowDragState();
       clearSelection();
+    });
+  }
+  
+  const btnMoreOptions = document.getElementById('btnMoreOptions');
+  const moreOptionsMenu = document.getElementById('moreOptionsMenu');
+  if (btnMoreOptions && moreOptionsMenu) {
+    btnMoreOptions.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moreOptionsMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!moreOptionsMenu.contains(e.target) && e.target !== btnMoreOptions && !btnMoreOptions.contains(e.target)) {
+        moreOptionsMenu.classList.add('hidden');
+      }
     });
   }
 })();

@@ -60,7 +60,7 @@ body.auth-page {
   width: 220px;
   background: var(--sidebar-bg);
   backdrop-filter: blur(24px);
-  border-right: 1px solid var(--border);
+  border-right: none;
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
@@ -611,7 +611,7 @@ body.modal-open {
   gap: 6px;
   padding: 7px 16px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.2;
   font-family: inherit;
   cursor: pointer;
@@ -2078,7 +2078,7 @@ html.dark-mode .spreadsheet-cell.table-find-active {
 }
 
 .table-sheet-tab.is-active {
-  background: #d1d1d6;
+  background: #fff;
   color: #48484a;
   font-weight: 600;
 }
@@ -2128,12 +2128,12 @@ html.dark-mode .spreadsheet-cell.table-find-active {
 }
 
 .spreadsheet tr:first-child th {
-  border-top: 1px solid #e3e3e8;
+  border-top: none;
 }
 
 .spreadsheet th:first-child,
 .spreadsheet td:first-child {
-  border-left: 1px solid #e3e3e8;
+  border-left: none;
 }
 
 .spreadsheet-corner {
@@ -2209,7 +2209,7 @@ tr.spreadsheet-data-row.row-drag-over .row-label-inner {
   border: 1px solid transparent;
   border-radius: 6px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: inherit;
   color: var(--text);
   line-height: 28px;
@@ -2389,6 +2389,57 @@ body.row-dragging .spreadsheet-row-label {
 
 .sheet-context-menu button.danger {
   color: #ff3b30;
+}
+
+.more-options-wrap {
+  position: relative;
+  display: inline-block;
+  margin-left: 4px;
+}
+.more-options-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1100;
+  min-width: 160px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.more-options-menu.hidden {
+  display: none;
+}
+.more-options-menu button, .more-options-menu .btn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 400;
+  margin: 0;
+}
+.more-options-menu button:hover, .more-options-menu .btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.more-options-menu button.danger, .more-options-menu .btn.danger {
+  color: #ff3b30;
+}
+.more-options-menu button.danger:hover, .more-options-menu .btn.danger:hover {
+  background: rgba(255, 59, 48, 0.08);
+}
+.more-options-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
 }
 
 .sheet-context-menu button.danger:hover {

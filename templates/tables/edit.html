@@ -13,15 +13,33 @@
     <div class="note-edit-actions">
       <button type="button" class="btn btn-default" id="btnRefreshTable" title="Reload latest changes from server">Refresh</button>
       {% if can_edit_content %}
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True history_object_id=sheet.pk %}
-      <button type="button" class="btn btn-default" id="btnDuplicateTable" title="Create a duplicate table">Duplicate</button>
-      <form method="post" class="inline-form" id="deleteTableForm">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="delete">
-        <button type="button" class="btn btn-danger btn-delete-action" id="btnDeleteTable">Delete</button>
-      </form>
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True %}
+      <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+      <div class="more-options-wrap">
+        <button type="button" class="btn btn-default" id="btnMoreOptions" title="More options">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="8" cy="3" r="1.5"></circle>
+            <circle cx="8" cy="8" r="1.5"></circle>
+            <circle cx="8" cy="13" r="1.5"></circle>
+          </svg>
+        </button>
+        <div class="more-options-menu hidden" id="moreOptionsMenu">
+          <button type="button" class="btn-workspace-history" data-object-id="{{ sheet.pk }}">History</button>
+          <div class="more-options-divider"></div>
+          <button type="button" id="btnImportExcel">Import</button>
+          <button type="button" id="btnExportExcel">Export</button>
+          <button type="button" id="btnDuplicateTable">Duplicate</button>
+          <div class="more-options-divider"></div>
+          <form method="post" class="inline-form" id="deleteTableForm" style="margin: 0; padding: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <button type="button" class="danger btn-delete-action" id="btnDeleteTable">Delete</button>
+          </form>
+        </div>
+      </div>
       {% include "includes/save_controls.html" with autosave_id="tableAutosaveStatus" %}
       {% else %}
+      <button type="button" class="btn btn-default" id="btnExportExcel" title="Export as Excel (.xlsx) file">Export</button>
       <span class="preference-desc">View only</span>
       {% endif %}
     </div>
@@ -66,6 +84,7 @@
 {% endblock %}
 
 {% block page_js %}
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="{% static 'js/history.js' %}"></script>
 <script src="{% static 'js/editor-sheet-tabs.js' %}"></script>
 <script src="{% static 'js/table-editor.js' %}"></script>
