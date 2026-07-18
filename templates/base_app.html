@@ -50,54 +50,42 @@
           
           {% if 'todos' in ws.enabled_tools %}
           <a href="{% url 'todos:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'todos' and request.workspace.id == ws.id %}active{% endif %}" title="To Do">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/todos.svg' %}" alt="" aria-hidden="true">
             <span>To Do</span>
           </a>
           {% endif %}
           
           {% if 'notes' in ws.enabled_tools %}
           <a href="{% url 'notes:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'notes' and request.workspace.id == ws.id %}active{% endif %}" title="Notes">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/notes.svg' %}" alt="" aria-hidden="true">
             <span>Notes</span>
           </a>
           {% endif %}
           
           {% if 'tables' in ws.enabled_tools %}
           <a href="{% url 'tables:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'tables' and request.workspace.id == ws.id %}active{% endif %}" title="Tables">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/tables.svg' %}" alt="" aria-hidden="true">
             <span>Tables</span>
           </a>
           {% endif %}
           
           {% if 'jsondocs' in ws.enabled_tools %}
           <a href="{% url 'jsondocs:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'jsondocs' and request.workspace.id == ws.id %}active{% endif %}" title="JSON">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2l1 3 1-6 1 6 1-3h2"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/json.svg' %}" alt="" aria-hidden="true">
             <span>JSON</span>
           </a>
           {% endif %}
           
           {% if 'markdown' in ws.enabled_tools %}
           <a href="{% url 'markdown:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'markdown' and request.workspace.id == ws.id %}active{% endif %}" title="Markdown">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/markdown.svg' %}" alt="" aria-hidden="true">
             <span>Markdown</span>
           </a>
           {% endif %}
           
           {% if 'codefiles' in ws.enabled_tools %}
           <a href="{% url 'codefiles:index' %}?w={{ ws.id }}" class="nav-item {% if request.resolver_match.app_name == 'codefiles' and request.workspace.id == ws.id %}active{% endif %}" title="Code">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/code.svg' %}" alt="" aria-hidden="true">
             <span>Code</span>
           </a>
           {% endif %}
@@ -114,9 +102,7 @@
         <div class="nav-section">
           <div class="nav-section-label">Tools</div>
           <a href="{% url 'compare:index' %}" class="nav-item {% if request.resolver_match.app_name == 'compare' %}active{% endif %}" title="Compare">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>
-            </svg>
+            <img class="nav-icon" src="{% static 'images/icons3d/compare.svg' %}" alt="" aria-hidden="true">
             <span>Compare</span>
           </a>
         </div>
