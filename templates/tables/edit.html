@@ -84,8 +84,9 @@
 {% endblock %}
 
 {% block page_js %}
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="{% static 'js/history.js' %}"></script>
 <script src="{% static 'js/editor-sheet-tabs.js' %}"></script>
 <script src="{% static 'js/table-editor.js' %}"></script>
+{# SheetJS is only needed for import/export, so it loads last and never blocks grid render #}
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 {% endblock %}

@@ -1353,19 +1353,30 @@ body.modal-open {
   flex-direction: column;
   position: relative;
   min-height: 160px;
-  padding: 16px;
-  border-radius: var(--radius);
-  background: var(--note-color, #fff9c4);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 18px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--note-color, #fff9c4) 55%, #fff);
+  border: none;
   text-decoration: none;
   color: var(--text);
   transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
+}
+
+/* White (default) cards need a subtle tint to stay visible on the white panel:
+   blue for notes, purple for tables */
+.note-card-wrap[style*="#FFFFFF" i] .note-card {
+  background: #e9f1fd;
+}
+
+.note-card-wrap[style*="#FFFFFF" i] .note-card.table-card,
+.note-card-wrap[style*="#F5F5F5" i] .note-card {
+  background: #efeafa;
 }
 
 .note-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
 
 .note-card-title {
@@ -1407,7 +1418,7 @@ body.modal-open {
 
 .note-card-wrap:hover .note-card {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
 
 .note-card-pin {
@@ -1491,10 +1502,6 @@ body.modal-open {
 
 .note-card-menu button.danger:hover {
   background: rgba(255, 59, 48, 0.08);
-}
-
-.note-card-wrap.is-pinned .note-card {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .note-card-wrap:has(.note-card-menu-btn) .note-card-title {
@@ -1985,7 +1992,6 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   flex-shrink: 0;
   min-height: 36px;
   border: 1px solid #d1d1d6;
-  border-top: none;
   border-radius: 0 0 10px 10px;
   background: #e5e5ea;
   overflow: hidden;
