@@ -6036,9 +6036,41 @@ html.dark-mode .settings-nav-item.active {
 }
 
 html.dark-mode .editor-wrap {
-  background: color-mix(in srgb, var(--note-color, #141414) 12%, #141414);
+  background: #141414;
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: none;
+}
+
+/* Notes with a color applied keep the exact original color in dark mode,
+   with light-mode text and toolbar for readability */
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap {
+  background: var(--note-color, #141414);
+}
+
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-container,
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-editor {
+  color: #1d1d1f;
+}
+
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-editor.ql-blank::before {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-snow .ql-stroke {
+  stroke: #444;
+}
+
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-snow .ql-fill {
+  fill: #444;
+}
+
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-snow .ql-picker {
+  color: #444;
+}
+
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-editor .note-pasted-table th,
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-editor .note-pasted-table td {
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 html.dark-mode .editor-wrap .ql-toolbar {
@@ -6068,22 +6100,45 @@ html.dark-mode .color-picker-popover {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* Colored cards keep their exact original color in dark mode (dark text) */
 html.dark-mode .note-card {
-  background: color-mix(in srgb, var(--note-color, #1c1c1e) 22%, #1c1c1e) !important;
+  background: var(--note-color, #1c1c1e) !important;
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: none;
-  color: #f2f2f7;
+  color: #1d1d1f;
 }
 
 html.dark-mode .note-card-preview {
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(0, 0, 0, 0.55);
 }
 
 html.dark-mode .note-card-date {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(0, 0, 0, 0.4);
 }
 
 html.dark-mode .note-card-pin {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Uncolored (white/gray) cards stay dark-themed */
+html.dark-mode .note-card-wrap[style*="#FFFFFF" i] .note-card,
+html.dark-mode .note-card-wrap[style*="#F5F5F5" i] .note-card {
+  background: #1c1c1e !important;
+  color: #f2f2f7;
+}
+
+html.dark-mode .note-card-wrap[style*="#FFFFFF" i] .note-card-preview,
+html.dark-mode .note-card-wrap[style*="#F5F5F5" i] .note-card-preview {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+html.dark-mode .note-card-wrap[style*="#FFFFFF" i] .note-card-date,
+html.dark-mode .note-card-wrap[style*="#F5F5F5" i] .note-card-date {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+html.dark-mode .note-card-wrap[style*="#FFFFFF" i] .note-card-pin,
+html.dark-mode .note-card-wrap[style*="#F5F5F5" i] .note-card-pin {
   color: rgba(255, 255, 255, 0.55);
 }
 
@@ -6739,4 +6794,66 @@ html.dark-mode .json-val-null {
 html.dark-mode .app-modal-dialog {
   background: #1c1c1e;
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Dark mode fixes ─────────────────────────────────────────────── */
+
+/* Title inputs are designed as transparent text fields — the generic
+   dark input rule must not give them a filled/native box */
+html.dark-mode .note-title-input,
+html.dark-mode .table-title-input,
+html.dark-mode .list-title-input,
+html.dark-mode .task-title-input,
+html.dark-mode .json-title-input,
+html.dark-mode .markdown-title-input,
+html.dark-mode .code-title-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text);
+}
+
+html.dark-mode .list-title-input {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark-mode .json-title-input:hover,
+html.dark-mode .markdown-title-input:hover,
+html.dark-mode .code-title-input:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Spreadsheet cells: keep textarea transparent so the cell background
+   is uniform (no dark bands under short cells in tall rows) */
+html.dark-mode .spreadsheet-cell .cell-input {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text);
+}
+
+/* More-options (3-dot) dropdown menu */
+html.dark-mode .more-options-menu {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .more-options-menu button:hover,
+html.dark-mode .more-options-menu .btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark-mode .more-options-menu button.danger,
+html.dark-mode .more-options-menu .btn.danger {
+  color: #ff6961;
+}
+
+html.dark-mode .more-options-menu button.danger:hover,
+html.dark-mode .more-options-menu .btn.danger:hover {
+  background: rgba(255, 105, 97, 0.12);
+}
+
+html.dark-mode .more-options-divider {
+  background: rgba(255, 255, 255, 0.1);
 }
