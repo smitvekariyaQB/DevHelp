@@ -248,9 +248,7 @@
     currentAbortController = new AbortController();
     const { signal } = currentAbortController;
 
-    // Show subtle loading state
     const main = document.querySelector(MAIN_SELECTOR);
-    if (main) main.style.opacity = '0.6';
 
     try {
       const res = await fetch(url, {
@@ -338,9 +336,6 @@
 
       // 10. Scroll to top
       main.scrollTop = 0;
-
-      // 11. Restore opacity
-      main.style.opacity = '';
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.error('[Router] navigation failed:', err);
