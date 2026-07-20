@@ -5907,8 +5907,8 @@ html.dark-mode .user-action-btn:hover {
 }
 
 html.dark-mode .nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
 html.dark-mode .user-panel {
@@ -6309,16 +6309,42 @@ html.dark-mode .todo-list-item.active {
   background: rgba(255, 255, 255, 0.1);
 }
 
+html.dark-mode .add-task-input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  box-shadow: none;
+}
+
+html.dark-mode .add-task-input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+html.dark-mode .add-task-input::placeholder {
+  color: #8e8e93;
+}
+
+html.dark-mode .task-check-placeholder,
+html.dark-mode .task-check {
+  border-color: #636366;
+}
+
+html.dark-mode .tasks-date,
+html.dark-mode .task-empty {
+  color: #98989d;
+}
+
 html.dark-mode .ql-snow .ql-stroke {
-  stroke: #98989d;
+  stroke: #d1d1d6;
 }
 
 html.dark-mode .ql-snow .ql-fill {
-  fill: #98989d;
+  fill: #d1d1d6;
 }
 
 html.dark-mode .ql-snow .ql-picker {
-  color: #98989d;
+  color: #d1d1d6;
 }
 
 html.dark-mode .ql-snow .ql-picker-options {

@@ -19,6 +19,8 @@
   const btnUndo = document.getElementById('btnCompareUndo');
   const btnRedo = document.getElementById('btnCompareRedo');
   const btnReset = document.getElementById('btnCompareReset');
+  const btnFormat = document.getElementById('btnCompareFormat');
+  const btnMinify = document.getElementById('btnCompareMinify');
 
   const HLJS_LANGUAGE_ALIASES = { html: 'xml', htm: 'xml' };
 
@@ -136,6 +138,42 @@
         serializePaneState(getPaneState(pane)) !== serializePaneState(pane.baseline);
       btnReset.disabled = !canReset;
     }
+    refreshJsonToolButtons();
+  }
+
+  function isLikelyJsonPane(pane) {
+    if (!pane) return false;
+    if (pane.language === 'json') return true;
+    const trimmed = (pane.editor?.value || '').trim();
+    if (!trimmed) return false;
+    return trimmed.startsWith('{') || trimmed.startsWith('[');
+  }
+
+  function refreshJsonToolButtons() {
+    const pane = getActivePane();
+    const enabled = isLikelyJsonPane(pane) && Boolean(pane.editor?.value?.trim());
+    if (btnFormat) btnFormat.disabled = !enabled;
+    if (btnMinify) btnMinify.disabled = !enabled;
+  }
+
+  function formatActivePaneJson(spaces) {
+    const pane = getActivePane();
+    const triggerBtn = spaces > 0 ? btnFormat : btnMinify;
+    if (!pane?.editor || triggerBtn?.disabled) return false;
+    const text = pane.editor.value;
+    if (!text.trim()) return false;
+
+    const formatted = window.formatJsonText?.(text, spaces);
+    if (formatted == null || formatted === text) return formatted != null;
+
+    recordHistoryNow(pane);
+    pane.editor.value = formatted;
+    markPaneManual(pane);
+    syncPaneHighlight();
+    if (activePane === pane) runFind();
+    refreshHistoryButtons();
+    scheduleSaveSession();
+    return true;
   }
 
   function setPaneBaseline(pane) {
@@ -1523,6 +1561,8 @@
   btnUndo?.addEventListener('click', doUndo);
   btnRedo?.addEventListener('click', doRedo);
   btnReset?.addEventListener('click', resetActivePane);
+  btnFormat?.addEventListener('click', () => formatActivePaneJson(2));
+  btnMinify?.addEventListener('click', () => formatActivePaneJson(0));
 
   function onCompareDocKeydown(e) {
     const key = e.key.toLowerCase();

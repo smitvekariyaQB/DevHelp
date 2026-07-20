@@ -21,6 +21,8 @@
       <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareUndo" title="Undo in active pane (Ctrl+Z)" disabled>Undo</button>
       <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareRedo" title="Redo in active pane (Ctrl+Y)" disabled>Redo</button>
       <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareReset" title="Reset active pane to last loaded content" disabled>Reset</button>
+      <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareFormat" title="Format JSON in active pane" disabled>Format</button>
+      <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareMinify" title="Minify JSON in active pane" disabled>Minify</button>
       <button type="button" class="btn btn-default btn-compare-tool" id="btnCompareSearch" title="Search in active pane (Ctrl+F)">Search</button>
     </div>
   </header>
@@ -157,5 +159,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
 <script src="{% static 'js/history.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'js/json-format.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'js/compare-editor.js' %}?v={% now 'U' %}"></script>
 {% endblock %}
