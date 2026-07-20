@@ -375,7 +375,7 @@
     // Only intercept links that are:
     // 1. Sidebar nav items (always)
     // 2. Links inside the main content area that are internal
-    const isSidebarLink = link.closest(SIDEBAR_NAV_SELECTOR) || link.closest('.user-panel');
+    const isSidebarLink = link.closest(SIDEBAR_NAV_SELECTOR) || link.closest('.sidebar-footer');
     const isMainLink = link.closest(MAIN_SELECTOR);
 
     if (!isSidebarLink && !isMainLink) return;

@@ -917,6 +917,20 @@
     pane.lineNumbers.innerHTML = html;
   }
 
+  /** Match each gutter number height to its (possibly wrapped) content line. */
+  function syncLineNumberHeights(pane) {
+    if (!pane.highlight || !pane.lineNumbers) return;
+    const contentLines = pane.highlight.querySelectorAll('.compare-line');
+    const numberLines = pane.lineNumbers.querySelectorAll('.compare-line-num');
+    const count = Math.min(contentLines.length, numberLines.length);
+    for (let i = 0; i < count; i += 1) {
+      const height = contentLines[i].offsetHeight;
+      if (height > 0) {
+        numberLines[i].style.height = `${height}px`;
+      }
+    }
+  }
+
   function getEditorMinHeight(pane) {
     if (!pane.textWrap) return 240;
     return Math.max(240, pane.textWrap.clientHeight);
@@ -1097,9 +1111,11 @@
       );
       syncLineNumbers(pane, statuses);
       resizeEditor(pane);
+      syncLineNumberHeights(pane);
       renderMinimap(pane, statuses);
     });
     requestAnimationFrame(() => {
+      panes.forEach((pane) => syncLineNumberHeights(pane));
       renderDiffActions();
       if (panes[0].textWrap) syncDiffGutterScroll(panes[0]);
     });
@@ -1607,8 +1623,14 @@
 
   function onCompareResize() {
     syncGutterHeadOffset();
-    panes.forEach(resizeEditor);
-    renderDiffActions();
+    panes.forEach((pane) => {
+      resizeEditor(pane);
+      syncLineNumberHeights(pane);
+    });
+    requestAnimationFrame(() => {
+      panes.forEach((pane) => syncLineNumberHeights(pane));
+      renderDiffActions();
+    });
   }
 
   document.addEventListener('keydown', onCompareDocKeydown, true);
@@ -1616,7 +1638,14 @@
 
   if (typeof ResizeObserver !== 'undefined') {
     const resizeObserver = new ResizeObserver(() => {
-      panes.forEach(resizeEditor);
+      panes.forEach((pane) => {
+        resizeEditor(pane);
+        syncLineNumberHeights(pane);
+      });
+      requestAnimationFrame(() => {
+        panes.forEach((pane) => syncLineNumberHeights(pane));
+        renderDiffActions();
+      });
     });
     panes.forEach((pane) => {
       if (pane.textWrap) resizeObserver.observe(pane.textWrap);

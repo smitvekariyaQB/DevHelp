@@ -109,8 +109,10 @@
       </nav>
 
       <div class="sidebar-footer">
-        <a href="{% url 'accounts:profile' %}" class="user-panel-profile {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" title="{{ user.get_full_name }} — {{ user.email }}">
-          <div class="user-avatar">{% if user.first_name %}{{ user.first_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}</div>
+        <a href="{% url 'accounts:profile' %}"
+           class="nav-item user-panel-profile {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"
+           title="{{ user.get_full_name }} — {{ user.email }}">
+          <img class="nav-icon" src="{% static 'images/icons3d/profile.svg' %}" alt="" aria-hidden="true">
           <div class="user-info">
             <span class="user-name">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.email }}{% endif %}</span>
             {% if user.get_full_name %}<span class="user-email">{{ user.email }}</span>{% endif %}

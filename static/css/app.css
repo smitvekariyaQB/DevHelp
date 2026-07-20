@@ -155,15 +155,10 @@ html.sidebar-collapsed .nav-item,
   padding: 10px;
 }
 
-html.sidebar-collapsed .user-panel,
-.sidebar.sidebar-collapsed .user-panel {
-  padding: 8px 4px;
-}
-
 html.sidebar-collapsed .user-panel-profile,
 .sidebar.sidebar-collapsed .user-panel-profile {
   justify-content: center;
-  margin-bottom: 8px;
+  padding: 10px;
 }
 
 html.sidebar-collapsed .user-panel-actions,
@@ -294,64 +289,34 @@ html.sidebar-collapsed .user-action-btn,
 }
 
 .sidebar-footer {
-  padding-top: 12px;
-}
-
-.user-panel {
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.55);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  padding: 12px 0 0;
 }
 
 .user-panel-profile {
-  display: flex;
   align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit;
-  padding: 8px;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s;
 }
 
-.user-panel-profile:hover {
-  background: rgba(0, 0, 0, 0.04);
+.user-panel-profile .nav-icon {
+  width: 28px;
+  height: 28px;
 }
 
-.user-panel-profile.active .user-avatar {
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.user-info {
+.user-panel-profile .user-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
 }
 
-.user-name {
-  font-size: 13px;
-  font-weight: 600;
+.user-panel-profile .user-name {
+  font-size: 14px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.user-email {
+.user-panel-profile .user-email {
   font-size: 11px;
   color: var(--text-secondary);
   overflow: hidden;
@@ -5496,6 +5461,11 @@ body.markdown-resizing {
 .compare-line,
 .compare-line-num {
   display: block;
+  box-sizing: border-box;
+}
+
+.compare-line-num {
+  overflow: hidden;
 }
 
 .compare-diff-line {
@@ -5911,8 +5881,8 @@ html.dark-mode .nav-item.active {
   color: #ffffff;
 }
 
-html.dark-mode .user-panel {
-  background: rgba(255, 255, 255, 0.04);
+html.dark-mode .user-panel-profile .user-email {
+  color: #98989d;
 }
 
 html.dark-mode .user-action-btn {
@@ -6294,7 +6264,6 @@ html.dark-mode .json-files-panel,
 html.dark-mode .code-files-panel,
 html.dark-mode .md-files-panel,
 html.dark-mode .markdown-pane,
-html.dark-mode .code-editor-wrap,
 html.dark-mode .json-editor-wrap {
   background: #141414;
 }
@@ -6399,17 +6368,20 @@ html.dark-mode .compare-app {
 }
 
 html.dark-mode .markdown-text-editor,
-html.dark-mode .json-text-editor {
+html.dark-mode .json-text-editor,
+html.dark-mode .code-text-editor,
+html.dark-mode .code-text-stack,
+html.dark-mode .code-editor-wrap,
+html.dark-mode .compare-text-editor,
+html.dark-mode .compare-text-stack,
+html.dark-mode .compare-editor-wrap {
   background: #0a0a0a;
 }
 
-html.dark-mode .code-text-editor,
-html.dark-mode .code-text-stack,
-html.dark-mode .compare-text-editor {
-  background: #141414;
-}
-
 html.dark-mode .compare-editor {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: transparent;
   caret-color: #f2f2f7;
 }
 
@@ -6609,12 +6581,19 @@ html.dark-mode .markdown-preview pre code {
   color: inherit;
 }
 
-html.dark-mode .markdown-scroll-sync-switch {
+html.dark-mode .markdown-scroll-sync-switch,
+html.dark-mode .compare-scroll-sync-switch {
   background: #48484a;
 }
 
-html.dark-mode .markdown-scroll-sync-input:checked + .markdown-scroll-sync-switch {
-  background: #f2f2f7;
+html.dark-mode .markdown-scroll-sync-input:checked + .markdown-scroll-sync-switch,
+html.dark-mode .compare-scroll-sync-input:checked + .compare-scroll-sync-switch {
+  background: #30d158;
+}
+
+html.dark-mode .compare-scroll-sync-input:checked + .compare-scroll-sync-switch::after,
+html.dark-mode .markdown-scroll-sync-input:checked + .markdown-scroll-sync-switch::after {
+  background: #fff;
 }
 
 html.dark-mode .markdown-resizer:hover .markdown-resizer-handle,
@@ -6672,8 +6651,11 @@ html.dark-mode .code-editor:focus {
   box-shadow: none;
 }
 
-/* Code syntax colors in dark mode (inlined so SPA nav does not wait on CDN theme CSS). */
-html.dark-mode .code-text-highlight.hljs {
+/* Code + Compare syntax colors in dark mode (inlined so SPA nav does not wait on CDN theme CSS). */
+html.dark-mode .code-text-highlight,
+html.dark-mode .compare-text-highlight,
+html.dark-mode .code-text-highlight.hljs,
+html.dark-mode .compare-text-highlight.hljs {
   color: #c9d1d9;
 }
 
@@ -6683,14 +6665,25 @@ html.dark-mode .code-text-highlight .hljs-meta .hljs-keyword,
 html.dark-mode .code-text-highlight .hljs-template-tag,
 html.dark-mode .code-text-highlight .hljs-template-variable,
 html.dark-mode .code-text-highlight .hljs-type,
-html.dark-mode .code-text-highlight .hljs-variable.language_ {
+html.dark-mode .code-text-highlight .hljs-variable.language_,
+html.dark-mode .compare-text-highlight .hljs-doctag,
+html.dark-mode .compare-text-highlight .hljs-keyword,
+html.dark-mode .compare-text-highlight .hljs-meta .hljs-keyword,
+html.dark-mode .compare-text-highlight .hljs-template-tag,
+html.dark-mode .compare-text-highlight .hljs-template-variable,
+html.dark-mode .compare-text-highlight .hljs-type,
+html.dark-mode .compare-text-highlight .hljs-variable.language_ {
   color: #ff7b72;
 }
 
 html.dark-mode .code-text-highlight .hljs-title,
 html.dark-mode .code-text-highlight .hljs-title.class_,
 html.dark-mode .code-text-highlight .hljs-title.class_.inherited__,
-html.dark-mode .code-text-highlight .hljs-title.function_ {
+html.dark-mode .code-text-highlight .hljs-title.function_,
+html.dark-mode .compare-text-highlight .hljs-title,
+html.dark-mode .compare-text-highlight .hljs-title.class_,
+html.dark-mode .compare-text-highlight .hljs-title.class_.inherited__,
+html.dark-mode .compare-text-highlight .hljs-title.function_ {
   color: #d2a8ff;
 }
 
@@ -6703,55 +6696,102 @@ html.dark-mode .code-text-highlight .hljs-operator,
 html.dark-mode .code-text-highlight .hljs-selector-attr,
 html.dark-mode .code-text-highlight .hljs-selector-class,
 html.dark-mode .code-text-highlight .hljs-selector-id,
-html.dark-mode .code-text-highlight .hljs-variable {
+html.dark-mode .code-text-highlight .hljs-variable,
+html.dark-mode .compare-text-highlight .hljs-attr,
+html.dark-mode .compare-text-highlight .hljs-attribute,
+html.dark-mode .compare-text-highlight .hljs-literal,
+html.dark-mode .compare-text-highlight .hljs-meta,
+html.dark-mode .compare-text-highlight .hljs-number,
+html.dark-mode .compare-text-highlight .hljs-operator,
+html.dark-mode .compare-text-highlight .hljs-selector-attr,
+html.dark-mode .compare-text-highlight .hljs-selector-class,
+html.dark-mode .compare-text-highlight .hljs-selector-id,
+html.dark-mode .compare-text-highlight .hljs-variable {
   color: #79c0ff;
 }
 
 html.dark-mode .code-text-highlight .hljs-meta .hljs-string,
 html.dark-mode .code-text-highlight .hljs-regexp,
-html.dark-mode .code-text-highlight .hljs-string {
+html.dark-mode .code-text-highlight .hljs-string,
+html.dark-mode .compare-text-highlight .hljs-meta .hljs-string,
+html.dark-mode .compare-text-highlight .hljs-regexp,
+html.dark-mode .compare-text-highlight .hljs-string {
   color: #a5d6ff;
 }
 
 html.dark-mode .code-text-highlight .hljs-built_in,
-html.dark-mode .code-text-highlight .hljs-symbol {
+html.dark-mode .code-text-highlight .hljs-symbol,
+html.dark-mode .compare-text-highlight .hljs-built_in,
+html.dark-mode .compare-text-highlight .hljs-symbol {
   color: #ffa657;
 }
 
 html.dark-mode .code-text-highlight .hljs-code,
 html.dark-mode .code-text-highlight .hljs-comment,
-html.dark-mode .code-text-highlight .hljs-formula {
+html.dark-mode .code-text-highlight .hljs-formula,
+html.dark-mode .compare-text-highlight .hljs-code,
+html.dark-mode .compare-text-highlight .hljs-comment,
+html.dark-mode .compare-text-highlight .hljs-formula {
   color: #8b949e;
 }
 
 html.dark-mode .code-text-highlight .hljs-name,
 html.dark-mode .code-text-highlight .hljs-quote,
 html.dark-mode .code-text-highlight .hljs-selector-pseudo,
-html.dark-mode .code-text-highlight .hljs-selector-tag {
+html.dark-mode .code-text-highlight .hljs-selector-tag,
+html.dark-mode .compare-text-highlight .hljs-name,
+html.dark-mode .compare-text-highlight .hljs-quote,
+html.dark-mode .compare-text-highlight .hljs-selector-pseudo,
+html.dark-mode .compare-text-highlight .hljs-selector-tag {
   color: #7ee787;
 }
 
-html.dark-mode .code-text-highlight .hljs-subst {
+html.dark-mode .code-text-highlight .hljs-subst,
+html.dark-mode .compare-text-highlight .hljs-subst {
   color: #c9d1d9;
 }
 
-html.dark-mode .code-text-highlight .hljs-section {
+html.dark-mode .code-text-highlight .hljs-section,
+html.dark-mode .compare-text-highlight .hljs-section {
   color: #1f6feb;
   font-weight: 700;
 }
 
-html.dark-mode .code-text-highlight .hljs-bullet {
+html.dark-mode .code-text-highlight .hljs-bullet,
+html.dark-mode .compare-text-highlight .hljs-bullet {
   color: #f2cc60;
 }
 
-html.dark-mode .code-text-highlight .hljs-emphasis {
+html.dark-mode .code-text-highlight .hljs-emphasis,
+html.dark-mode .compare-text-highlight .hljs-emphasis {
   color: #c9d1d9;
   font-style: italic;
 }
 
-html.dark-mode .code-text-highlight .hljs-strong {
+html.dark-mode .code-text-highlight .hljs-strong,
+html.dark-mode .compare-text-highlight .hljs-strong {
   color: #c9d1d9;
   font-weight: 700;
+}
+
+html.dark-mode .compare-line-numbers {
+  color: #8e8e93;
+}
+
+html.dark-mode .compare-pane-title {
+  color: #98989d;
+}
+
+html.dark-mode .compare-filename {
+  color: #f2f2f7;
+}
+
+html.dark-mode .compare-filename.is-empty {
+  color: #8e8e93;
+}
+
+html.dark-mode .compare-page-title {
+  color: #f2f2f7;
 }
 
 /* JSON syntax highlighting */
