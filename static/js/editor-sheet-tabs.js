@@ -26,6 +26,13 @@
       else window.location.href = url;
     }
 
+    async function onNewSubmit(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      if (onBeforeNavigate) await onBeforeNavigate();
+      form.submit();
+    }
+
     function onTabClick(e) {
       const tab = e.target.closest('.table-sheet-tab');
       if (!tab || tab.classList.contains('is-active')) return;
@@ -47,7 +54,10 @@
       scrollSheetTabs(180);
     }
 
+    const newForm = document.getElementById('sheetTabsNewForm');
+
     sheetTabsList.addEventListener('click', onTabClick);
+    newForm?.addEventListener('submit', onNewSubmit);
     btnSheetTabsLeft?.addEventListener('click', onScrollLeft);
     btnSheetTabsRight?.addEventListener('click', onScrollRight);
     sheetTabsTrack.addEventListener('scroll', onScroll, { passive: true });
@@ -73,6 +83,7 @@
 
     return () => {
       sheetTabsList.removeEventListener('click', onTabClick);
+      newForm?.removeEventListener('submit', onNewSubmit);
       btnSheetTabsLeft?.removeEventListener('click', onScrollLeft);
       btnSheetTabsRight?.removeEventListener('click', onScrollRight);
       sheetTabsTrack.removeEventListener('scroll', onScroll);

@@ -1,4 +1,4 @@
-{% if items %}
+{% if items or create_url %}
 <div class="table-sheet-tabs" id="tableSheetTabs">
   <button type="button" class="table-sheet-tabs-scroll table-sheet-tabs-scroll-left" id="btnSheetTabsLeft" aria-label="Scroll tabs left" disabled>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -15,6 +15,16 @@
       {% endfor %}
     </div>
   </div>
+  {% if create_url and can_edit_content %}
+  <form method="post" action="{{ create_url }}" class="table-sheet-tab-new-form" id="sheetTabsNewForm">
+    {% csrf_token %}
+    <button type="submit"
+            class="table-sheet-tab-new"
+            id="btnSheetTabsNew"
+            title="{{ create_title|default:'New' }}"
+            aria-label="{{ create_title|default:'New' }}">+</button>
+  </form>
+  {% endif %}
   <button type="button" class="table-sheet-tabs-scroll table-sheet-tabs-scroll-right" id="btnSheetTabsRight" aria-label="Scroll tabs right">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M9 18l6-6-6-6"/>

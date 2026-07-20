@@ -51,7 +51,8 @@
       <div id="noteEditor"></div>
     </div>
 
-    {% include "includes/editor_sheet_tabs.html" with items=workspace_notes active_id=note.pk edit_url_name="notes:edit" %}
+    {% url 'notes:create' as note_create_url %}
+    {% include "includes/editor_sheet_tabs.html" with items=workspace_notes active_id=note.pk edit_url_name="notes:edit" create_url=note_create_url create_title="New note" %}
   </div>
 </div>
 

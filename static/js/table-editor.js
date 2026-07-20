@@ -172,6 +172,7 @@
     }
     container.style.width = `${tableWidth}px`;
     container.style.minWidth = `${tableWidth}px`;
+    applyPinnedLayout();
   }
 
   function updateTableLayout() {
@@ -279,6 +280,10 @@
       }
       if (!resizing && Number.isFinite(rc.width) && col.width !== rc.width) {
         col.width = rc.width;
+        widthsChanged = true;
+      }
+      if (Boolean(rc.pinned) !== Boolean(col.pinned)) {
+        col.pinned = Boolean(rc.pinned);
         widthsChanged = true;
       }
     });
@@ -423,13 +428,87 @@
     });
   }
 
+  function getPinnedCount() {
+    let count = 0;
+    for (const col of sheetData.columns) {
+      if (!col.pinned) break;
+      count += 1;
+    }
+    return count;
+  }
+
+  function normalizePinnedFlags() {
+    const freezeCount = getPinnedCount();
+    sheetData.columns.forEach((col, i) => {
+      col.pinned = i < freezeCount;
+    });
+  }
+
+  function pinThroughColumn(colId) {
+    if (!canEdit) return;
+    const idx = sheetData.columns.findIndex((c) => c.id === colId);
+    if (idx < 0) return;
+    recordHistoryNow();
+    collectData();
+    sheetData.columns.forEach((col, i) => {
+      col.pinned = i <= idx;
+    });
+    render();
+    scheduleAutosave(true);
+  }
+
+  function unpinFromColumn(colId) {
+    if (!canEdit) return;
+    const idx = sheetData.columns.findIndex((c) => c.id === colId);
+    if (idx < 0) return;
+    recordHistoryNow();
+    collectData();
+    sheetData.columns.forEach((col, i) => {
+      col.pinned = i < idx;
+    });
+    render();
+    scheduleAutosave(true);
+  }
+
+  function applyPinnedLayout() {
+    let left = ROW_HEADER_WIDTH;
+    const freezeCount = getPinnedCount();
+    sheetData.columns.forEach((col, i) => {
+      const pinned = i < freezeCount;
+      const isLast = pinned && i === freezeCount - 1;
+      const th = container.querySelector(`.spreadsheet-col-head[data-col-id="${col.id}"]`);
+      const cells = container.querySelectorAll(`.spreadsheet-cell[data-col-id="${col.id}"]`);
+      const els = [th, ...cells].filter(Boolean);
+      els.forEach((el) => {
+        el.classList.toggle('is-pinned', pinned);
+        el.classList.toggle('is-pinned-last', isLast);
+        if (pinned) el.style.left = `${left}px`;
+        else el.style.removeProperty('left');
+      });
+      if (pinned) left += col.width || DEFAULT_COL_WIDTH;
+    });
+  }
+
   function insertColumnAt(index) {
     recordHistoryNow();
     collectData();
+    const freezeCount = getPinnedCount();
     const n = sheetData.columns.length + 1;
-    const col = { id: uid(), width: DEFAULT_COL_WIDTH, label: `Column ${n}` };
     const at = Math.max(0, Math.min(index, sheetData.columns.length));
+    const col = {
+      id: uid(),
+      width: DEFAULT_COL_WIDTH,
+      label: `Column ${n}`,
+      pinned: freezeCount > 0 && at < freezeCount,
+    };
     sheetData.columns.splice(at, 0, col);
+    if (freezeCount > 0 && at < freezeCount) {
+      sheetData.columns.forEach((c, i) => {
+        c.pinned = i < freezeCount + 1;
+      });
+    } else {
+      normalizePinnedFlags();
+    }
     sheetData.rows.forEach((row) => { row.cells[col.id] = ''; });
     render();
     scheduleAutosave(true);
@@ -516,6 +595,7 @@
     recordHistoryNow();
     const [moved] = sheetData.columns.splice(fromIdx, 1);
     sheetData.columns.splice(toIdx, 0, moved);
+    normalizePinnedFlags();
     render();
     scheduleAutosave(true);
   }
@@ -693,6 +773,7 @@
       container.style.width = `${tableWidth}px`;
       container.style.minWidth = `${tableWidth}px`;
     }
+    applyPinnedLayout();
   }
 
   function stopResize() {
@@ -876,6 +957,7 @@
     });
 
     applyColumnWidths();
+    applyPinnedLayout();
     refreshFindAfterRender();
     paintSelection();
   }
@@ -1071,6 +1153,7 @@
     sheetContextMenu = document.createElement('div');
     sheetContextMenu.className = 'sheet-context-menu hidden';
     sheetContextMenu.innerHTML = `
+    <button type="button" data-action="pin">Pin column</button>
     <button type="button" data-action="insert-left">Add left</button>
     <button type="button" data-action="insert-right">Add right</button>
     <button type="button" data-action="copy">Copy</button>
@@ -1090,6 +1173,12 @@
         else if (action === 'delete') await deleteColumn(id);
         else if (action === 'insert-left') insertColumnRelative(id, 'left');
         else if (action === 'insert-right') insertColumnRelative(id, 'right');
+        else if (action === 'pin') {
+          const idx = sheetData.columns.findIndex((c) => c.id === id);
+          const freeze = getPinnedCount();
+          if (idx >= 0 && idx < freeze) unpinFromColumn(id);
+          else pinThroughColumn(id);
+        }
       } else if (kind === 'row') {
         if (action === 'copy') copyRow(id);
         else if (action === 'delete') await deleteRow(id);
@@ -1099,26 +1188,44 @@
     });
   }
 
-  function updateSheetContextMenuLabels(kind) {
+  function updateSheetContextMenuLabels(kind, id) {
     if (!sheetContextMenu) return;
     const copyBtn = sheetContextMenu.querySelector('[data-action="copy"]');
     const leftBtn = sheetContextMenu.querySelector('[data-action="insert-left"]');
     const rightBtn = sheetContextMenu.querySelector('[data-action="insert-right"]');
+    const pinBtn = sheetContextMenu.querySelector('[data-action="pin"]');
+    const deleteBtn = sheetContextMenu.querySelector('[data-action="delete"]');
     if (kind === 'column') {
       copyBtn.textContent = 'Copy column';
       leftBtn.textContent = 'Add column left';
       rightBtn.textContent = 'Add column right';
+      deleteBtn.textContent = 'Delete column';
+      if (pinBtn) {
+        pinBtn.hidden = !canEdit;
+        const idx = sheetData.columns.findIndex((c) => c.id === id);
+        const freeze = getPinnedCount();
+        const isPinned = idx >= 0 && idx < freeze;
+        pinBtn.textContent = isPinned ? 'Unpin column' : 'Pin column';
+      }
+      leftBtn.hidden = !canEdit;
+      rightBtn.hidden = !canEdit;
+      deleteBtn.hidden = !canEdit;
     } else {
       copyBtn.textContent = 'Copy row';
       leftBtn.textContent = 'Add row above';
       rightBtn.textContent = 'Add row below';
+      deleteBtn.textContent = 'Delete row';
+      if (pinBtn) pinBtn.hidden = true;
+      leftBtn.hidden = !canEdit;
+      rightBtn.hidden = !canEdit;
+      deleteBtn.hidden = !canEdit;
     }
   }
 
   function showSheetContextMenu(x, y, kind, id) {
     ensureSheetContextMenu();
     sheetContextTarget = { kind, id };
-    updateSheetContextMenuLabels(kind);
+    updateSheetContextMenuLabels(kind, id);
     sheetContextMenu.classList.remove('hidden');
 
     const menuRect = sheetContextMenu.getBoundingClientRect();

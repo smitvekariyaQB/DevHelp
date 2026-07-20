@@ -65,7 +65,8 @@
       </div>
     </div>
 
-    {% include "includes/editor_sheet_tabs.html" with items=workspace_sheets active_id=sheet.pk edit_url_name="tables:edit" %}
+    {% url 'tables:create' as table_create_url %}
+    {% include "includes/editor_sheet_tabs.html" with items=workspace_sheets active_id=sheet.pk edit_url_name="tables:edit" create_url=table_create_url create_title="New table" %}
   </div>
 </div>
 

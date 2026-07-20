@@ -42,6 +42,7 @@ def _validate_data(data):
                 'id': str(col['id']),
                 'width': max(80, min(int(col.get('width', 160)), 600)),
                 'label': str(col.get('label', ''))[:80],
+                'pinned': bool(col.get('pinned')),
             })
     if not clean_cols:
         return default_sheet_data()
@@ -135,6 +136,7 @@ def _merge_data(base, current, server):
             'id': cid,
             'label': merged_attr(cid, 'label', ''),
             'width': merged_attr(cid, 'width', 160),
+            'pinned': bool(merged_attr(cid, 'pinned', False)),
         }
         for cid in ordered_col_ids
     ]
