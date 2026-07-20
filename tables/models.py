@@ -27,7 +27,7 @@ class TableSheet(SoftDeleteModel):
         ('#E1BEE7', 'Purple'),
         ('#BBDEFB', 'Blue'),
         ('#C8E6C9', 'Green'),
-        ('#F5F5F5', 'Gray'),
+        ('#B2DFDB', 'Teal'),
     ]
 
     user = models.ForeignKey(

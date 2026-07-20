@@ -78,9 +78,22 @@
     return state;
   }
 
+  function applyTableColor(hex) {
+    const panel = document.getElementById('tableEditorPanel');
+    if (panel && hex) panel.style.setProperty('--table-color', hex);
+    const dot = document.querySelector('.color-picker-dot');
+    if (dot && hex) dot.style.background = hex;
+    cfg.initialColor = hex || '#FFFFFF';
+  }
+
   function restoreState(state) {
     isRestoring = true;
     if (titleInput) titleInput.value = state.title;
+    if (typeof state.color === 'string') {
+      applyTableColor(state.color);
+      const colorInput = document.querySelector(`#colorOptions input[value="${state.color}"]`);
+      if (colorInput) colorInput.checked = true;
+    }
     sheetData = JSON.parse(JSON.stringify(state.data));
     render();
     isRestoring = false;
@@ -209,7 +222,11 @@
       savingSnapshot.forEach((key) => dirtyCells.delete(key));
       if (json && json.data) {
         baseData = JSON.parse(JSON.stringify(json.data));
-        if (typeof json.color === 'string') cfg.initialColor = json.color;
+        if (typeof json.color === 'string') {
+          applyTableColor(json.color);
+          const colorInput = document.querySelector(`#colorOptions input[value="${json.color}"]`);
+          if (colorInput) colorInput.checked = true;
+        }
         applyRemoteData(json.data);
         if (titleInput && document.activeElement !== titleInput && typeof json.title === 'string') {
           titleInput.value = json.title;
@@ -359,7 +376,11 @@
       const json = await res.json();
       if (!json?.data) throw new Error();
       baseData = JSON.parse(JSON.stringify(json.data));
-      if (typeof json.color === 'string') cfg.initialColor = json.color;
+      if (typeof json.color === 'string') {
+        applyTableColor(json.color);
+        const colorInput = document.querySelector(`#colorOptions input[value="${json.color}"]`);
+        if (colorInput) colorInput.checked = true;
+      }
       applyRemoteData(json.data);
       if (titleInput && document.activeElement !== titleInput && typeof json.title === 'string') {
         titleInput.value = json.title;
@@ -1340,6 +1361,50 @@
 
   document.getElementById('btnRefreshTable')?.addEventListener('click', refreshFromServer);
 
+  function closeColorPopover() {
+    const popover = document.getElementById('colorPickerPopover');
+    const pickerBtn = document.getElementById('btnColorPicker');
+    if (popover) popover.hidden = true;
+    if (pickerBtn) pickerBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function initColorPicker() {
+    if (!canEdit) return;
+    const pickerBtn = document.getElementById('btnColorPicker');
+    const popover = document.getElementById('colorPickerPopover');
+
+    if (pickerBtn && popover) {
+      pickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = popover.hidden;
+        popover.hidden = !open;
+        pickerBtn.setAttribute('aria-expanded', String(open));
+      });
+      popover.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    document.querySelectorAll('#colorOptions input[name="color"]').forEach((input) => {
+      const pick = () => {
+        recordHistoryNow();
+        applyTableColor(input.value);
+        scheduleAutosave(true);
+        closeColorPopover();
+      };
+      input.addEventListener('change', pick);
+      input.addEventListener('click', pick);
+    });
+  }
+
+  function onDocumentColorClick(e) {
+    if (e.target.closest('.color-picker-wrap')) return;
+    closeColorPopover();
+  }
+
+  initColorPicker();
+  document.addEventListener('click', onDocumentColorClick);
+
+  if (cfg.initialColor) applyTableColor(cfg.initialColor);
+
   function normalizeCellText(text) {
     return String(text || '')
       .replace(/\t/g, ' ')
@@ -1920,6 +1985,7 @@
       document.removeEventListener('mouseup', onDocumentMouseUp);
       clearDragPendingCursors();
       document.removeEventListener('click', onSheetContextMenuDismiss);
+      document.removeEventListener('click', onDocumentColorClick);
       document.removeEventListener('scroll', hideSheetContextMenu, true);
       container.removeEventListener('paste', onCellPaste);
       hideSheetContextMenu();

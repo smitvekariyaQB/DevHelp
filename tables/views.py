@@ -252,6 +252,7 @@ def edit(request, pk):
             'sheet': sheet,
             'sheet_data_json': json.dumps(sheet.data),
             'workspace_sheets': workspace_sheets(request.workspace),
+            'colors': TableSheet.COLORS,
         },
     )
 

@@ -13,7 +13,7 @@
     <div class="note-edit-actions">
       <button type="button" class="btn btn-default" id="btnRefreshTable" title="Reload latest changes from server">Refresh</button>
       {% if can_edit_content %}
-      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True %}
+      {% include "includes/editor_toolbar.html" with copy_button_id="btnCopyTable" search_button_id="btnTableSearch" show_sheet_add_buttons=True colors=colors current_color=sheet.color color_picker_title="Table color" %}
       <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none">
       <div class="more-options-wrap">
         <button type="button" class="btn btn-default" id="btnMoreOptions" title="More options">
@@ -45,7 +45,7 @@
     </div>
   </header>
 
-  <div class="table-editor-panel" id="tableEditorPanel">
+  <div class="table-editor-panel" id="tableEditorPanel" style="--table-color: {{ sheet.color }}">
     <div class="table-find-bar hidden" id="tableFindBar">
       <input type="text"
              id="tableFindInput"
