@@ -2106,6 +2106,11 @@ html.dark-mode .spreadsheet-cell.table-find-active {
   background: color-mix(in srgb, var(--table-color, #ffffff) 28%, #ffffff);
 }
 
+.table-editor-panel .spreadsheet-cell.sel-selected,
+.table-editor-panel .spreadsheet-cell.sel-selected.is-pinned {
+  background: color-mix(in srgb, #4a9eff 22%, var(--table-color, #ffffff)) !important;
+}
+
 .table-editor-panel .spreadsheet-corner,
 .table-editor-panel .spreadsheet-col-head,
 .table-editor-panel .spreadsheet-row-label {
@@ -2606,8 +2611,14 @@ body.row-dragging .spreadsheet-row-label {
 
 /* ── Excel-like cell selection ─────────────────────────────────── */
 .spreadsheet-cell.sel-selected {
-  background: rgba(0, 122, 255, 0.07) !important;
+  background: rgba(0, 122, 255, 0.12) !important;
   position: relative;
+}
+
+/* Keep pinned columns sticky while selected (relative would break freeze). */
+.spreadsheet-cell.sel-selected.is-pinned {
+  position: sticky;
+  z-index: 2;
 }
 
 .spreadsheet-cell.sel-selected .cell-input {
@@ -2642,6 +2653,11 @@ body.row-dragging .spreadsheet-row-label {
 
 .spreadsheet-col-head.sel-col-active {
   background: #dde9f8 !important;
+}
+
+.spreadsheet-col-head.sel-col-active .col-header-label,
+.spreadsheet-col-head.sel-col-active .col-header-input {
+  color: #1d1d1f;
 }
 
 .spreadsheet-row-label.sel-row-active {
@@ -6308,7 +6324,11 @@ html.dark-mode .cell-input:focus {
 }
 
 html.dark-mode .spreadsheet-cell.sel-selected {
-  background: rgba(56, 132, 255, 0.12) !important;
+  background: rgba(56, 132, 255, 0.22) !important;
+}
+
+html.dark-mode .spreadsheet-cell.sel-selected.is-pinned {
+  position: sticky;
 }
 
 html.dark-mode .spreadsheet-cell.sel-selected::after {
@@ -6316,11 +6336,22 @@ html.dark-mode .spreadsheet-cell.sel-selected::after {
 }
 
 html.dark-mode .spreadsheet-col-head.sel-col-active {
-  background: #192537 !important;
+  background: #2a3f5f !important;
+}
+
+html.dark-mode .spreadsheet-col-head.sel-col-active .col-header-label,
+html.dark-mode .spreadsheet-col-head.sel-col-active .col-header-input {
+  color: #f2f2f7;
+  -webkit-text-fill-color: #f2f2f7;
 }
 
 html.dark-mode .spreadsheet-row-label.sel-row-active {
-  background: #192537 !important;
+  background: #2a3f5f !important;
+  color: #f2f2f7;
+}
+
+html.dark-mode .spreadsheet-row-label.sel-row-active .row-num {
+  color: #f2f2f7;
 }
 
 html.dark-mode .toast {
@@ -6570,6 +6601,15 @@ html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F
   background: color-mix(in srgb, var(--table-color, #ffffff) 35%, #ffffff);
 }
 
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-cell.sel-selected,
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-cell.sel-selected.is-pinned {
+  background: color-mix(in srgb, #4a9eff 28%, var(--table-color, #ffffff)) !important;
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-cell.sel-selected .cell-input {
+  background: transparent;
+}
+
 html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-corner,
 html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-col-head,
 html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-row-label {
@@ -6595,6 +6635,25 @@ html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F
 html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .sheet-del-col,
 html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .sheet-del-row {
   color: rgba(0, 0, 0, 0.45);
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-col-head.sel-col-active {
+  background: #c5d8f0 !important;
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-col-head.sel-col-active .col-header-label,
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-col-head.sel-col-active .col-header-input {
+  color: #1d1d1f !important;
+  -webkit-text-fill-color: #1d1d1f;
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-row-label.sel-row-active {
+  background: #c5d8f0 !important;
+  color: #1d1d1f !important;
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-row-label.sel-row-active .row-num {
+  color: #1d1d1f !important;
 }
 
 html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet th,
