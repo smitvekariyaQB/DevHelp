@@ -3,18 +3,29 @@
 {% block body_class %}auth-page{% endblock %}
 
 {% block content %}
+{% include "includes/auth_bg.html" %}
 <div class="auth-card">
   <div class="auth-body">
-    <h1>Create account</h1>
+    <div class="auth-brand">
+      {% include "includes/brand_logo.html" with logo_class="brand-logo-lg" %}
+      <h1>Create account</h1>
+      <p class="auth-sub">Start organizing notes, tasks &amp; tables</p>
+    </div>
     <form method="post" class="auth-form">
       {% csrf_token %}
       {% if form.non_field_errors %}
       <div class="form-error">{{ form.non_field_errors }}</div>
       {% endif %}
-      <label for="{{ form.first_name.id_for_label }}">First name</label>
-      {{ form.first_name }}
-      <label for="{{ form.last_name.id_for_label }}">Last name</label>
-      {{ form.last_name }}
+      <div class="auth-name-row">
+        <div>
+          <label for="{{ form.first_name.id_for_label }}">First name</label>
+          {{ form.first_name }}
+        </div>
+        <div>
+          <label for="{{ form.last_name.id_for_label }}">Last name</label>
+          {{ form.last_name }}
+        </div>
+      </div>
       <label for="{{ form.email.id_for_label }}">Email</label>
       {{ form.email }}
       <label>Password</label>

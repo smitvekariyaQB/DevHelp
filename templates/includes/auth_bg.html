@@ -1,0 +1,60 @@
+<div class="auth-bg" aria-hidden="true">
+  <div class="auth-aurora-floor"></div>
+  <svg class="auth-aurora-svg" viewBox="0 0 1200 900" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="authAuroraGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#7c6cff">
+          <animate attributeName="stop-color" dur="14s" repeatCount="indefinite"
+            values="#7c6cff;#5b8cff;#7c6cff"/>
+        </stop>
+        <stop offset="100%" stop-color="#2dd4bf">
+          <animate attributeName="stop-color" dur="14s" repeatCount="indefinite"
+            values="#2dd4bf;#38bdf8;#2dd4bf"/>
+        </stop>
+      </linearGradient>
+      <linearGradient id="authAuroraFade" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+        <stop offset="22%" stop-color="#fff" stop-opacity="0.85"/>
+        <stop offset="48%" stop-color="#fff" stop-opacity="0.45"/>
+        <stop offset="72%" stop-color="#fff" stop-opacity="0.16"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <mask id="authAuroraMask">
+        <rect width="1200" height="900" fill="url(#authAuroraFade)"/>
+      </mask>
+      <filter id="authAuroraBlur" x="-30%" y="-55%" width="160%" height="210%">
+        <feGaussianBlur stdDeviation="52"/>
+      </filter>
+    </defs>
+    <g mask="url(#authAuroraMask)" filter="url(#authAuroraBlur)">
+      <path fill="url(#authAuroraGrad)" opacity="0.95">
+        <animate
+          attributeName="d"
+          dur="16s"
+          repeatCount="indefinite"
+          values="
+            M0,900 L0,220 C220,80 400,320 620,180 C840,40 1000,60 1200,160 L1200,900 Z;
+            M0,900 L0,160 C200,280 420,40 680,160 C920,280 1080,80 1200,140 L1200,900 Z;
+            M0,900 L0,200 C240,60 460,260 720,100 C960,-20 1100,220 1200,180 L1200,900 Z;
+            M0,900 L0,220 C220,80 400,320 620,180 C840,40 1000,60 1200,160 L1200,900 Z
+          "
+        />
+      </path>
+      <path fill="url(#authAuroraGrad)" opacity="0.45">
+        <animate
+          attributeName="d"
+          dur="20s"
+          repeatCount="indefinite"
+          values="
+            M0,900 L0,360 C260,240 480,460 760,300 C980,180 1120,380 1200,320 L1200,900 Z;
+            M0,900 L0,300 C220,420 520,220 800,340 C1040,440 1140,260 1200,300 L1200,900 Z;
+            M0,900 L0,340 C280,220 540,420 820,260 C1040,140 1160,360 1200,330 L1200,900 Z;
+            M0,900 L0,360 C260,240 480,460 760,300 C980,180 1120,380 1200,320 L1200,900 Z
+          "
+        />
+      </path>
+    </g>
+  </svg>
+  <div class="auth-aurora-shimmer"></div>
+  <div class="auth-aurora-edge"></div>
+</div>
