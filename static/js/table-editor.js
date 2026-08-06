@@ -1254,8 +1254,8 @@
   let findIndex = -1;
 
   function clearFindHighlight() {
-    container.querySelectorAll('.table-find-active').forEach((el) => {
-      el.classList.remove('table-find-active');
+    container.querySelectorAll('.table-find-active, .table-find-match').forEach((el) => {
+      el.classList.remove('table-find-active', 'table-find-match');
     });
   }
 
@@ -1284,7 +1284,16 @@
     return targets;
   }
 
-  function runFind() {
+  function markFindMatches() {
+    findMatches.forEach((match) => {
+      const parent = match.type === 'header'
+        ? match.element.closest('.spreadsheet-col-head')
+        : match.element.closest('.spreadsheet-cell');
+      parent?.classList.add('table-find-match');
+    });
+  }
+
+  function runFind(autoReveal = true) {
     if (!findInput) return;
     const query = findInput.value;
     findMatches = [];
@@ -1313,6 +1322,8 @@
       }
     });
 
+    markFindMatches();
+
     if (findCount) {
       if (!findMatches.length) {
         findCount.textContent = 'No matches';
@@ -1320,22 +1331,33 @@
         findCount.textContent = `${findMatches.length} match${findMatches.length === 1 ? '' : 'es'}`;
       }
     }
+
+    if (autoReveal && findMatches.length) {
+      goToFindMatch(0);
+    }
   }
 
   function scrollElementIntoView(el) {
+    if (!el) return;
     const scrollEl = container.closest('.spreadsheet-scroll');
-    if (!scrollEl || !el) return;
+    if (!scrollEl) {
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      return;
+    }
     const scrollRect = scrollEl.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
-    if (elRect.top < scrollRect.top + 40) {
-      scrollEl.scrollTop += elRect.top - scrollRect.top - 40;
-    } else if (elRect.bottom > scrollRect.bottom - 40) {
-      scrollEl.scrollTop += elRect.bottom - scrollRect.bottom + 40;
+    const topPad = 56;
+    const bottomPad = 48;
+    const sidePad = 24;
+    if (elRect.top < scrollRect.top + topPad) {
+      scrollEl.scrollTop += elRect.top - scrollRect.top - topPad;
+    } else if (elRect.bottom > scrollRect.bottom - bottomPad) {
+      scrollEl.scrollTop += elRect.bottom - scrollRect.bottom + bottomPad;
     }
-    if (elRect.left < scrollRect.left + 20) {
-      scrollEl.scrollLeft += elRect.left - scrollRect.left - 20;
-    } else if (elRect.right > scrollRect.right - 20) {
-      scrollEl.scrollLeft += elRect.right - scrollRect.right + 20;
+    if (elRect.left < scrollRect.left + sidePad) {
+      scrollEl.scrollLeft += elRect.left - scrollRect.left - sidePad;
+    } else if (elRect.right > scrollRect.right - sidePad) {
+      scrollEl.scrollLeft += elRect.right - scrollRect.right + sidePad;
     }
   }
 
@@ -1343,26 +1365,28 @@
     if (!findInput || !findMatches.length) return;
     findIndex = ((index % findMatches.length) + findMatches.length) % findMatches.length;
     const match = findMatches[findIndex];
-    clearFindHighlight();
+
+    container.querySelectorAll('.table-find-active').forEach((el) => {
+      el.classList.remove('table-find-active');
+    });
+    markFindMatches();
 
     const parent = match.type === 'header'
       ? match.element.closest('.spreadsheet-col-head')
       : match.element.closest('.spreadsheet-cell');
     parent?.classList.add('table-find-active');
 
-    setTimeout(() => {
-      scrollElementIntoView(match.element);
+    requestAnimationFrame(() => {
+      scrollElementIntoView(parent || match.element);
       if (match.type === 'header' && match.element.matches('.col-header-label')) {
         match.element.tabIndex = -1;
         match.element.focus({ preventScroll: true });
-      } else {
+      } else if (typeof match.element.setSelectionRange === 'function') {
         match.element.focus({ preventScroll: true });
-        if (typeof match.element.setSelectionRange === 'function') {
-          match.element.setSelectionRange(match.start, match.end);
-        }
+        match.element.setSelectionRange(match.start, match.end);
       }
-      findInput?.focus();
-    }, 0);
+      findInput?.focus({ preventScroll: true });
+    });
 
     if (updateCount && findCount) {
       findCount.textContent = `${findIndex + 1} of ${findMatches.length}`;
@@ -1387,6 +1411,7 @@
     findBar?.classList.remove('hidden');
     findInput?.focus();
     findInput?.select();
+    if (findInput?.value) runFind();
   }
 
   function closeFindBar() {
@@ -1401,7 +1426,7 @@
   function refreshFindAfterRender() {
     if (!findBar || findBar.classList.contains('hidden') || !findInput?.value) return;
     const savedIndex = findIndex;
-    runFind();
+    runFind(false);
     if (findMatches.length) {
       goToFindMatch(Math.min(savedIndex >= 0 ? savedIndex : 0, findMatches.length - 1));
     }

@@ -1910,6 +1910,7 @@ body.modal-open {
   font-family: var(--font);
   font-size: 15px;
   min-height: 280px;
+  overflow-y: auto;
 }
 
 .editor-wrap .ql-editor {
@@ -1918,9 +1919,26 @@ body.modal-open {
   padding: 16px 8px;
 }
 
-.editor-wrap .ql-editor.ql-blank::before {
-  color: #aeaeb2;
-  font-style: normal;
+.editor-wrap .ql-editor .note-find-match {
+  background-color: rgba(255, 214, 0, 0.55) !important;
+  border-radius: 2px;
+  box-shadow: inset 0 -1px 0 rgba(255, 180, 0, 0.45);
+}
+
+.editor-wrap .ql-editor .note-find-active {
+  background-color: rgba(255, 149, 0, 0.75) !important;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 149, 0, 0.9);
+}
+
+html.dark-mode .editor-wrap .ql-editor .note-find-match,
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-editor .note-find-match {
+  background-color: rgba(255, 214, 0, 0.62) !important;
+}
+
+html.dark-mode .editor-wrap .ql-editor .note-find-active,
+html.dark-mode .note-edit-form:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .editor-wrap .ql-editor .note-find-active {
+  background-color: rgba(255, 149, 0, 0.8) !important;
 }
 
 .editor-wrap .ql-editor .note-table-embed {
@@ -2178,16 +2196,55 @@ body.modal-open {
   color: var(--text);
 }
 
+.spreadsheet-col-head.table-find-match,
+.spreadsheet-cell.table-find-match {
+  background: rgba(255, 214, 0, 0.42) !important;
+  outline: 1px solid rgba(255, 180, 0, 0.55);
+  outline-offset: -1px;
+}
+
+.spreadsheet-col-head.table-find-match .cell-input,
+.spreadsheet-col-head.table-find-match .col-header-label,
+.spreadsheet-col-head.table-find-match .col-header-input,
+.spreadsheet-cell.table-find-match .cell-input {
+  background: transparent !important;
+}
+
 .spreadsheet-col-head.table-find-active,
 .spreadsheet-cell.table-find-active {
-  outline: 2px solid var(--accent);
+  outline: 2px solid #ff9500 !important;
   outline-offset: -2px;
-  background: rgba(0, 122, 255, 0.08);
+  background: rgba(255, 149, 0, 0.58) !important;
+  z-index: 2;
+}
+
+.spreadsheet-col-head.table-find-active .cell-input,
+.spreadsheet-col-head.table-find-active .col-header-label,
+.spreadsheet-col-head.table-find-active .col-header-input,
+.spreadsheet-cell.table-find-active .cell-input {
+  background: transparent !important;
+}
+
+html.dark-mode .spreadsheet-col-head.table-find-match,
+html.dark-mode .spreadsheet-cell.table-find-match {
+  background: rgba(255, 214, 0, 0.5) !important;
+  outline-color: rgba(255, 200, 0, 0.7);
 }
 
 html.dark-mode .spreadsheet-col-head.table-find-active,
 html.dark-mode .spreadsheet-cell.table-find-active {
-  background: rgba(0, 122, 255, 0.15);
+  background: rgba(255, 149, 0, 0.7) !important;
+  outline-color: #ffb340 !important;
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-cell.table-find-match,
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-col-head.table-find-match {
+  background: rgba(255, 214, 0, 0.55) !important;
+}
+
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-cell.table-find-active,
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) .spreadsheet-col-head.table-find-active {
+  background: rgba(255, 149, 0, 0.72) !important;
 }
 
 .table-editor-panel .spreadsheet-scroll-wrap {
@@ -3469,14 +3526,17 @@ body.workspace-history-open {
 }
 
 .json-hl-find {
-  background: rgba(255, 214, 0, 0.4);
+  background: rgba(255, 214, 0, 0.55);
+  color: inherit;
   border-radius: 2px;
+  box-shadow: inset 0 -1px 0 rgba(255, 180, 0, 0.35);
 }
 
 .json-hl-find-active {
-  background: rgba(255, 149, 0, 0.55);
+  background: rgba(255, 149, 0, 0.72);
+  color: inherit;
   border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(255, 149, 0, 0.65);
+  box-shadow: 0 0 0 1px rgba(255, 149, 0, 0.85);
 }
 
 .json-valid-badge[data-state="unknown"] {
@@ -3874,12 +3934,12 @@ body.workspace-history-open {
 }
 
 .json-tree-row.json-tree-find-match {
-  background: rgba(255, 214, 0, 0.35);
+  background: rgba(255, 214, 0, 0.45);
 }
 
 .json-tree-row.json-tree-find-active {
-  background: rgba(255, 149, 0, 0.45);
-  outline: 1px solid rgba(255, 149, 0, 0.55);
+  background: rgba(255, 149, 0, 0.6);
+  outline: 1px solid rgba(255, 149, 0, 0.75);
   outline-offset: -1px;
 }
 
@@ -7256,6 +7316,27 @@ html.dark-mode .json-hl-boolean {
 
 html.dark-mode .json-hl-null {
   color: #abb2bf;
+}
+
+html.dark-mode .json-hl-find {
+  background: rgba(255, 214, 0, 0.55);
+  color: inherit;
+  box-shadow: inset 0 -1px 0 rgba(255, 200, 0, 0.45);
+}
+
+html.dark-mode .json-hl-find-active {
+  background: rgba(255, 149, 0, 0.75);
+  color: inherit;
+  box-shadow: 0 0 0 1px rgba(255, 170, 0, 0.9);
+}
+
+html.dark-mode .json-tree-row.json-tree-find-match {
+  background: rgba(255, 214, 0, 0.4);
+}
+
+html.dark-mode .json-tree-row.json-tree-find-active {
+  background: rgba(255, 149, 0, 0.55);
+  outline-color: rgba(255, 170, 0, 0.8);
 }
 
 html.dark-mode .json-tree-key {

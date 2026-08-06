@@ -28,9 +28,6 @@
   let findIndex = -1;
   let findBarOpen = false;
 
-  const FIND_MATCH_BG = 'rgba(255, 214, 0, 0.45)';
-  const FIND_ACTIVE_BG = 'rgba(255, 149, 0, 0.55)';
-
   const history = window.createEditorHistory(60);
 
   function setStatus(state, text) {
@@ -48,7 +45,7 @@
   function clearFindHighlights() {
     if (!quill) return;
     const len = Math.max(0, quill.getLength() - 1);
-    if (len > 0) quill.formatText(0, len, { background: false }, 'silent');
+    if (len > 0) quill.formatText(0, len, { findHighlight: false }, 'silent');
   }
 
   function unwrapNode(el) {
@@ -613,6 +610,13 @@
   NoteTableBlot.className = 'note-table-embed';
   Quill.register(NoteTableBlot);
 
+  const Parchment = Quill.import('parchment');
+  const FindHighlightClass = new Parchment.ClassAttributor('findHighlight', 'note-find', {
+    scope: Parchment.Scope.INLINE,
+    whitelist: ['match', 'active'],
+  });
+  Quill.register(FindHighlightClass, true);
+
   function parseHtmlTableFromClipboard(html) {
     if (!html) return null;
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -800,21 +804,33 @@
     if (!query || !findMatches.length) return;
     const len = query.length;
     findMatches.forEach((start, i) => {
-      const bg = i === findIndex ? FIND_ACTIVE_BG : FIND_MATCH_BG;
-      quill.formatText(start, len, { background: bg }, 'silent');
+      const cls = i === findIndex ? 'active' : 'match';
+      quill.formatText(start, len, { findHighlight: cls }, 'silent');
     });
   }
 
   function scrollNoteMatchIntoView(start, length) {
     if (!quill) return;
-    quill.setSelection(start, length, 'api');
-    if (typeof quill.scrollSelectionIntoView === 'function') {
-      quill.scrollSelectionIntoView();
-    } else {
-      const bounds = quill.getBounds(start, length);
-      if (bounds && typeof quill.scrollRectIntoView === 'function') {
-        quill.scrollRectIntoView(bounds);
+    quill.setSelection(start, length, 'silent');
+    const bounds = quill.getBounds(start, length);
+    if (!bounds) return;
+
+    const scroller = quill.root?.parentElement || quill.root;
+    if (!scroller) return;
+
+    const pad = 72;
+    const viewHeight = scroller.clientHeight || 0;
+    if (!viewHeight) {
+      if (typeof quill.scrollSelectionIntoView === 'function') {
+        quill.scrollSelectionIntoView();
       }
+      return;
+    }
+
+    if (bounds.top < pad) {
+      scroller.scrollTop += bounds.top - pad;
+    } else if (bounds.bottom > viewHeight - pad) {
+      scroller.scrollTop += bounds.bottom - (viewHeight - pad);
     }
   }
 
@@ -850,7 +866,12 @@
         findCount.textContent = `${findMatches.length} match${findMatches.length === 1 ? '' : 'es'}`;
       }
     }
-    syncNoteFindHighlight();
+
+    if (findMatches.length) {
+      goToFindMatch(0);
+    } else {
+      syncNoteFindHighlight();
+    }
   }
 
   function goToFindMatch(index, updateCount = true) {

@@ -773,7 +773,7 @@
       if (i === findIndex) row.classList.add('json-tree-find-active');
     });
 
-    viewerFindMatches[findIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    viewerFindMatches[findIndex]?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
     findInput?.focus({ preventScroll: true });
 
     if (updateCount && findCount) {
@@ -908,7 +908,7 @@
     }
   }
 
-  function runFind() {
+  function runFind(autoReveal = true) {
     if (!findInput) return;
     const query = findInput.value;
     findMatches = [];
@@ -947,6 +947,26 @@
       }
     }
     syncTextHighlight();
+    if (autoReveal && findMatches.length) {
+      goToFindMatch(0);
+    }
+  }
+
+  function scrollJsonMatchIntoView(start) {
+    if (!editor || !textWrap) return;
+    const style = getComputedStyle(editor);
+    const lineHeight = parseFloat(style.lineHeight) || 20;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const line = getLineColumn(editor.value, start).line;
+    const targetTop = paddingTop + (line - 1) * lineHeight;
+    const viewTop = textWrap.scrollTop;
+    const viewBottom = viewTop + textWrap.clientHeight;
+    const pad = 80;
+    if (targetTop < viewTop + pad) {
+      textWrap.scrollTop = Math.max(0, targetTop - pad);
+    } else if (targetTop + lineHeight > viewBottom - pad) {
+      textWrap.scrollTop = Math.max(0, targetTop - textWrap.clientHeight + pad + lineHeight);
+    }
   }
 
   function goToFindMatch(index, updateCount = true) {
@@ -963,18 +983,14 @@
     syncTextHighlight();
 
     const revealMatch = () => {
+      scrollJsonMatchIntoView(start);
       editor.focus({ preventScroll: true });
       editor.setSelectionRange(start, end);
-      const lineHeight = parseInt(getComputedStyle(editor).lineHeight, 10) || 20;
-      const line = getLineColumn(editor.value, start).line;
-      if (textWrap) {
-        textWrap.scrollTop = Math.max(0, (line - 1) * lineHeight - 80);
-      }
-      findInput?.focus();
+      findInput?.focus({ preventScroll: true });
     };
 
     // Defer so Enter in the find bar does not insert into the editor.
-    setTimeout(revealMatch, 0);
+    requestAnimationFrame(revealMatch);
 
     if (updateCount && findCount) {
       findCount.textContent = `${findIndex + 1} of ${findMatches.length}`;
