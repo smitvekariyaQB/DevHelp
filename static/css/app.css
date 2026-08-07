@@ -12,6 +12,9 @@
   --radius-sm: 8px;
   --shadow: 0 22px 70px rgba(0, 0, 0, 0.14);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  --scrollbar-size: 12px;
+  --scrollbar-thumb: rgba(60, 60, 67, 0.4);
+  --scrollbar-thumb-hover: rgba(60, 60, 67, 0.55);
 }
 
 * {
@@ -2429,6 +2432,150 @@ html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F
   overflow-x: auto;
   overflow-y: auto;
   scrollbar-gutter: stable;
+  background: transparent;
+}
+
+/* Shared thin pill scrollbar: tables, notes, todo, json, md, code, compare */
+/* Firefox only — Chrome's scrollbar-* keeps native arrow buttons on Linux */
+@supports not selector(::-webkit-scrollbar) {
+  .spreadsheet-scroll,
+  .cell-input,
+  .notes-page,
+  .editor-wrap .ql-container,
+  .todo-tasks-panel,
+  .todo-lists-panel,
+  .json-editor-wrap,
+  .json-file-list,
+  .markdown-editor-wrap,
+  .markdown-preview-pane .markdown-pane-body,
+  .md-file-list,
+  .markdown-preview pre,
+  .code-editor-wrap,
+  .code-file-list,
+  .compare-editor-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
+.spreadsheet-scroll::-webkit-scrollbar,
+.cell-input::-webkit-scrollbar,
+.notes-page::-webkit-scrollbar,
+.editor-wrap .ql-container::-webkit-scrollbar,
+.todo-tasks-panel::-webkit-scrollbar,
+.todo-lists-panel::-webkit-scrollbar,
+.json-editor-wrap::-webkit-scrollbar,
+.json-file-list::-webkit-scrollbar,
+.markdown-editor-wrap::-webkit-scrollbar,
+.markdown-preview-pane .markdown-pane-body::-webkit-scrollbar,
+.md-file-list::-webkit-scrollbar,
+.markdown-preview pre::-webkit-scrollbar,
+.code-editor-wrap::-webkit-scrollbar,
+.code-file-list::-webkit-scrollbar,
+.compare-editor-wrap::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.spreadsheet-scroll::-webkit-scrollbar-button,
+.cell-input::-webkit-scrollbar-button,
+.notes-page::-webkit-scrollbar-button,
+.editor-wrap .ql-container::-webkit-scrollbar-button,
+.todo-tasks-panel::-webkit-scrollbar-button,
+.todo-lists-panel::-webkit-scrollbar-button,
+.json-editor-wrap::-webkit-scrollbar-button,
+.json-file-list::-webkit-scrollbar-button,
+.markdown-editor-wrap::-webkit-scrollbar-button,
+.markdown-preview-pane .markdown-pane-body::-webkit-scrollbar-button,
+.md-file-list::-webkit-scrollbar-button,
+.markdown-preview pre::-webkit-scrollbar-button,
+.code-editor-wrap::-webkit-scrollbar-button,
+.code-file-list::-webkit-scrollbar-button,
+.compare-editor-wrap::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.spreadsheet-scroll::-webkit-scrollbar-track,
+.cell-input::-webkit-scrollbar-track,
+.notes-page::-webkit-scrollbar-track,
+.editor-wrap .ql-container::-webkit-scrollbar-track,
+.todo-tasks-panel::-webkit-scrollbar-track,
+.todo-lists-panel::-webkit-scrollbar-track,
+.json-editor-wrap::-webkit-scrollbar-track,
+.json-file-list::-webkit-scrollbar-track,
+.markdown-editor-wrap::-webkit-scrollbar-track,
+.markdown-preview-pane .markdown-pane-body::-webkit-scrollbar-track,
+.md-file-list::-webkit-scrollbar-track,
+.markdown-preview pre::-webkit-scrollbar-track,
+.code-editor-wrap::-webkit-scrollbar-track,
+.code-file-list::-webkit-scrollbar-track,
+.compare-editor-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.spreadsheet-scroll::-webkit-scrollbar-thumb,
+.cell-input::-webkit-scrollbar-thumb,
+.notes-page::-webkit-scrollbar-thumb,
+.editor-wrap .ql-container::-webkit-scrollbar-thumb,
+.todo-tasks-panel::-webkit-scrollbar-thumb,
+.todo-lists-panel::-webkit-scrollbar-thumb,
+.json-editor-wrap::-webkit-scrollbar-thumb,
+.json-file-list::-webkit-scrollbar-thumb,
+.markdown-editor-wrap::-webkit-scrollbar-thumb,
+.markdown-preview-pane .markdown-pane-body::-webkit-scrollbar-thumb,
+.md-file-list::-webkit-scrollbar-thumb,
+.markdown-preview pre::-webkit-scrollbar-thumb,
+.code-editor-wrap::-webkit-scrollbar-thumb,
+.code-file-list::-webkit-scrollbar-thumb,
+.compare-editor-wrap::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+.spreadsheet-scroll::-webkit-scrollbar-thumb:hover,
+.cell-input::-webkit-scrollbar-thumb:hover,
+.notes-page::-webkit-scrollbar-thumb:hover,
+.editor-wrap .ql-container::-webkit-scrollbar-thumb:hover,
+.todo-tasks-panel::-webkit-scrollbar-thumb:hover,
+.todo-lists-panel::-webkit-scrollbar-thumb:hover,
+.json-editor-wrap::-webkit-scrollbar-thumb:hover,
+.json-file-list::-webkit-scrollbar-thumb:hover,
+.markdown-editor-wrap::-webkit-scrollbar-thumb:hover,
+.markdown-preview-pane .markdown-pane-body::-webkit-scrollbar-thumb:hover,
+.md-file-list::-webkit-scrollbar-thumb:hover,
+.markdown-preview pre::-webkit-scrollbar-thumb:hover,
+.code-editor-wrap::-webkit-scrollbar-thumb:hover,
+.code-file-list::-webkit-scrollbar-thumb:hover,
+.compare-editor-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.spreadsheet-scroll::-webkit-scrollbar-corner,
+.cell-input::-webkit-scrollbar-corner,
+.notes-page::-webkit-scrollbar-corner,
+.editor-wrap .ql-container::-webkit-scrollbar-corner,
+.todo-tasks-panel::-webkit-scrollbar-corner,
+.todo-lists-panel::-webkit-scrollbar-corner,
+.json-editor-wrap::-webkit-scrollbar-corner,
+.json-file-list::-webkit-scrollbar-corner,
+.markdown-editor-wrap::-webkit-scrollbar-corner,
+.markdown-preview-pane .markdown-pane-body::-webkit-scrollbar-corner,
+.md-file-list::-webkit-scrollbar-corner,
+.markdown-preview pre::-webkit-scrollbar-corner,
+.code-editor-wrap::-webkit-scrollbar-corner,
+.code-file-list::-webkit-scrollbar-corner,
+.compare-editor-wrap::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Colored tables keep light-surface scrollbar contrast in dark mode */
+html.dark-mode .table-editor-panel:not([style*="#FFFFFF" i]):not([style*="#F5F5F5" i]) {
+  --scrollbar-thumb: rgba(60, 60, 67, 0.4);
+  --scrollbar-thumb-hover: rgba(60, 60, 67, 0.55);
 }
 
 .spreadsheet-container {
@@ -6256,6 +6403,8 @@ html.dark-mode {
   --accent: #f2f2f7;
   --accent-hover: #ffffff;
   --shadow: 0 22px 70px rgba(0, 0, 0, 0.65);
+  --scrollbar-thumb: rgba(235, 235, 245, 0.4);
+  --scrollbar-thumb-hover: rgba(235, 235, 245, 0.55);
 }
 
 html.dark-mode .sidebar-toggle:hover,
@@ -6526,6 +6675,10 @@ html.dark-mode .spreadsheet-scroll-wrap {
   background: #0a0a0a;
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: none;
+}
+
+html.dark-mode .spreadsheet-scroll {
+  background: transparent;
 }
 
 html.dark-mode .table-sheet-tabs {
