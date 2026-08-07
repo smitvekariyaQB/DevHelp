@@ -290,6 +290,8 @@ html.sidebar-collapsed .user-action-btn,
   height: 20px;
   flex-shrink: 0;
   object-fit: contain;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .sidebar-footer {
