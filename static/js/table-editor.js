@@ -1059,6 +1059,14 @@
     };
   }
 
+  let didDragSelect = false;
+
+  function stopNativeTextSelect() {
+    window.getSelection()?.removeAllRanges();
+    const active = document.activeElement;
+    if (active?.classList?.contains('cell-input')) active.blur();
+  }
+
   // Mouse-based drag selection
   container.addEventListener('mousedown', (e) => {
     // Don't interfere with resize handles, context menus, or header edits
@@ -1071,18 +1079,30 @@
     const idx = cellIdxFromEvent(e);
     if (!idx) return;
 
+    didDragSelect = false;
+    window.getSelection()?.removeAllRanges();
+
+    const ta = e.target.closest('.cell-input');
+    const alreadyEditing = ta && document.activeElement === ta;
+
     if (e.shiftKey && selAnchor) {
-      // Extend selection
       e.preventDefault();
       selFocus = idx;
       selDragging = true;
+      document.body.classList.add('sheet-selecting');
+      stopNativeTextSelect();
       paintSelection();
-    } else {
-      // New selection
-      selAnchor = idx;
-      selFocus = idx;
-      selDragging = true;
-      paintSelection();
+      return;
+    }
+
+    selAnchor = idx;
+    selFocus = idx;
+    selDragging = true;
+    paintSelection();
+
+    if (!alreadyEditing) {
+      e.preventDefault();
+      document.body.classList.add('sheet-selecting');
     }
   });
 
@@ -1091,13 +1111,31 @@
     const idx = cellIdxFromEvent(e);
     if (!idx) return;
     if (selFocus && idx.row === selFocus.row && idx.col === selFocus.col) return;
+    didDragSelect = true;
+    document.body.classList.add('sheet-selecting');
+    stopNativeTextSelect();
     selFocus = idx;
     paintSelection();
   });
 
-  document.addEventListener('mouseup', () => {
+  document.addEventListener('mouseup', (e) => {
+    if (!selDragging) return;
+    selDragging = false;
+    document.body.classList.remove('sheet-selecting');
+    if (didDragSelect) return;
+    const ta = e.target.closest?.('.cell-input');
+    if (ta && document.activeElement !== ta) {
+      ta.focus({ preventScroll: true });
+    }
+  });
+
+  document.addEventListener('selectstart', (e) => {
     if (selDragging) {
-      selDragging = false;
+      e.preventDefault();
+      return;
+    }
+    if (hasSelection && e.target.closest?.('.spreadsheet')) {
+      e.preventDefault();
     }
   });
 
@@ -1124,10 +1162,9 @@
       selectedCols.map((col) => cellValueForExport(row.cells[col.id])),
     );
 
-    const tsvHeader = headers.map(cellForTsvExport).join('\t');
     const tsvRows = rows.map((r) => r.map(cellForTsvExport).join('\t'));
-    const plain = [tsvHeader, ...tsvRows].join('\n');
-    const tableHtml = buildCleanTableHtml(headers, rows);
+    const plain = tsvRows.join('\n');
+    const tableHtml = buildCleanTableHtml(headers, rows, { includeHeader: false });
     return { plain, tableHtml };
   }
 
@@ -1459,7 +1496,20 @@
       doRedo();
     }
   }
-  document.addEventListener('keydown', onDocKeydown);
+  document.addEventListener('keydown', onDocKeydown, true);
+
+  document.addEventListener('copy', (e) => {
+    if (!hasSelection) return;
+    const target = e.target;
+    if (target && target !== document && target !== document.body && !container.contains(target)) return;
+    const payload = buildSelectionCopyPayload();
+    if (!payload) return;
+    e.preventDefault();
+    e.clipboardData?.setData('text/plain', payload.plain);
+    e.clipboardData?.setData('text/html', wrapHtmlDoc(payload.tableHtml));
+    prepareTableCopy();
+    showCopiedFeedback();
+  }, true);
 
   if (titleInput) {
     titleInput.addEventListener('input', () => {

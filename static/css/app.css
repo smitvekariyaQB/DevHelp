@@ -3037,6 +3037,8 @@ body.row-dragging .spreadsheet-row-label {
   overflow: hidden;
   min-height: 44px;
   min-width: 80px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cell-input {
@@ -3055,6 +3057,20 @@ body.row-dragging .spreadsheet-row-label {
   overflow-x: hidden;
   overflow-y: hidden;
   box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cell-input:focus {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+body.sheet-selecting,
+body.sheet-selecting .cell-input,
+body.sheet-selecting .cell-input:focus {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 .cell-input:focus {
