@@ -1162,9 +1162,10 @@
       selectedCols.map((col) => cellValueForExport(row.cells[col.id])),
     );
 
+    const tsvHeader = headers.map(cellForTsvExport).join('\t');
     const tsvRows = rows.map((r) => r.map(cellForTsvExport).join('\t'));
-    const plain = tsvRows.join('\n');
-    const tableHtml = buildCleanTableHtml(headers, rows, { includeHeader: false });
+    const plain = [tsvHeader, ...tsvRows].join('\n');
+    const tableHtml = buildCleanTableHtml(headers, rows);
     return { plain, tableHtml };
   }
 
