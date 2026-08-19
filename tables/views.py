@@ -63,17 +63,55 @@ def _validate_data(data):
         clean_rows = [
             {'id': str(uuid.uuid4()), 'cells': {c['id']: '' for c in clean_cols}}
         ]
-    return {'columns': clean_cols, 'rows': clean_rows}
+    row_ids = {r['id'] for r in clean_rows}
+    return {
+        'columns': clean_cols,
+        'rows': clean_rows,
+        'merges': _validate_merges(data.get('merges'), col_ids, row_ids),
+    }
+
+
+def _validate_merges(merges, col_ids, row_ids):
+    if not isinstance(merges, list):
+        return []
+    clean = []
+    seen = set()
+    for merge in merges:
+        if not isinstance(merge, dict):
+            continue
+        row_id = str(merge.get('rowId') or '')
+        col_id = str(merge.get('colId') or '')
+        if row_id not in row_ids or col_id not in col_ids or (row_id, col_id) in seen:
+            continue
+        try:
+            rowspan = max(1, min(int(merge.get('rowspan', 1)), 200))
+            colspan = max(1, min(int(merge.get('colspan', 1)), 50))
+        except (TypeError, ValueError):
+            continue
+        if rowspan == 1 and colspan == 1:
+            continue
+        seen.add((row_id, col_id))
+        clean.append({
+            'rowId': row_id,
+            'colId': col_id,
+            'rowspan': rowspan,
+            'colspan': colspan,
+        })
+        if len(clean) >= 500:
+            break
+    return clean
 
 
 def _as_data(value):
     if not isinstance(value, dict):
-        return {'columns': [], 'rows': []}
+        return {'columns': [], 'rows': [], 'merges': []}
     columns = value.get('columns')
     rows = value.get('rows')
+    merges = value.get('merges')
     return {
         'columns': columns if isinstance(columns, list) else [],
         'rows': rows if isinstance(rows, list) else [],
+        'merges': merges if isinstance(merges, list) else [],
     }
 
 
@@ -178,7 +216,17 @@ def _merge_data(base, current, server):
                 cells[cid] = ''
         result_rows.append({'id': rid, 'cells': cells})
 
-    return {'columns': result_columns, 'rows': result_rows}
+    if current.get('merges') != base.get('merges'):
+        result_merges = current.get('merges')
+    else:
+        result_merges = server.get('merges')
+    col_ids = {col['id'] for col in result_columns}
+    row_ids = {row['id'] for row in result_rows}
+    return {
+        'columns': result_columns,
+        'rows': result_rows,
+        'merges': _validate_merges(result_merges, col_ids, row_ids),
+    }
 
 
 @login_required

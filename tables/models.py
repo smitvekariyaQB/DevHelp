@@ -15,7 +15,7 @@ def default_sheet_data():
         {'id': str(uuid.uuid4()), 'cells': {col['id']: '' for col in columns}}
         for _ in range(5)
     ]
-    return {'columns': columns, 'rows': rows}
+    return {'columns': columns, 'rows': rows, 'merges': []}
 
 
 class TableSheet(SoftDeleteModel):
